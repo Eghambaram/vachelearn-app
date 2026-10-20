@@ -10,7 +10,8 @@ Admin dashboard on demo data).
 - `pnpm test:e2e` → 114 passed (adds 1.4 `shell.spec.ts`: nav per demo role, skip link, keyboard-only nav, role +
   workspace switchers, user menu, permission-denied / 404, drawer focus trap at 360 px, no sideways scroll, axe on
   every shell/public/auth/system page; desktop + 360 px projects)
-- No `.skip`/`.only`/`.todo` in `apps/web`. CI not yet run (push blocked, see below)
+- No `.skip`/`.only`/`.todo` in `apps/web`.
+- First CI run (GitHub Actions 39442225795, commit 14b63ca): success — all gates + E2E 114 passed in 53.9 s
 
 ## Done in this phase
 - 1.1 pnpm workspace, `apps/web` (Next 16.4.2, React 19.3.1, TS 6.0.3 strict), ESLint 10, Prettier, Vitest,
@@ -35,8 +36,6 @@ Slice 1.5.1: Platform Admin dashboard (ref 01-final) on demo data through a type
 revenue/plan widgets hidden (D-027), industry widget per D-048. Optionally run `ux-accessibility-reviewer` on 1.3–1.4.
 
 ## Blocked on owner
-- Push: GitHub 403 — credential `egha-dev` has no write access to `Eghambaram/vachelearn-app`. Grant access or push
-  as the owner (`gh auth login`, then `git push -u origin main`). `main` is 11 commits ahead of origin.
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
 - Before Phase 2: D-010 · D-049 · D-051 · D-053 (confirm) · D-026 · D-047 · D-048 (decide).
 
