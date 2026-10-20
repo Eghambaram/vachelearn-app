@@ -36,7 +36,7 @@ revenue/plan widgets hidden (D-027), industry widget per D-048. Optionally run `
 
 ## Blocked on owner
 - Push: GitHub 403 — credential `egha-dev` has no write access to `Eghambaram/vachelearn-app`. Grant access or push
-  as the owner (`gh auth login`, then `git push -u origin main`). `main` is 12 commits ahead of origin.
+  as the owner (`gh auth login`, then `git push -u origin main`). `main` is 11 commits ahead of origin.
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
 - Before Phase 2: D-010 · D-049 · D-051 · D-053 (confirm) · D-026 · D-047 · D-048 (decide).
 
