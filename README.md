@@ -8,7 +8,8 @@ references and legacy evidence. **No application has been implemented yet.**
 
 1. Install prerequisites: Git, Node.js (current Active LTS), pnpm, Docker Desktop (or Docker Engine + Compose),
    Claude Code.
-2. Put this folder under version control: `git init && git add -A && git commit -m "chore: starter kit v2.0"`.
+2. Put this folder under version control if `git status` says it is not a repository yet:
+   `git init && git add -A && git commit -m "chore: starter kit v2.0"`.
 3. Open a terminal in this folder and run `claude`. `CLAUDE.md`, `.claude/rules/`, skills, agents and hooks load
    automatically. Run `/context` to confirm.
 4. Send the message in `prompts/00-kickoff.md`. That runs **Phase 0** (planning only, no code).

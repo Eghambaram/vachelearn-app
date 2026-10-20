@@ -1,5 +1,9 @@
 # Implementation Plan
 
+> **Pre-Phase-0 draft (kit v1.0), not yet reconciled.** Phase 0 rewrites this file. Until then `MASTER_PROMPT.md`
+> and `prompts/phase-*.md` win on conflicts — notably, basic progress/completion/overdue reports are in **Phase 4**
+> (`prompts/phase-4-learning-lifecycle.md` §4.7); Phase 5 adds compliance reports and exports.
+
 ## Phase 0 — Discovery and definition
 **Deliverables:** workspace audit, product requirements, UI inventory, architecture proposal, domain model, role matrix, decisions log, first vertical slice plan.
 **Exit:** owner reviews plan and open decisions. No large code changes before the audit.

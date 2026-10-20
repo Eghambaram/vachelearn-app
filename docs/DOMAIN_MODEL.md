@@ -1,5 +1,9 @@
 # VacheLearn Domain Model — Initial Proposal
 
+> **Pre-Phase-0 draft (kit v1.0), not yet reconciled.** Phase 0 rewrites this file. Until then `MASTER_PROMPT.md`
+> wins on conflicts — notably, auth sessions are `AuthSession` and classroom sessions are `ClassSession`; the
+> `Session` entries below predate that rename.
+
 ## Main entity groups
 
 ### Tenancy and identity

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-// PreToolUse hook for Edit/Write/MultiEdit.
-// Blocks writes to real environment/secret files and blocks content that looks like a live secret.
+// PreToolUse hook for Edit/Write/MultiEdit/Bash.
+// Blocks writes to real environment/secret files, shell commands that touch them (cat, cp, >, source, ...),
+// and content or commands that look like a live secret.
+// Bash permission deny rules are prefix matches and easy to sidestep; this hook is the real guard.
 // Exit 2 = block the tool call; stderr is shown to Claude as the reason. Exit 0 = allow.
 
 import path from 'node:path';
@@ -31,8 +33,29 @@ process.stdin.on('end', () => {
     process.exit(2);
   }
 
-  // 2) Content that looks like a live credential.
-  const content = [toolInput.content, toolInput.new_string, ...(toolInput.edits ?? []).map((e) => e?.new_string)]
+  // 1b) Shell commands that reference a real env or key file. `.env` must start a path segment, so
+  // `process.env.X` and `.envrc` do not match; `.env.example` / `.env.sample` stay allowed.
+  const command = String(toolInput.command ?? '');
+  if (command) {
+    const envRefs = command.match(/(?<![\w$.-])\.env(\.[\w.-]+)?(?![\w-])/g) ?? [];
+    const realEnv = envRefs.find((ref) => !/\.(example|sample)$/.test(ref));
+    const keyRef = command.match(/[\w./-]+\.(pem|key|p12|pfx)(?![\w-])/i)?.[0];
+    if (realEnv || keyRef) {
+      console.error(
+        `Blocked: this command references ${realEnv ?? keyRef}, which may contain real secrets. ` +
+          'Use .env.example for names and placeholders, and ask the user to manage real values themselves.',
+      );
+      process.exit(2);
+    }
+  }
+
+  // 2) Content (or a shell command) that looks like a live credential.
+  const content = [
+    toolInput.content,
+    toolInput.new_string,
+    command,
+    ...(toolInput.edits ?? []).map((e) => e?.new_string),
+  ]
     .filter(Boolean)
     .join('\n');
 

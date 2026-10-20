@@ -1,5 +1,9 @@
 # Architecture Proposal
 
+> **Pre-Phase-0 draft (kit v1.0), not yet reconciled.** Phase 0 rewrites this file. Until then `MASTER_PROMPT.md`
+> and `docs/DECISIONS.md` win on conflicts — notably, background jobs start on a Postgres-backed job/outbox table
+> (D-040), not a separate queue, and the repo may add `packages/contracts` (D-035).
+
 ## Recommended baseline
 - Frontend: Next.js + TypeScript.
 - UI: Tailwind CSS + shadcn/ui with a VacheLearn design system.
