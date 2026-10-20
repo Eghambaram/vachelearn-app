@@ -1,0 +1,73 @@
+# Package Manifest — VacheLearn Starter Kit v2.0
+
+Generated 2026-10-20. ★ = new in v2.0 · ✎ = updated in v2.0 · (unmarked) = unchanged from v1.0
+
+- ★ `.claude/agents/qa-verifier.md`
+- ★ `.claude/agents/security-reviewer.md`
+- ★ `.claude/agents/tenant-isolation-auditor.md`
+- ★ `.claude/agents/ux-accessibility-reviewer.md`
+- ★ `.claude/hooks/format-file.mjs`
+- ★ `.claude/hooks/guard-secrets.mjs`
+- ★ `.claude/rules/api.md`
+- ★ `.claude/rules/database.md`
+- ★ `.claude/rules/docs.md`
+- ★ `.claude/rules/testing.md`
+- ★ `.claude/rules/web.md`
+- ★ `.claude/settings.json`
+- ★ `.claude/skills/decision/SKILL.md`
+- ★ `.claude/skills/handoff/SKILL.md`
+- ★ `.claude/skills/isolation-tests/SKILL.md`
+- ★ `.claude/skills/slice/SKILL.md`
+- ★ `.claude/skills/start-phase/SKILL.md`
+- ★ `.claude/skills/verify/SKILL.md`
+- `.env.example`
+- ★ `.gitignore`
+- ★ `CLAUDE.md`
+- ★ `KIT_REVIEW.md`
+- ✎ `MASTER_PROMPT.md`
+- ✎ `PACKAGE_MANIFEST.md`
+- ✎ `README.md`
+- `assets/brand/vache-logo.jpg`
+- `assets/ui-ux/01-platform-admin-dashboard-final.png`
+- `assets/ui-ux/01-platform-admin-dashboard.png`
+- `assets/ui-ux/02-course-management-builder.png`
+- `assets/ui-ux/03-learner-dashboard.png`
+- `assets/ui-ux/05-platform-and-learner-ui-storyboard.png`
+- `assets/ui-ux/07-admin-workflows-composite.png`
+- `assets/ui-ux/08-multi-panel-ui-reference.png`
+- `assets/ui-ux/09-marketing-storyboard.png`
+- `assets/ui-ux/10-public-landing-page-reference.png`
+- `assets/ui-ux/11-dashboard-collage-reference.png`
+- `assets/ui-ux/12-product-ui-reference.png`
+- `assets/ui-ux/13-course-player-reference.png`
+- `docs/ACCEPTANCE_TESTS.md`
+- `docs/ARCHITECTURE.md`
+- ✎ `docs/CLAUDE_CODE_KICKOFF.md`
+- ✎ `docs/DECISIONS.md`
+- `docs/DOMAIN_MODEL.md`
+- `docs/IMPLEMENTATION_PLAN.md`
+- ★ `docs/LEGACY_CAPABILITY_INVENTORY.md`
+- `docs/MIGRATION_MAPPING.md`
+- ★ `docs/MVP_SPEC.md`
+- `docs/PRODUCT_REQUIREMENTS.md`
+- ★ `docs/PROGRESS.md`
+- `docs/ROLE_PERMISSION_MATRIX.md`
+- `docs/RUNBOOK.md`
+- ✎ `docs/Supplementary_Master_Prompt.md`
+- ✎ `docs/UI_UX_SPECIFICATION.md`
+- `docs/VacheLearn_MVP_Implementation_Specification.docx`
+- ★ `prompts/00-kickoff.md`
+- ★ `prompts/README.md`
+- ★ `prompts/phase-0-discovery.md`
+- ★ `prompts/phase-1-design-system.md`
+- ★ `prompts/phase-2-foundation.md`
+- ★ `prompts/phase-3-people-content.md`
+- ★ `prompts/phase-4-learning-lifecycle.md`
+- ★ `prompts/phase-5-operations.md`
+- ★ `prompts/phase-6-commerce-analytics.md`
+- ★ `prompts/phase-7-production-readiness.md`
+- ★ `prompts/review-prompts.md`
+- ★ `prompts/session-resume.md`
+- `reference/legacy/001-AdminScreens.pdf`
+- `reference/legacy/002-LearnnerScreens.pdf`
+- `reference/legacy/003-Application ERD_merged.pdf`
