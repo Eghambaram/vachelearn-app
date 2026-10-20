@@ -1,8 +1,8 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.3b done** (data display, page structure, states), uncommitted.
-Slice 1.3 (core components) is complete once 1.3b is committed. Next: Slice 1.4 (app shells + navigation).
+Phase 1 · Design system & UI foundations — Slice 1.3 complete (1.3b commit 101740e). **Next: Slice 1.4** (app
+shells + navigation), not started.
 
 ## Last verified
 2026-10-20, Node v24.21.0, pnpm 12.8.1, on the final tree:
@@ -23,17 +23,13 @@ Slice 1.3 (core components) is complete once 1.3b is committed. Next: Slice 1.4 
 - 1.3b chart tokens `chart-1…5` (10 new contrast pairs); restyled card, table, tabs, breadcrumb, dropdown-menu, chart
   (recharts 3, D-060); Checkbox indeterminate; PageHeader, Breadcrumbs, KpiCard, ChartCard (+ table view), DataTable
   (server-driven), FilterBar, Pagination (cursor), Stepper, EmptyState, ErrorState, PermissionDenied, DemoBadge;
-  `lib/table.ts`; gallery sections (uncommitted).
+  `lib/table.ts`; gallery sections (commit 101740e).
 
 ## In progress / uncommitted
-- All Slice 1.3b files (see `git status`): `apps/web/src/components/*` (new composites + 6 ui primitives),
-  `lib/table.ts`, `styles/tokens.*`, `globals.css`, `messages/en.ts`, `app/design/components/*`, `e2e/components.spec.ts`,
-  `package.json` + lockfile (recharts 3.10.1), `docs/UI_UX_SPECIFICATION.md`, `docs/DECISIONS.md` (D-060; D-058/059/060
-  rows moved out of the owner-queue table into Architecture).
-  Suggested commit: `feat(web): data display, page structure and state components (Slice 1.3b)`.
+- Nothing.
 
 ## Next step
-Commit Slice 1.3b (on owner request); optionally run the `ux-accessibility-reviewer` subagent on 1.3a+1.3b. Then open
+Optionally run the `ux-accessibility-reviewer` subagent on 1.3a+1.3b. Then open
 `prompts/phase-1-design-system.md` §1.4 and plan Slice 1.4 (public + auth layouts, workspace AppShell with sidebar/top
 bar, role-based nav definitions, mobile sidebar, i18n helper D-028) — needs the brand logo SVG/PNG (see below).
 
