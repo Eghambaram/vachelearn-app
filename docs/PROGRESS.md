@@ -25,6 +25,4 @@ Proposed, to confirm before Phase 1–2: D-010 auth · D-024 package manager · 
 library · D-038 marketing content policy. (See docs/DECISIONS.md.)
 
 ## Known issues
-- `guard-secrets.mjs` Bash checks are **inactive** until the owner adds `Bash` to the PreToolUse hook matcher in
-  `.claude/settings.json` (`"Edit|Write|MultiEdit"` → `"Edit|Write|MultiEdit|Bash"`); Claude may not edit its own hooks.
 - See `KIT_REVIEW.md` for contradictions resolved in kit v2.0 and remaining gaps.
