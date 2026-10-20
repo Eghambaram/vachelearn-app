@@ -25,20 +25,18 @@ Admin dashboard on demo data).
 - 1.4 logo (D-064) · i18n helper `lib/i18n.ts` (all components migrated, guard test) · `SessionView` contract +
   `mocks/demo-session.ts` · permission-driven `lib/nav.ts` · AppShell (sidebar, drawer, top bar, user menu, workspace
   switcher, demo bar) · public/auth layouts · placeholder pages (D-061) · 403/404/error/suspended · `/account` ·
-  `StickyActions` · `ENABLE_DEMO_WORKSPACES` gate (D-063) — uncommitted.
+  `StickyActions` · `ENABLE_DEMO_WORKSPACES` gate (D-063) (commit 83bd1ef).
 
 ## In progress / uncommitted
-- Slice 1.4 (see `git status`): `apps/web/src/{app,components/shell,lib,mocks,messages}`, `public/brand/`,
-  `assets/brand/vache-logo.svg`, `e2e/shell.spec.ts`, `.env.example`, `docs/{DECISIONS,UI_UX_SPECIFICATION,
-  ROLE_PERMISSION_MATRIX}.md`. Suggested commit: `feat(web): app shells, role navigation and demo workspaces (Slice 1.4)`.
+- Nothing.
 
 ## Next step
-Commit 1.4 (owner asked to commit and push). Then Slice 1.5.1: Platform Admin dashboard (ref 01-final) on demo data
-through a typed `lib/api` client → `mocks/`; revenue/plan widgets hidden (D-027), industry widget per D-048.
+Slice 1.5.1: Platform Admin dashboard (ref 01-final) on demo data through a typed `lib/api` client → `mocks/`;
+revenue/plan widgets hidden (D-027), industry widget per D-048. Optionally run `ux-accessibility-reviewer` on 1.3–1.4.
 
 ## Blocked on owner
 - Push: GitHub 403 — credential `egha-dev` has no write access to `Eghambaram/vachelearn-app`. Grant access or push
-  as the owner (`gh auth login`, then `git push -u origin main`).
+  as the owner (`gh auth login`, then `git push -u origin main`). `main` is 12 commits ahead of origin.
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
 - Before Phase 2: D-010 · D-049 · D-051 · D-053 (confirm) · D-026 · D-047 · D-048 (decide).
 
