@@ -56,10 +56,20 @@ boundaries (WCAG 1.4.3 / 1.4.11).
 | `danger-700` on `surface`                | `#b42318` / `#ffffff` | 6.57:1  | 4.5     | Error message text on cards              |
 | `info-700` on `surface`                  | `#175cd3` / `#ffffff` | 5.99:1  | 4.5     | Info message text on cards               |
 | `on-primary` on `danger-700`             | `#ffffff` / `#b42318` | 6.57:1  | 4.5     | Destructive button text on hover         |
+| `chart-1` on `surface`                   | `#0f6e56` / `#ffffff` | 6.20:1  | 3       | Chart series 1 on cards                  |
+| `chart-1` on `bg`                        | `#0f6e56` / `#f6fafb` | 5.90:1  | 3       | Chart series 1 on app background         |
+| `chart-2` on `surface`                   | `#2563eb` / `#ffffff` | 5.17:1  | 3       | Chart series 2 on cards                  |
+| `chart-2` on `bg`                        | `#2563eb` / `#f6fafb` | 4.92:1  | 3       | Chart series 2 on app background         |
+| `chart-3` on `surface`                   | `#b54708` / `#ffffff` | 5.43:1  | 3       | Chart series 3 on cards                  |
+| `chart-3` on `bg`                        | `#b54708` / `#f6fafb` | 5.16:1  | 3       | Chart series 3 on app background         |
+| `chart-4` on `surface`                   | `#7a5af8` / `#ffffff` | 4.52:1  | 3       | Chart series 4 on cards                  |
+| `chart-4` on `bg`                        | `#7a5af8` / `#f6fafb` | 4.30:1  | 3       | Chart series 4 on app background         |
+| `chart-5` on `surface`                   | `#c11574` / `#ffffff` | 5.79:1  | 3       | Chart series 5 on cards                  |
+| `chart-5` on `bg`                        | `#c11574` / `#f6fafb` | 5.51:1  | 3       | Chart series 5 on app background         |
 
 Changes from the kit's proposed palette: **added `--vl-color-focus-ring-inverse` `#a7f3d0`** — the primary colour as a
 focus ring on the dark sidebar is only 2.49:1 (a test documents this); dark surfaces use the class `surface-dark` to
-switch to the inverse ring. Slice 1.3a added **`--vl-color-scrim` `#101828`** (`bg-scrim/60`) for modal/drawer backdrops — non-text, so no contrast pair. Corrected the kit's "ink on amber" figure from 7.89:1 to 8.04:1. Never use as text:
+switch to the inverse ring. Slice 1.3a added **`--vl-color-scrim` `#101828`** (`bg-scrim/60`) for modal/drawer backdrops — non-text, so no contrast pair. Slice 1.3b added **`--vl-color-chart-1…5`** (categorical series colours, D-060): graphics only, each ≥ 3:1 on `surface` and `bg`; never the only cue (legends, dash styles and a table view are required). Corrected the kit's "ink on amber" figure from 7.89:1 to 8.04:1. Never use as text:
 `brand` (3.36:1, large text/icons only), `accent` amber (2.21:1 on white), `border` (decorative, 1.47:1),
 `border-input` (boundaries only).
 
@@ -124,6 +134,35 @@ update `status.ts` and this table together).
   `docs/progress-log/2026-10.md`): import `cn` from `@/lib/utils`, no `dark:`, solid focus outlines (never
   semi-transparent rings), list highlights with an inset outline, token variables only (a unit test fails on any
   undefined `var(--x)` or default-palette colour class).
+
+### Component conventions (Slice 1.3b)
+
+- **Page structure:** `PageHeader` (one `h1`, breadcrumbs, inline meta such as StatusBadge/DemoBadge, actions with the
+  primary last), `Breadcrumbs` (last entry is the current page, `aria-current="page"`, never a link), `Tabs` (`default`
+  segmented variant for small toggles, `line` variant for page sections; active tab = bold + 2 px bar, not colour only),
+  `Stepper` (display only; state in text: "Details (completed)", "Step 2 of 4"; `error` overrides a step).
+- **States:** `EmptyState` (why it is empty + a real next step), `ErrorState` (`role="alert"`, shows the API
+  `requestId`, optional retry; never raw server text), `PermissionDenied` (403 only, reveals nothing about the
+  resource; scope-hidden resources are 404 and use a not-found page). Heading level is a prop to fit the outline.
+- **Demo data:** `DemoBadge` ("Demo") on every fixture-backed card, chart or page; `KpiCard` and `ChartCard` take
+  `demo`.
+- **KpiCard:** a named group; value and change are pre-formatted server values; change has direction (icon + hidden
+  words) and an explicit `sentiment` (up is not always good) for colour.
+- **ChartCard:** title, always-visible text summary, Chart/Table tabs (the table is the accessible equivalent), and
+  loading / error / empty states — no axes are drawn for data that does not exist. Charts use recharts 3 via the
+  restyled shadcn wrapper (`components/ui/chart.tsx`); series colours are typed to `CHART_COLORS` (the chart tokens)
+  and passed directly to recharts; the second series in a line chart uses a dash pattern.
+- **DataTable (server-driven, no TanStack Table — D-060):** renders one page exactly as the API returned it; never
+  sorts or filters locally. Sortable columns name the API's allowlisted sort field; headers expose `aria-sort`.
+  Loading keeps the header with skeleton rows (`aria-busy`); error and empty replace the table. Row actions open a
+  **non-modal** menu named "Actions for <row>"; destructive actions must open a ConfirmDialog. Selection covers the
+  current page only and is cleared when the page, sort or filters change; the selected count is announced.
+- **FilterBar** (`role="search"`, visible labels on every control, "Clear filters" only when something is applied)
+  and **Pagination** (cursor-based previous/next with "Page N", rows-per-page 25/50/100; no totals, because cursor
+  lists do not have them). `lib/table.ts` holds `nextSort`, `ariaSort`, `useCursorPagination` (cursor stack, reset on
+  any query change) and `useDebouncedValue` for search. Filter values are hints: the API validates them and applies
+  tenant/branch scope, so a filter can never widen access.
+- Tables scroll inside a focusable container, so the page itself never scrolls sideways at 360 px (E2E-checked).
 
 ## Reference image caveats
 

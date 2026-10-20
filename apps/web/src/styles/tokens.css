@@ -41,6 +41,14 @@
   --vl-color-info-700: #175cd3;
   --vl-color-info-50: #eff8ff;
 
+  /* Chart series (categorical, in this order). Graphics only: each is >= 3:1 on surface and bg (WCAG 1.4.11).
+     Never the only cue — charts also use legends, direct labels or dash styles, and a table view (D-060). */
+  --vl-color-chart-1: #0f6e56; /* green (same value as primary) */
+  --vl-color-chart-2: #2563eb; /* blue */
+  --vl-color-chart-3: #b54708; /* burnt orange */
+  --vl-color-chart-4: #7a5af8; /* violet */
+  --vl-color-chart-5: #c11574; /* magenta */
+
   /* Typography — one family (D-059); sizes reuse Tailwind's 12/14/16/18/20/24/30/36 scale */
   --vl-font-sans:
     'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans',

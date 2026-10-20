@@ -20,6 +20,67 @@ export const en = {
   datePicker: {
     placeholder: 'Pick a date',
   },
+  breadcrumbs: {
+    label: 'Breadcrumb',
+    more: 'More pages',
+  },
+  demo: {
+    badge: 'Demo',
+    title: 'Demo data — not real figures',
+  },
+  states: {
+    emptyTitle: 'Nothing here yet',
+    errorTitle: 'This could not be loaded',
+    errorDescription: 'Try again. If it keeps happening, contact support with the reference below.',
+    errorReference: 'Reference',
+    retry: 'Try again',
+    deniedTitle: 'You do not have access to this',
+    deniedDescription:
+      'Your role does not include this. Ask an administrator in your organisation if you need access.',
+  },
+  kpi: {
+    increase: 'Up',
+    decrease: 'Down',
+    unchanged: 'No change',
+  },
+  chart: {
+    viewsLabel: 'Choose how to show this data',
+    chart: 'Chart',
+    table: 'Table',
+    summary: 'Summary',
+    emptyTitle: 'No data for this period',
+    emptyDescription: 'The chart appears once there is data to show.',
+  },
+  table: {
+    actionsColumn: 'Actions',
+    rowActions: (row: string) => `Actions for ${row}`,
+    selectAll: 'Select all rows on this page',
+    selectRow: (row: string) => `Select ${row}`,
+    selected: (count: number) => `${count} selected`,
+    clearSelection: 'Clear selection',
+    loadingRows: 'Loading rows…',
+  },
+  pagination: {
+    label: 'Pagination',
+    previous: 'Previous page',
+    next: 'Next page',
+    rowsPerPage: 'Rows per page',
+    page: (page: number) => `Page ${page}`,
+  },
+  filterBar: {
+    label: 'Search and filter',
+    search: 'Search',
+    clear: 'Clear filters',
+    active: (count: number) => (count === 1 ? '1 filter applied' : `${count} filters applied`),
+  },
+  stepper: {
+    label: 'Progress',
+    complete: 'completed',
+    current: 'current step',
+    upcoming: 'not started',
+    error: 'needs attention',
+    stepOf: (step: number, total: number) => `Step ${step} of ${total}`,
+  },
   status: {
     tenant: { active: 'Active', suspended: 'Suspended', archived: 'Archived', trial: 'Trial' },
     course: {

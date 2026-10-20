@@ -45,6 +45,8 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Toaster } from '@/components/ui/sonner';
 import { STATUS_VOCABULARY, type StatusEntity } from '@/lib/status';
+import { DataGallery } from './data-gallery';
+import { Section } from './gallery-section';
 
 // Gallery-only sample options. Fictional and clearly not product data.
 const BRANCH_OPTIONS = [
@@ -53,25 +55,6 @@ const BRANCH_OPTIONS = [
   { value: 'b1', label: 'Example Branch B1' },
   { value: 'hq', label: 'Example Head Office' },
 ] as const;
-
-function Section({
-  id,
-  title,
-  children,
-}: {
-  id: string;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section aria-labelledby={id} className="rounded-xl border bg-card p-4 shadow-card sm:p-6">
-      <h2 id={id} className="mb-4 text-xl font-semibold">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
 
 export function ComponentGallery() {
   const [branch, setBranch] = React.useState<string | null>(null);
@@ -86,8 +69,8 @@ export function ComponentGallery() {
         </p>
         <h1 className="text-3xl font-semibold">Components</h1>
         <p className="max-w-3xl text-muted-foreground">
-          Slice 1.3a: forms, overlays and feedback. Data display and page structure arrive in Slice
-          1.3b.{' '}
+          Slice 1.3a: forms, overlays and feedback. Slice 1.3b: page structure, data display and
+          states.{' '}
           <a href="/design" className="text-primary underline underline-offset-4">
             Design tokens
           </a>
@@ -278,6 +261,8 @@ export function ComponentGallery() {
           </div>
         </div>
       </Section>
+
+      <DataGallery />
     </main>
   );
 }

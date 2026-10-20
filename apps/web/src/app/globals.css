@@ -60,6 +60,12 @@
   --color-info: var(--vl-color-info-700);
   --color-info-subtle: var(--vl-color-info-50);
 
+  --color-chart-1: var(--vl-color-chart-1);
+  --color-chart-2: var(--vl-color-chart-2);
+  --color-chart-3: var(--vl-color-chart-3);
+  --color-chart-4: var(--vl-color-chart-4);
+  --color-chart-5: var(--vl-color-chart-5);
+
   --font-sans: var(--vl-font-sans);
   --font-heading: var(--vl-font-sans);
 

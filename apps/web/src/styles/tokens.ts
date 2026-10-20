@@ -162,4 +162,34 @@ export const CONTRAST_PAIRS: readonly ContrastPair[] = [
     minimum: 4.5,
     use: 'Destructive button text on hover',
   },
+  ...(['surface', 'bg'] as const).map((background) => ({
+    foreground: 'chart-1',
+    background,
+    minimum: 3 as const,
+    use: `Chart series 1 on ${background === 'bg' ? 'app background' : 'cards'}`,
+  })),
+  ...(['surface', 'bg'] as const).map((background) => ({
+    foreground: 'chart-2',
+    background,
+    minimum: 3 as const,
+    use: `Chart series 2 on ${background === 'bg' ? 'app background' : 'cards'}`,
+  })),
+  ...(['surface', 'bg'] as const).map((background) => ({
+    foreground: 'chart-3',
+    background,
+    minimum: 3 as const,
+    use: `Chart series 3 on ${background === 'bg' ? 'app background' : 'cards'}`,
+  })),
+  ...(['surface', 'bg'] as const).map((background) => ({
+    foreground: 'chart-4',
+    background,
+    minimum: 3 as const,
+    use: `Chart series 4 on ${background === 'bg' ? 'app background' : 'cards'}`,
+  })),
+  ...(['surface', 'bg'] as const).map((background) => ({
+    foreground: 'chart-5',
+    background,
+    minimum: 3 as const,
+    use: `Chart series 5 on ${background === 'bg' ? 'app background' : 'cards'}`,
+  })),
 ];
