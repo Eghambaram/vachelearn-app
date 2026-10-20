@@ -30,14 +30,13 @@ Phase 1 · Design system & UI foundations — **Slice 1.5.1 done** (Platform Adm
 - 1.5.1 `packages/contracts` (Zod 4, D-035: error envelope, `PlatformDashboard`) · `docs/METRICS.md` (D-065 completion
   rate, D-066 statuses) · `lib/api/client.ts` + `platform.ts` (contract-parsed demo layer, `?demoState=`) · `/platform`
   dashboard (KPIs, growth/enrollment/status charts with tables, activity, recent tenants; no revenue/industry) ·
-  workspace catch-alls now `[...slug]` + root pages · charts without JS animation (uncommitted).
+  workspace catch-alls now `[...slug]` + root pages · charts without JS animation (commit 88e9422).
 
 ## In progress / uncommitted
-- Slice 1.5.1 files (see `git status`). Suggested commit:
-  `feat(platform): platform admin dashboard on demo data + shared contracts (Slice 1.5.1)`.
+- Nothing.
 
 ## Next step
-Commit 1.5.1 and push (on owner request). Then Slice 1.5.2: Tenant Admin dashboard (ref 07 panel 1) at `/admin`,
+Push 1.5.1 (on owner request). Then Slice 1.5.2: Tenant Admin dashboard (ref 07 panel 1) at `/admin`,
 scope-aware for BA/LM/CV (D-026 pending: Proposed default), compliance tiles marked as arriving in Phase 5.
 
 ## Blocked on owner
