@@ -34,10 +34,11 @@ Optionally run the `ux-accessibility-reviewer` subagent on 1.3a+1.3b. Then open
 bar, role-based nav definitions, mobile sidebar, i18n helper D-028) — needs the brand logo SVG/PNG (see below).
 
 ## Blocked on owner
-- Before Slice 1.4: brand logo as SVG or transparent PNG (current asset is a JPEG on off-white with a "Vache"
-  wordmark — do not redraw it).
+- **Slice 1.4 waits for the brand logo** as SVG or transparent PNG under `assets/brand/` (owner chose to supply it,
+  2026-10-20; current JPEG is on off-white — do not redraw it). Plan approved with D-061 · D-062 · D-063.
 - Before Phase 2: D-010 · D-049 · D-051 · D-053 (confirm) · D-026 · D-047 · D-048 (decide).
-- Pushing to GitHub (needed for the first CI run) requires owner approval.
+- Push approved 2026-10-20 but rejected: GitHub 403, credential `egha-dev` has no write access to
+  `Eghambaram/vachelearn-app`. Owner to grant access or switch credentials; 9 commits ahead of origin.
 
 ## Known issues
 - Node 26 not yet LTS (nodejs.org, 2026-10-20); bump `.nvmrc`/`engines` once it is (reported 2026-10-28).
