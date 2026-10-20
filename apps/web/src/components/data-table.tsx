@@ -25,7 +25,10 @@ import {
 } from '@/components/ui/table';
 import { ariaSort, nextSort, type SortState } from '@/lib/table';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 export type DataTableColumn<Row> = {
   id: string;
@@ -143,7 +146,7 @@ export function DataTable<Row>({
             {selection ? (
               <TableHead scope="col" className="w-10">
                 <Checkbox
-                  aria-label={en.table.selectAll}
+                  aria-label={t.table.selectAll}
                   checked={allSelected ? true : someSelected ? 'indeterminate' : false}
                   disabled={loading || rows.length === 0}
                   onCheckedChange={(checked) => toggleAll(checked === true)}
@@ -171,7 +174,7 @@ export function DataTable<Row>({
             ))}
             {rowActions ? (
               <TableHead scope="col" className="w-12">
-                <span className="sr-only">{en.table.actionsColumn}</span>
+                <span className="sr-only">{t.table.actionsColumn}</span>
               </TableHead>
             ) : null}
           </TableRow>
@@ -199,7 +202,7 @@ export function DataTable<Row>({
                     {selection ? (
                       <TableCell>
                         <Checkbox
-                          aria-label={en.table.selectRow(label)}
+                          aria-label={t.table.selectRow(label)}
                           checked={selected}
                           onCheckedChange={(checked) => toggleRow(id, checked === true)}
                         />
@@ -222,7 +225,7 @@ export function DataTable<Row>({
                           <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
                               <IconButton
-                                label={en.table.rowActions(label)}
+                                label={t.table.rowActions(label)}
                                 icon={<MoreHorizontal />}
                                 size="icon-sm"
                               />
@@ -269,18 +272,18 @@ export function DataTable<Row>({
           {selectedOnPage.length > 0 ? (
             <>
               <span className="font-medium text-info">
-                {en.table.selected(selectedOnPage.length)}
+                {t.table.selected(selectedOnPage.length)}
               </span>
               {bulkActions?.(selectedOnPage)}
               <Button variant="ghost" size="sm" onClick={() => toggleAll(false)}>
-                {en.table.clearSelection}
+                {t.table.clearSelection}
               </Button>
             </>
           ) : null}
         </div>
       ) : null}
       <span role="status" className="sr-only">
-        {loading ? en.table.loadingRows : ''}
+        {loading ? t.table.loadingRows : ''}
       </span>
       <div className="rounded-xl border bg-card">{body}</div>
       {footer}

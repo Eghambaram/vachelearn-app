@@ -1,11 +1,10 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-test('home page renders the scaffold heading', async ({ page }) => {
+test('home page renders its heading and marks its copy as placeholder', async ({ page }) => {
   await page.goto('/');
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'VacheLearn — scaffold' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.getByRole('main').getByText(/Placeholder copy/)).toBeVisible();
 });
 
 test('home page has no detectable accessibility violations (WCAG 2.x A/AA)', async ({ page }) => {

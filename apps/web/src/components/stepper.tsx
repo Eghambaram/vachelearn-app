@@ -1,7 +1,10 @@
 import * as React from 'react';
 import { Check, CircleAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 export type StepState = 'complete' | 'current' | 'upcoming' | 'error';
 
@@ -40,7 +43,7 @@ const MARKER_CLASS: Record<StepState, string> = {
 export function Stepper({
   steps,
   currentIndex,
-  'aria-label': ariaLabel = en.stepper.label,
+  'aria-label': ariaLabel = t.stepper.label,
   orientation = 'responsive',
   className,
 }: StepperProps) {
@@ -48,7 +51,7 @@ export function Stepper({
   return (
     <div role="group" aria-label={ariaLabel} className={className}>
       <p className="sr-only">
-        {en.stepper.stepOf(Math.min(currentIndex + 1, steps.length), steps.length)}
+        {t.stepper.stepOf(Math.min(currentIndex + 1, steps.length), steps.length)}
       </p>
       <ol className={cn('flex flex-col gap-4', responsive && 'md:flex-row md:gap-2')}>
         {steps.map((step, index) => {
@@ -96,7 +99,7 @@ export function Stepper({
                   )}
                 >
                   {step.label}
-                  <span className="sr-only"> ({en.stepper[state]})</span>
+                  <span className="sr-only"> ({t.stepper[state]})</span>
                 </span>
                 {step.description ? (
                   <span className="text-xs text-muted-foreground">{step.description}</span>

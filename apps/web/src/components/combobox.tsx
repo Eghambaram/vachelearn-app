@@ -14,7 +14,10 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { FieldControlProps } from '@/components/form-field';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 export type ComboboxOption = { value: string; label: string };
 
@@ -36,9 +39,9 @@ export function Combobox({
   options,
   value,
   onValueChange,
-  placeholder = en.combobox.placeholder,
-  searchPlaceholder = en.combobox.searchPlaceholder,
-  emptyText = en.combobox.empty,
+  placeholder = t.combobox.placeholder,
+  searchPlaceholder = t.combobox.searchPlaceholder,
+  emptyText = t.combobox.empty,
   className,
   ...field
 }: ComboboxProps) {

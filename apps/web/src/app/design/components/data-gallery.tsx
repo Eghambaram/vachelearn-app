@@ -16,6 +16,8 @@ import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
 import { PermissionDenied } from '@/components/permission-denied';
 import { StatusBadge } from '@/components/status-badge';
+import { BrandLogo } from '@/components/shell/brand-logo';
+import { StickyActions } from '@/components/shell/sticky-actions';
 import { Stepper } from '@/components/stepper';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,7 +45,7 @@ import {
   type PageLimit,
   type SortState,
 } from '@/lib/table';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
 import {
   EXAMPLE_COMPLETION_BY_BRANCH,
   EXAMPLE_MONTHLY_TREND,
@@ -52,6 +54,9 @@ import {
   type ExampleListQuery,
 } from './gallery-fixtures';
 import { Section } from './gallery-section';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 const BAR_CONFIG = {
   completed: { label: 'Completed %', color: CHART_COLORS[0] },
@@ -190,7 +195,7 @@ function LearnerTableDemo() {
                   <SelectContent>
                     {STATUS_FILTERS.map((value) => (
                       <SelectItem key={value} value={value}>
-                        {value === 'all' ? 'All statuses' : en.status.enrollment[value]}
+                        {value === 'all' ? 'All statuses' : t.status.enrollment[value]}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -432,6 +437,27 @@ export function DataGallery() {
               { id: 'confirm', label: 'Confirm import' },
             ]}
           />
+        </div>
+      </Section>
+
+      <Section id="shell-parts" title="Brand lockup and learner actions">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-wrap items-center gap-6">
+            <BrandLogo label="Vache logo on a light surface" />
+            <div className="surface-dark rounded-xl bg-sidebar p-4">
+              <BrandLogo label="Vache logo on the sidebar" />
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Below 640 px the learner actions stick to the bottom of the screen, clear of the
+            phone&apos;s home indicator.
+          </p>
+          <StickyActions>
+            <Button variant="outline" onClick={() => galleryToast('Previous lesson')}>
+              Previous lesson
+            </Button>
+            <Button onClick={() => galleryToast('Next lesson')}>Next lesson</Button>
+          </StickyActions>
         </div>
       </Section>
 

@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 type FilterBarProps = {
   /** Controlled search text. Debounce before requesting (see `useDebouncedValue`); the server does the search. */
@@ -41,12 +44,12 @@ export function FilterBar({
   return (
     <div
       role="search"
-      aria-label={en.filterBar.label}
+      aria-label={t.filterBar.label}
       className={cn('flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end', className)}
     >
       {search ? (
         <div className="flex min-w-0 flex-col gap-1.5 md:w-72">
-          <Label htmlFor={searchId}>{search.label ?? en.filterBar.search}</Label>
+          <Label htmlFor={searchId}>{search.label ?? t.filterBar.search}</Label>
           <div className="relative">
             <Search
               aria-hidden="true"
@@ -67,13 +70,11 @@ export function FilterBar({
       {onClear && applied ? (
         <div className="flex items-center gap-3 md:ml-auto">
           {activeCount > 0 ? (
-            <span className="text-sm text-muted-foreground">
-              {en.filterBar.active(activeCount)}
-            </span>
+            <span className="text-sm text-muted-foreground">{t.filterBar.active(activeCount)}</span>
           ) : null}
           <Button variant="ghost" onClick={onClear}>
             <X aria-hidden="true" />
-            {en.filterBar.clear}
+            {t.filterBar.clear}
           </Button>
         </div>
       ) : null}

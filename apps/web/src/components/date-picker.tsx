@@ -8,7 +8,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import type { FieldControlProps } from '@/components/form-field';
 import { DEFAULT_LOCALE, formatDateOnly } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 /** `YYYY-MM-DD` — a calendar date with no time or timezone (e.g. a due date). */
 export type IsoDate = string;
@@ -40,7 +43,7 @@ type DatePickerProps = Partial<FieldControlProps> & {
 export function DatePicker({
   value,
   onValueChange,
-  placeholder = en.datePicker.placeholder,
+  placeholder = t.datePicker.placeholder,
   locale = DEFAULT_LOCALE,
   className,
   ...field

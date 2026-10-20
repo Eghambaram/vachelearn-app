@@ -164,6 +164,32 @@ update `status.ts` and this table together).
   tenant/branch scope, so a filter can never widen access.
 - Tables scroll inside a focusable container, so the page itself never scrolls sideways at 360 px (E2E-checked).
 
+### App shells (Slice 1.4)
+
+- **Route groups:** `(public)` (`/`, `/help`: marketing header + footer, placeholder copy per D-038), `(auth)` (`/login`,
+  `/select-workspace`, `/forbidden`, `/suspended`: centred card), `(platform)/platform`, `(tenant)/admin`,
+  `(instruct)/instructor`, `(learn)/learn` (AppShell), `(account)/account` (AppShell of the user's own workspace); global
+  `not-found` and `error`. Every page has a skip link as its first focus stop, one `h1`, and a `· VacheLearn` title.
+- **AppShell:** dark sidebar (`surface-dark`, inverse focus ring) with brand lockup (D-064), workspace summary (tenant +
+  role · scope; a switcher only with 2+ memberships), permission-driven nav (`lib/nav.ts`, active item filled +
+  `aria-current="page"`), help card; top bar with help and a user menu (profile, switch workspace, sign-out shown
+  disabled with "arrives with authentication"). Below `lg` the sidebar becomes a left drawer (focus trapped, Escape
+  closes, focus returns, following a link closes it). Menus in the shell are non-modal.
+- **Navigation:** each item names a permission key from the role matrix; `navFor(workspace, session.permissions)` filters
+  it. Unbuilt screens open a "Planned for slice N" page with the Demo badge (D-061); unknown paths are 404; a nav page
+  the role lacks shows permission-denied; a role outside a workspace sees permission-denied inside its own shell.
+  Feature-flagged screens (classroom, surveys, commerce) are absent until their flag exists.
+- **Session contract:** `lib/api/session-types.ts` (`SessionView`: user, role, scope label, memberships, active tenant,
+  permissions, `demo`). Phase 1 builds it from `mocks/demo-session.ts`; Phase 2 returns it from the API unchanged.
+- **Demo layer (D-063):** demo bar on every workspace page ("Demo workspace — sample data, no sign-in, nothing is saved"
+  + "View as" role select, a plain form) and the workspace picker's role list. Gated by `ENABLE_DEMO_WORKSPACES`
+  (request-time, `force-dynamic`); demo cookies `vl_demo_role` / `vl_demo_tenant` are httpOnly and never authorize.
+- **Learner actions:** `StickyActions` sticks to the bottom below 640 px with `env(safe-area-inset-bottom)` padding
+  (root viewport sets `viewport-fit=cover`).
+- **i18n (D-028):** all UI copy comes from `getMessages()` in `lib/i18n.ts`; a unit test fails if any other module
+  imports a message catalogue. Accessible names contain the visible label (WCAG 2.5.3); extra context is appended as
+  screen-reader text, e.g. "Vache (home page)".
+
 ## Reference image caveats
 
 - The images were generated as concept art. All names, numbers, ₹ revenue, ratings and dates in them are fictional.
@@ -175,7 +201,8 @@ update `status.ts` and this table together).
 
 ## Core layout system
 - Left navigation for authenticated workspaces.
-- Top bar with global search where appropriate, notifications, help, locale and user menu.
+- Top bar with help and user menu (Slice 1.4). Global search (Phase 3), notifications (5.6) and the locale menu (second
+  language, D-028) are added only when they work (D-062).
 - Consistent page title, subtitle and primary action.
 - Filterable/paginated tables with explicit empty/loading/error states.
 - Cards for key summaries, with accessible labels and chart/table equivalents.

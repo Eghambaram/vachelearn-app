@@ -2,7 +2,10 @@ import * as React from 'react';
 import { CircleAlert, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 type ErrorStateProps = {
   title?: string;
@@ -11,7 +14,7 @@ type ErrorStateProps = {
   requestId?: string;
   /** Shown as "Try again" when the failed load can be retried. */
   onRetry?: () => void;
-  headingLevel?: 'h2' | 'h3';
+  headingLevel?: 'h1' | 'h2' | 'h3';
   className?: string;
 };
 
@@ -20,8 +23,8 @@ type ErrorStateProps = {
  * Never shows raw server messages or stack traces.
  */
 export function ErrorState({
-  title = en.states.errorTitle,
-  description = en.states.errorDescription,
+  title = t.states.errorTitle,
+  description = t.states.errorDescription,
   requestId,
   onRetry,
   headingLevel: Heading = 'h2',
@@ -41,13 +44,13 @@ export function ErrorState({
       <div className="max-w-md text-sm text-foreground">{description}</div>
       {requestId ? (
         <p className="text-xs text-muted-foreground">
-          {en.states.errorReference}: <code className="tabular-nums">{requestId}</code>
+          {t.states.errorReference}: <code className="tabular-nums">{requestId}</code>
         </p>
       ) : null}
       {onRetry ? (
         <Button variant="outline" onClick={onRetry} className="mt-1">
           <RotateCw aria-hidden="true" />
-          {en.states.retry}
+          {t.states.retry}
         </Button>
       ) : null}
     </div>

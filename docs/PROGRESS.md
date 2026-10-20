@@ -1,16 +1,16 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — Slice 1.3 complete (1.3b commit 101740e). **Next: Slice 1.4** (app
-shells + navigation), not started.
+Phase 1 · Design system & UI foundations — **Slice 1.4 done** (app shells + navigation). Next: Slice 1.5.1 (Platform
+Admin dashboard on demo data).
 
 ## Last verified
-2026-10-20, Node v24.21.0, pnpm 12.8.1, on the final tree:
-- `pnpm verify` → format OK · lint OK · typecheck OK · unit 267 passed, 0 failed (15 files) · build OK
-- `pnpm test:e2e` → 48 passed (adds 1.3b: keyboard sort + aria-sort, cursor pagination, search/empty, row-action menu
-  focus, bulk select, loading/error + axe, chart→table tab + axe, stepper, no sideways scroll; desktop + 360 px)
-- Clean copy (168 files, no node_modules): `pnpm install --frozen-lockfile && pnpm verify` → passed
-- CI workflow not yet run (branch not pushed)
+2026-10-20, Node v24.21.0, pnpm 12.8.1, on the final 1.4 tree:
+- `pnpm verify` → format OK · lint OK · typecheck OK · unit 319 passed, 0 failed (17 files) · build OK
+- `pnpm test:e2e` → 114 passed (adds 1.4 `shell.spec.ts`: nav per demo role, skip link, keyboard-only nav, role +
+  workspace switchers, user menu, permission-denied / 404, drawer focus trap at 360 px, no sideways scroll, axe on
+  every shell/public/auth/system page; desktop + 360 px projects)
+- No `.skip`/`.only`/`.todo` in `apps/web`. CI not yet run (push blocked, see below)
 
 ## Done in this phase
 - 1.1 pnpm workspace, `apps/web` (Next 16.4.2, React 19.3.1, TS 6.0.3 strict), ESLint 10, Prettier, Vitest,
@@ -20,37 +20,41 @@ shells + navigation), not started.
   inverse focus ring for dark surfaces; dev-only `/design` (commit ca61cf9).
 - 1.3a shadcn primitives reviewed + restyled; FormField, StatusBadge (full vocabulary), ConfirmDialog, Combobox,
   DatePicker, IconButton; zoned date + exact money formatting; `/design/components` gallery (commit 939e9a4).
-- 1.3b chart tokens `chart-1…5` (10 new contrast pairs); restyled card, table, tabs, breadcrumb, dropdown-menu, chart
-  (recharts 3, D-060); Checkbox indeterminate; PageHeader, Breadcrumbs, KpiCard, ChartCard (+ table view), DataTable
-  (server-driven), FilterBar, Pagination (cursor), Stepper, EmptyState, ErrorState, PermissionDenied, DemoBadge;
-  `lib/table.ts`; gallery sections (commit 101740e).
+- 1.3b chart tokens; card, table, tabs, breadcrumb, dropdown-menu, chart (recharts 3, D-060); PageHeader, KpiCard,
+  ChartCard, DataTable (server-driven), FilterBar, Pagination (cursor), Stepper, state components (commit 101740e).
+- 1.4 logo (D-064) · i18n helper `lib/i18n.ts` (all components migrated, guard test) · `SessionView` contract +
+  `mocks/demo-session.ts` · permission-driven `lib/nav.ts` · AppShell (sidebar, drawer, top bar, user menu, workspace
+  switcher, demo bar) · public/auth layouts · placeholder pages (D-061) · 403/404/error/suspended · `/account` ·
+  `StickyActions` · `ENABLE_DEMO_WORKSPACES` gate (D-063) — uncommitted.
 
 ## In progress / uncommitted
-- Nothing.
+- Slice 1.4 (see `git status`): `apps/web/src/{app,components/shell,lib,mocks,messages}`, `public/brand/`,
+  `assets/brand/vache-logo.svg`, `e2e/shell.spec.ts`, `.env.example`, `docs/{DECISIONS,UI_UX_SPECIFICATION,
+  ROLE_PERMISSION_MATRIX}.md`. Suggested commit: `feat(web): app shells, role navigation and demo workspaces (Slice 1.4)`.
 
 ## Next step
-Optionally run the `ux-accessibility-reviewer` subagent on 1.3a+1.3b. Then open
-`prompts/phase-1-design-system.md` §1.4 and plan Slice 1.4 (public + auth layouts, workspace AppShell with sidebar/top
-bar, role-based nav definitions, mobile sidebar, i18n helper D-028) — needs the brand logo SVG/PNG (see below).
+Commit 1.4 (owner asked to commit and push). Then Slice 1.5.1: Platform Admin dashboard (ref 01-final) on demo data
+through a typed `lib/api` client → `mocks/`; revenue/plan widgets hidden (D-027), industry widget per D-048.
 
 ## Blocked on owner
-- **Slice 1.4 waits for the brand logo** as SVG or transparent PNG under `assets/brand/` (owner chose to supply it,
-  2026-10-20; current JPEG is on off-white — do not redraw it). Plan approved with D-061 · D-062 · D-063.
+- Push: GitHub 403 — credential `egha-dev` has no write access to `Eghambaram/vachelearn-app`. Grant access or push
+  as the owner (`gh auth login`, then `git push -u origin main`).
+- Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
 - Before Phase 2: D-010 · D-049 · D-051 · D-053 (confirm) · D-026 · D-047 · D-048 (decide).
-- Push approved 2026-10-20 but rejected: GitHub 403, credential `egha-dev` has no write access to
-  `Eghambaram/vachelearn-app`. Owner to grant access or switch credentials; 9 commits ahead of origin.
 
 ## Known issues
 - Node 26 not yet LTS (nodejs.org, 2026-10-20); bump `.nvmrc`/`engines` once it is (reported 2026-10-28).
 - `engineStrict` is enforced on fresh installs only; an existing `node_modules` skips the check ("Already up to date").
 - D-058: TypeScript pinned ~6.0 and ESLint plugin peer exception — revisit when typescript-eslint supports TS 7.
-- `src/styles/vendor/shadcn-variants.css` is a vendored copy (shadcn@4.22.1, MIT); refresh it by hand if shadcn changes.
-- Component copy lives in `messages/en.ts` and is not yet routed through the i18n helper (Slice 1.4, D-028).
+- `src/styles/vendor/shadcn-variants.css` is a vendored copy (shadcn@4.22.1, MIT); `shadcn add` and `prettier --write`
+  run from `apps/web` (root ignore file not applied) reformat it —
+  restore with `git checkout` after adding components.
 - Proposed status tones (UI spec §Status tones) await owner review in the gallery.
-- Full-page axe scan of `/design/components` takes 40–44 s under load; marked `test.slow()` (90 s). Under heavy
-  machine load (load avg ~8) one run still timed out (also on the unchanged `/design`); rerun passed 48/48.
-- Radix modal DropdownMenu aria-hides the page (axe `aria-hidden-focus`): DataTable row menus use `modal={false}`;
-  any future DropdownMenu should too.
-- `shadcn add` reformats `src/styles/vendor/shadcn-variants.css`; restore it with `git checkout` after adding components.
+- E2E is load-sensitive on WSL: full suite 5–7 min; `components.spec.ts` has a 90 s per-test timeout because its
+  full-page axe scans of the gallery take 30–40 s under parallel load.
+- Radix modal DropdownMenu aria-hides the page (axe `aria-hidden-focus`): every DropdownMenu uses `modal={false}`.
+- Accessible names must contain the visible label (axe `label-content-name-mismatch`, WCAG 2.5.3): append screen-reader
+  context instead of replacing the name with `aria-label`.
+- `pkill -f "<pattern>"` in a Bash call kills the calling shell when the pattern appears in the command itself.
 - `guard-secrets.mjs` blocks any shell command whose text names a real env file (even in commit messages or file
   content written via heredoc) — use the Write tool or reword; don't weaken the hook.

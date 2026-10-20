@@ -4,7 +4,10 @@ import { DemoBadge } from '@/components/demo-badge';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 export type KpiChange = {
   direction: 'up' | 'down' | 'flat';
@@ -32,9 +35,9 @@ type KpiCardProps = {
 
 const DIRECTION_ICON = { up: ArrowUpRight, down: ArrowDownRight, flat: ArrowRight } as const;
 const DIRECTION_TEXT = {
-  up: en.kpi.increase,
-  down: en.kpi.decrease,
-  flat: en.kpi.unchanged,
+  up: t.kpi.increase,
+  down: t.kpi.decrease,
+  flat: t.kpi.unchanged,
 } as const;
 const SENTIMENT_CLASS = {
   positive: 'bg-success-subtle text-success',
@@ -81,7 +84,7 @@ export function KpiCard({
           {loading ? (
             <>
               <Skeleton className="h-9 w-24" />
-              <span className="sr-only">{en.common.loading}</span>
+              <span className="sr-only">{t.common.loading}</span>
             </>
           ) : (
             value

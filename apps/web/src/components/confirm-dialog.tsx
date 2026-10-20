@@ -3,7 +3,10 @@
 import * as React from 'react';
 import { AlertDialog } from 'radix-ui';
 import { Button } from '@/components/ui/button';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 type ConfirmDialogProps = {
   /** The element that opens the dialog (usually a Button). Focus returns to it on close. */
@@ -29,7 +32,7 @@ export function ConfirmDialog({
   title,
   impact,
   confirmLabel,
-  cancelLabel = en.common.cancel,
+  cancelLabel = t.common.cancel,
   destructive = false,
   onConfirm,
 }: ConfirmDialogProps) {
@@ -70,7 +73,7 @@ export function ConfirmDialog({
                 aria-busy={pending || undefined}
                 onClick={handleConfirm}
               >
-                {pending ? en.common.loading : confirmLabel}
+                {pending ? t.common.loading : confirmLabel}
               </Button>
             </AlertDialog.Action>
           </div>

@@ -18,7 +18,10 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 export type ChartTableColumn = { key: string; label: string; numeric?: boolean };
 
@@ -56,7 +59,7 @@ export function ChartCard({
   loading = false,
   error,
   demo = false,
-  emptyDescription = en.chart.emptyDescription,
+  emptyDescription = t.chart.emptyDescription,
   actions,
   className,
 }: ChartCardProps) {
@@ -67,7 +70,7 @@ export function ChartCard({
   let body: React.ReactNode;
   if (loading) {
     body = (
-      <div role="status" aria-label={en.common.loading}>
+      <div role="status" aria-label={t.common.loading}>
         <Skeleton className="aspect-video w-full" />
       </div>
     );
@@ -79,16 +82,16 @@ export function ChartCard({
       <EmptyState
         headingLevel="h3"
         icon={<BarChart3 />}
-        title={en.chart.emptyTitle}
+        title={t.chart.emptyTitle}
         description={emptyDescription}
       />
     );
   } else {
     body = (
       <Tabs defaultValue="chart">
-        <TabsList aria-label={en.chart.viewsLabel} className="self-end">
-          <TabsTrigger value="chart">{en.chart.chart}</TabsTrigger>
-          <TabsTrigger value="table">{en.chart.table}</TabsTrigger>
+        <TabsList aria-label={t.chart.viewsLabel} className="self-end">
+          <TabsTrigger value="chart">{t.chart.chart}</TabsTrigger>
+          <TabsTrigger value="table">{t.chart.table}</TabsTrigger>
         </TabsList>
         <TabsContent value="chart">
           <figure aria-labelledby={titleId} aria-describedby={summaryId} className="m-0">
@@ -155,7 +158,7 @@ export function ChartCard({
         {body}
         {!loading && !error && !empty ? (
           <p id={summaryId} className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">{en.chart.summary}:</span> {summary}
+            <span className="font-medium text-foreground">{t.chart.summary}:</span> {summary}
           </p>
         ) : null}
       </CardContent>

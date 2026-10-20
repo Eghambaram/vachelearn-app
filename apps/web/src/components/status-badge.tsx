@@ -2,7 +2,10 @@ import type { LucideIcon } from 'lucide-react';
 import { Archive, CircleAlert, CircleCheck, CircleDashed, Clock, Loader } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { statusTone, type StatusEntity, type StatusOf, type StatusTone } from '@/lib/status';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 const TONE_CLASSES: Record<StatusTone, string> = {
   success: 'bg-success-subtle text-success',
@@ -40,7 +43,7 @@ export function StatusBadge<E extends StatusEntity>({
 }: StatusBadgeProps<E>) {
   const tone = statusTone(entity, status);
   const Icon = TONE_ICONS[tone];
-  const text = label ?? (en.status[entity] as Record<string, string>)[status];
+  const text = label ?? (t.status[entity] as Record<string, string>)[status];
   return (
     <span
       data-tone={tone}

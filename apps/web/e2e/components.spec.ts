@@ -1,6 +1,10 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
+// The gallery is one very large page and several tests run full-page axe scans on it; under the full parallel suite
+// a scan alone can take 30-40 s on WSL. Generous per-test time instead of narrowing what axe checks.
+test.describe.configure({ timeout: 90_000 });
+
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 async function expectNoAxeViolations(page: Page) {
@@ -15,8 +19,6 @@ test.describe('/design/components gallery (Slice 1.3a)', () => {
   });
 
   test('has no detectable accessibility violations (WCAG 2.x A/AA)', async ({ page }) => {
-    // Full-page scan of the whole gallery (1.3a + 1.3b): can exceed 30 s under parallel workers on WSL.
-    test.slow();
     await expectNoAxeViolations(page);
   });
 

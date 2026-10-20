@@ -1,14 +1,17 @@
 import * as React from 'react';
 import { Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 type PermissionDeniedProps = {
   title?: string;
   description?: React.ReactNode;
   /** A safe way out, e.g. a link back to the dashboard. */
   action?: React.ReactNode;
-  headingLevel?: 'h2' | 'h3';
+  headingLevel?: 'h1' | 'h2' | 'h3';
   className?: string;
 };
 
@@ -17,8 +20,8 @@ type PermissionDeniedProps = {
  * hidden by tenant/branch scope return 404 and show a not-found page instead, so their existence never leaks.
  */
 export function PermissionDenied({
-  title = en.states.deniedTitle,
-  description = en.states.deniedDescription,
+  title = t.states.deniedTitle,
+  description = t.states.deniedDescription,
   action,
   headingLevel: Heading = 'h2',
   className,

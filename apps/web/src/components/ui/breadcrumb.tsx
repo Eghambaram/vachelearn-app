@@ -2,11 +2,14 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { Slot } from 'radix-ui';
 import { ChevronRightIcon, MoreHorizontalIcon } from 'lucide-react';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 function Breadcrumb({
   className,
-  'aria-label': ariaLabel = en.breadcrumbs.label,
+  'aria-label': ariaLabel = t.breadcrumbs.label,
   ...props
 }: React.ComponentProps<'nav'>) {
   return <nav aria-label={ariaLabel} data-slot="breadcrumb" className={cn(className)} {...props} />;
@@ -91,7 +94,7 @@ function BreadcrumbEllipsis({ className, ...props }: React.ComponentProps<'span'
       {...props}
     >
       <MoreHorizontalIcon aria-hidden="true" />
-      <span className="sr-only">{en.breadcrumbs.more}</span>
+      <span className="sr-only">{t.breadcrumbs.more}</span>
     </span>
   );
 }

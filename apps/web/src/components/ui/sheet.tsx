@@ -2,11 +2,14 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
 import { Dialog as SheetPrimitive } from 'radix-ui';
 
 import { Button } from '@/components/ui/button';
 import { XIcon } from 'lucide-react';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -45,7 +48,7 @@ function SheetContent({
   children,
   side = 'right',
   showCloseButton = true,
-  closeLabel = en.common.close,
+  closeLabel = t.common.close,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left';

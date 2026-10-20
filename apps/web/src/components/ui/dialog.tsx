@@ -2,11 +2,14 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 
 import { Button } from '@/components/ui/button';
 import { XIcon } from 'lucide-react';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
@@ -44,7 +47,7 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
-  closeLabel = en.common.close,
+  closeLabel = t.common.close,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
@@ -102,7 +105,7 @@ function DialogFooter({
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close asChild>
-          <Button variant="outline">{en.common.close}</Button>
+          <Button variant="outline">{t.common.close}</Button>
         </DialogPrimitive.Close>
       )}
     </div>

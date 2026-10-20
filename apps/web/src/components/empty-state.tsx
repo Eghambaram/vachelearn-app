@@ -1,7 +1,10 @@
 import * as React from 'react';
 import { Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 type EmptyStateProps = {
   title?: string;
@@ -10,13 +13,13 @@ type EmptyStateProps = {
   /** A real next step (usually a Button or link), shown only when the viewer may take it. */
   action?: React.ReactNode;
   icon?: React.ReactNode;
-  /** Heading level that fits the surrounding outline (h2 on a page, h3 inside a card). */
-  headingLevel?: 'h2' | 'h3';
+  /** Heading level that fits the surrounding outline (h1 when it is the whole page, h2 on a page, h3 in a card). */
+  headingLevel?: 'h1' | 'h2' | 'h3';
   className?: string;
 };
 
 export function EmptyState({
-  title = en.states.emptyTitle,
+  title = t.states.emptyTitle,
   description,
   action,
   icon = <Inbox />,

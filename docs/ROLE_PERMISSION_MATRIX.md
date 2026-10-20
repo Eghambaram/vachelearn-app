@@ -33,6 +33,7 @@ notifications. These are not listed per role.
 | `platform_user.manage` | Platform staff accounts + platform roles | P | — | — | — | — | — | — | 2.4 |
 | `platform.support_access.start` | Open a support session into a tenant (D-037) | P | — | — | — | — | — | — | 2.4 |
 | `platform.audit.read` | Platform audit log | P | — | — | — | — | — | — | 2.2 |
+| `platform.settings.read` | Provider status and system settings, no secrets (UI #12; added 1.4, Proposed) | P | — | — | — | — | — | — | 7.4 |
 | `tenant_settings.read` | Settings, branding | SS | T | B (read) | S (read) | — | — | S (read) | 2.5 |
 | `tenant_settings.update` · `branding.update` | Change settings / branding | — | T | — | — | — | — | — | 2.5 / 3.8 |
 | `branch.read` | Branch list/detail | SS | T | B | S | — | — | S | 2.2 |

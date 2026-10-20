@@ -4,7 +4,10 @@ import * as React from 'react';
 import { CircleAlert } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 /** Props a form control needs so its label, help text and error are announced together. */
 export type FieldControlProps = {
@@ -36,7 +39,7 @@ export function FormField({
   help,
   error,
   required = false,
-  requiredText = en.common.required,
+  requiredText = t.common.required,
   className,
   children,
 }: FormFieldProps) {

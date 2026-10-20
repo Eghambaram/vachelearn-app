@@ -13,7 +13,10 @@ import {
 } from '@/components/ui/select';
 import { PAGE_LIMITS, type PageLimit } from '@/lib/table';
 import { cn } from '@/lib/utils';
-import { en } from '@/messages/en';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 type PaginationProps = {
   /** Zero-based; shown as "Page 1". Cursor lists have no total, so there is no "of N". */
@@ -46,13 +49,13 @@ export function Pagination({
   const limitId = React.useId();
   return (
     <nav
-      aria-label={en.pagination.label}
+      aria-label={t.pagination.label}
       className={cn('flex flex-wrap items-center justify-between gap-3', className)}
     >
       {onLimitChange && limit ? (
         <div className="flex items-center gap-2">
           <Label htmlFor={limitId} className="text-sm font-normal text-muted-foreground">
-            {en.pagination.rowsPerPage}
+            {t.pagination.rowsPerPage}
           </Label>
           <Select
             value={String(limit)}
@@ -75,7 +78,7 @@ export function Pagination({
       )}
       <div className="flex items-center gap-2">
         <span aria-live="polite" className="text-sm text-muted-foreground tabular-nums">
-          {en.pagination.page(pageIndex + 1)}
+          {t.pagination.page(pageIndex + 1)}
         </span>
         <Button
           variant="outline"
@@ -84,10 +87,10 @@ export function Pagination({
           disabled={disabled || !hasPrevious}
         >
           <ChevronLeft aria-hidden="true" />
-          {en.pagination.previous}
+          {t.pagination.previous}
         </Button>
         <Button variant="outline" size="sm" onClick={onNext} disabled={disabled || !hasNext}>
-          {en.pagination.next}
+          {t.pagination.next}
           <ChevronRight aria-hidden="true" />
         </Button>
       </div>

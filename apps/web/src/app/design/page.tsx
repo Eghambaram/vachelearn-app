@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { contrastRatio } from '@/lib/contrast';
-import { isDesignGalleryEnabled } from '@/lib/design-gallery';
+import { isDesignGalleryEnabled } from '@/lib/dev-tools';
 import { CONTRAST_PAIRS, readColorTokens, type ContrastPair } from '@/styles/tokens';
 
 // Evaluated per request so ENABLE_DESIGN_GALLERY is read at runtime, not baked in at build time.

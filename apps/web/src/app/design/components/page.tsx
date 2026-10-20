@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { isDesignGalleryEnabled } from '@/lib/design-gallery';
+import { isDesignGalleryEnabled } from '@/lib/dev-tools';
 import { ComponentGallery } from './component-gallery';
 
 // Same runtime gate as /design: on in `next dev`, 404 in production unless ENABLE_DESIGN_GALLERY=true.
