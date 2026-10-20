@@ -183,6 +183,72 @@ export const en = {
     errorBody: 'Try again. If it keeps happening, contact support with the reference below.',
     home: 'Go to the home page',
   },
+  platformDashboard: {
+    title: 'Platform dashboard',
+    description: (asOf: string) => `All tenants · as of ${asOf}`,
+    period: 'Period',
+    periods: { '30d': 'Last 30 days', '90d': 'Last 90 days', '12m': 'Last 12 months' },
+    changeSince: { '30d': 'in 30 days', '90d': 'in 90 days', '12m': 'in 12 months' },
+    kpi: {
+      tenants: 'Tenants',
+      tenantsHelper: (active: number, suspended: number) =>
+        `${active} active · ${suspended} suspended (archived excluded)`,
+      learners: 'Learners',
+      learnersHelper: 'Distinct users with an active learner membership in an active tenant',
+      courses: 'Published courses',
+      coursesHelper: 'Current version published, in active tenants',
+      completion: 'Completion rate',
+      completionHelper: (completed: string, enrolled: string) =>
+        `${completed} of ${enrolled} enrollments created in the period (cancelled excluded)`,
+      noRate: 'No enrollments',
+    },
+    charts: {
+      growthTitle: 'Tenant growth',
+      growthDescription:
+        'Bars: new tenants per bucket (left axis). Line: running total (right axis)',
+      growthSummary: (first: string, last: string, added: string) =>
+        `Non-archived tenants went from ${first} to ${last}; ${added} new in the period.`,
+      newTenants: 'New tenants',
+      totalTenants: 'Total tenants (line)',
+      bucket: 'Period starting',
+      enrollTitle: 'Enrollment trend',
+      enrollDescription: 'Enrollments created and completed per bucket',
+      enrollSummary: (enrolled: string, completed: string) =>
+        `${enrolled} enrollments and ${completed} completions in the period.`,
+      enrollments: 'Enrollments',
+      completions: 'Completions (dashed)',
+      statusTitle: 'Tenants by status',
+      statusDescription: 'Current status of every tenant',
+      statusSummary: (active: number, suspended: number, archived: number) =>
+        `${active} active, ${suspended} suspended and ${archived} archived.`,
+      status: 'Status',
+      tenants: 'Tenants',
+    },
+    recent: {
+      title: 'Recent tenants',
+      caption: 'Five most recently created tenants',
+      viewAll: 'View all tenants',
+      name: 'Tenant',
+      status: 'Status',
+      learners: 'Learners',
+      created: 'Created',
+      emptyTitle: 'No tenants yet',
+      emptyDescription: 'Tenants appear here once the first one is created (slice 2.2).',
+    },
+    activity: {
+      title: 'Platform activity',
+      viewAll: 'View audit log',
+      emptyTitle: 'No activity yet',
+      actions: {
+        'tenant.created': 'created tenant',
+        'tenant.suspended': 'suspended tenant',
+        'tenant.reactivated': 'reactivated tenant',
+        'tenant.archived': 'archived tenant',
+        'platform_user.invited': 'invited a platform user',
+        'support_session.started': 'started a support session for',
+      },
+    },
+  },
   help: {
     title: 'Help',
     body: 'A help centre is planned for Phase 7. Until then, ask your organisation’s administrator.',

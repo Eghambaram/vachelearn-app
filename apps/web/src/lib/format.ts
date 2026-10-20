@@ -79,3 +79,37 @@ export function formatMoney(
   // Intl accepts exact decimal strings (Intl.NumberFormat v3); typed as number in lib.dom.
   return formatter.format(`${negative ? '-' : ''}${decimal}` as unknown as number);
 }
+
+/** A rate sent as integer basis points (7350) shown as a percentage with one decimal ("73.5%"). */
+export function formatBasisPoints(
+  basisPoints: number,
+  { locale = DEFAULT_LOCALE }: { locale?: string } = {},
+) {
+  if (!Number.isInteger(basisPoints)) throw new Error('Rates arrive as integer basis points');
+  return new Intl.NumberFormat(locale, {
+    style: 'percent',
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(basisPoints / 10_000);
+}
+
+/**
+ * Label for a chart bucket that starts on a calendar date: "21 Sep" for weeks, "Sep 2026" for months. The date is
+ * already in the reporting zone, so it is never shifted.
+ */
+export function formatBucketLabel(
+  isoDate: string,
+  granularity: 'week' | 'month',
+  { locale = DEFAULT_LOCALE }: { locale?: string } = {},
+) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!match) throw new Error(`Expected YYYY-MM-DD, got "${isoDate}"`);
+  const [, y, m, d] = match;
+  const options: Intl.DateTimeFormatOptions =
+    granularity === 'week'
+      ? { day: 'numeric', month: 'short' }
+      : { month: 'short', year: 'numeric' };
+  return new Intl.DateTimeFormat(locale, { timeZone: 'UTC', ...options }).format(
+    new Date(Date.UTC(Number(y), Number(m) - 1, Number(d))),
+  );
+}

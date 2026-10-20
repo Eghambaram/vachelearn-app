@@ -83,9 +83,9 @@ tests pass.
 | Install | `pnpm install` (Node 24 LTS per `.nvmrc`, pnpm 12.8.1 per `packageManager`) |
 | Local services (Postgres, MinIO, Mailpit) | *Phase 2:* `docker compose -f infra/docker-compose.yml up -d` |
 | Dev servers | `pnpm dev` (web :3000; api :4000 from Phase 2) |
-| Lint / format check / format | `pnpm lint` · `pnpm format:check` · `pnpm format` |
+| Lint / format check / format | `pnpm lint` · `pnpm format:check` · `pnpm format` (run Prettier from the root only: from `apps/web` it reformats the vendored CSS) |
 | Type-check | `pnpm typecheck` (runs `next typegen` first) |
-| Unit + integration tests | `pnpm test` (single: `pnpm --filter web test -- <pattern>`; api from Phase 2) |
+| Unit + integration tests | `pnpm test` (web + `packages/contracts`; single: `pnpm --filter web test -- <pattern>` or `pnpm --filter @vachelearn/contracts test`; api from Phase 2) |
 | Tenant/branch isolation suite | *Phase 2:* `pnpm --filter api test:isolation` |
 | E2E (Playwright + axe) | `pnpm test:e2e` (first time: `pnpm --filter web exec playwright install chromium`) |
 | Build | `pnpm build` |

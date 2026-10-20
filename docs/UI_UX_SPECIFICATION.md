@@ -328,6 +328,17 @@ Compliance Viewer has no workspace of its own: it uses `/admin/*` with a read-on
 - Date range and filters.
 - All displayed values must be computed from API/data, not hardcoded in production.
 
+**Built in Slice 1.5.1 (demo data), `/platform`:** period filter in the URL (`?period=30d|90d|12m`, junk falls back
+to 30d); KPI cards Tenants (active + suspended, status split in helper), Learners, Published courses (change since
+period start), Completion rate (D-065, basis points, "No enrollments" when the denominator is 0); Tenant growth (bars
+on the left axis, running total line on the right), Enrollment trend (completions dashed), Tenants by status (donut,
+D-066 statuses); platform activity feed (actor, action, tenant, time in IST); five recent tenants. Each chart has a
+summary and a table view; definitions in `docs/METRICS.md`. **Omitted until decided:** revenue/MRR, revenue by plan,
+expiring subscriptions (D-027), top industries (D-048), export (Phase 5). Demo states: `?demoState=loading|empty|
+error|forbidden` (only while demo workspaces are enabled). Data flows through `lib/api/platform.ts` and is parsed with
+the shared contract `@vachelearn/contracts` (`PlatformDashboard`). Charts render without animation (recharts' JS
+animation ignores `prefers-reduced-motion`, WCAG 2.3.3).
+
 ## Course Management & Builder
 - Course list: search, category, level, format, instructor, status, sorting, pagination.
 - Builder steps: Basic Information → Content Builder → Assessment → Settings → Publish.

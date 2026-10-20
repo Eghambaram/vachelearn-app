@@ -344,8 +344,18 @@ export function DataGallery() {
                 <YAxis unit="%" width={44} tickLine={false} axisLine={false} />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <ChartLegend content={<ChartLegendContent />} />
-                <Bar dataKey="completed" fill={BAR_CONFIG.completed.color} radius={4} />
-                <Bar dataKey="overdue" fill={BAR_CONFIG.overdue.color} radius={4} />
+                <Bar
+                  isAnimationActive={false}
+                  dataKey="completed"
+                  fill={BAR_CONFIG.completed.color}
+                  radius={4}
+                />
+                <Bar
+                  isAnimationActive={false}
+                  dataKey="overdue"
+                  fill={BAR_CONFIG.overdue.color}
+                  radius={4}
+                />
               </BarChart>
             </ChartContainer>
           </ChartCard>
@@ -364,12 +374,14 @@ export function DataGallery() {
                 <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                 <ChartLegend content={<ChartLegendContent />} />
                 <Line
+                  isAnimationActive={false}
                   dataKey="mandatory"
                   stroke={LINE_CONFIG.mandatory.color}
                   strokeWidth={2}
                   dot={false}
                 />
                 <Line
+                  isAnimationActive={false}
                   dataKey="optional"
                   stroke={LINE_CONFIG.optional.color}
                   strokeWidth={2}

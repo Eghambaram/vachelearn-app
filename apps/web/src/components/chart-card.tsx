@@ -47,6 +47,8 @@ type ChartCardProps = {
   emptyDescription?: string;
   /** Extra header controls (period select, export). */
   actions?: React.ReactNode;
+  /** h2 when the card sits directly under the page title, h3 inside a section. */
+  headingLevel?: 'h2' | 'h3';
   className?: string;
 };
 
@@ -61,6 +63,7 @@ export function ChartCard({
   demo = false,
   emptyDescription = t.chart.emptyDescription,
   actions,
+  headingLevel: Heading = 'h3',
   className,
 }: ChartCardProps) {
   const titleId = React.useId();
@@ -145,9 +148,9 @@ export function ChartCard({
       <CardHeader className="grid-cols-[1fr_auto]">
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 id={titleId} className="text-base font-semibold">
+            <Heading id={titleId} className="text-base font-semibold">
               {title}
-            </h3>
+            </Heading>
             {demo ? <DemoBadge /> : null}
           </div>
           {description ? <div className="text-sm text-muted-foreground">{description}</div> : null}

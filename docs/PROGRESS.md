@@ -1,17 +1,17 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.4 done** (app shells + navigation). Next: Slice 1.5.1 (Platform
-Admin dashboard on demo data).
+Phase 1 · Design system & UI foundations — **Slice 1.5.1 done** (Platform Admin dashboard on demo data). Next: Slice
+1.5.2 (Tenant Admin dashboard).
 
 ## Last verified
-2026-10-20, Node v24.21.0, pnpm 12.8.1, on the final 1.4 tree:
-- `pnpm verify` → format OK · lint OK · typecheck OK · unit 319 passed, 0 failed (17 files) · build OK
-- `pnpm test:e2e` → 114 passed (adds 1.4 `shell.spec.ts`: nav per demo role, skip link, keyboard-only nav, role +
-  workspace switchers, user menu, permission-denied / 404, drawer focus trap at 360 px, no sideways scroll, axe on
-  every shell/public/auth/system page; desktop + 360 px projects)
-- No `.skip`/`.only`/`.todo` in `apps/web`.
-- First CI run (GitHub Actions 39442225795, commit 14b63ca): success — all gates + E2E 114 passed in 53.9 s
+2026-10-20, Node v24.21.0, pnpm 12.8.1, on the final 1.5.1 tree:
+- `pnpm verify` → format OK · lint OK · typecheck OK · unit: contracts 7 passed, web 344 passed (19 files), 0 failed
+  · build OK
+- `pnpm test:e2e` → 132 passed (adds `platform-dashboard.spec.ts`: KPIs/charts/activity/recent tenants with Demo
+  badges, keyboard period filter, chart → table, loading/empty/error/forbidden states, axe, 360 px). Earlier run on a
+  loaded machine: 4 axe-scan timeouts at 30 s → global E2E timeout now 60 s
+- No `.skip`/`.only`/`.todo`. Last CI run: 39442225795 (commit 14b63ca) success; 1.5.1 not yet pushed
 
 ## Done in this phase
 - 1.1 pnpm workspace, `apps/web` (Next 16.4.2, React 19.3.1, TS 6.0.3 strict), ESLint 10, Prettier, Vitest,
@@ -27,13 +27,18 @@ Admin dashboard on demo data).
   `mocks/demo-session.ts` · permission-driven `lib/nav.ts` · AppShell (sidebar, drawer, top bar, user menu, workspace
   switcher, demo bar) · public/auth layouts · placeholder pages (D-061) · 403/404/error/suspended · `/account` ·
   `StickyActions` · `ENABLE_DEMO_WORKSPACES` gate (D-063) (commit 83bd1ef).
+- 1.5.1 `packages/contracts` (Zod 4, D-035: error envelope, `PlatformDashboard`) · `docs/METRICS.md` (D-065 completion
+  rate, D-066 statuses) · `lib/api/client.ts` + `platform.ts` (contract-parsed demo layer, `?demoState=`) · `/platform`
+  dashboard (KPIs, growth/enrollment/status charts with tables, activity, recent tenants; no revenue/industry) ·
+  workspace catch-alls now `[...slug]` + root pages · charts without JS animation (uncommitted).
 
 ## In progress / uncommitted
-- Nothing.
+- Slice 1.5.1 files (see `git status`). Suggested commit:
+  `feat(platform): platform admin dashboard on demo data + shared contracts (Slice 1.5.1)`.
 
 ## Next step
-Slice 1.5.1: Platform Admin dashboard (ref 01-final) on demo data through a typed `lib/api` client → `mocks/`;
-revenue/plan widgets hidden (D-027), industry widget per D-048. Optionally run `ux-accessibility-reviewer` on 1.3–1.4.
+Commit 1.5.1 and push (on owner request). Then Slice 1.5.2: Tenant Admin dashboard (ref 07 panel 1) at `/admin`,
+scope-aware for BA/LM/CV (D-026 pending: Proposed default), compliance tiles marked as arriving in Phase 5.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
@@ -47,8 +52,9 @@ revenue/plan widgets hidden (D-027), industry widget per D-048. Optionally run `
   run from `apps/web` (root ignore file not applied) reformat it —
   restore with `git checkout` after adding components.
 - Proposed status tones (UI spec §Status tones) await owner review in the gallery.
-- E2E is load-sensitive on WSL: full suite 5–7 min; `components.spec.ts` has a 90 s per-test timeout because its
-  full-page axe scans of the gallery take 30–40 s under parallel load.
+- E2E is load-sensitive on WSL: full suite 6–10 min (CI < 1 min). Global per-test timeout 60 s, `components.spec.ts`
+  90 s, because full-page axe scans of chart-heavy pages take 20–40 s under parallel load.
+- recharts animation is JS and ignores `prefers-reduced-motion`: set `isAnimationActive={false}` on every series.
 - Radix modal DropdownMenu aria-hides the page (axe `aria-hidden-focus`): every DropdownMenu uses `modal={false}`.
 - Accessible names must contain the visible label (axe `label-content-name-mismatch`, WCAG 2.5.3): append screen-reader
   context instead of replacing the name with `aria-label`.

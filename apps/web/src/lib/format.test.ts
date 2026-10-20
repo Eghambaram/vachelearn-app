@@ -1,4 +1,12 @@
-import { formatDate, formatDateOnly, formatDateTime, formatMoney, formatNumber } from './format';
+import {
+  formatBasisPoints,
+  formatBucketLabel,
+  formatDate,
+  formatDateOnly,
+  formatDateTime,
+  formatMoney,
+  formatNumber,
+} from './format';
 
 // 18:45 UTC on 20 Oct is already 21 Oct in Kolkata (UTC+5:30) but still 20 Oct in Chicago (UTC-5 in October).
 const LATE_EVENING_UTC = '2026-10-20T18:45:00Z';
@@ -58,5 +66,24 @@ describe('formatMoney (integer minor units + ISO currency)', () => {
 describe('formatNumber', () => {
   it('uses Indian grouping by default', () => {
     expect(formatNumber(1234567)).toBe('12,34,567');
+  });
+});
+
+describe('formatBasisPoints', () => {
+  it('shows integer basis points as a one-decimal percentage', () => {
+    expect(formatBasisPoints(7350)).toBe('73.5%');
+    expect(formatBasisPoints(0)).toBe('0.0%');
+    expect(formatBasisPoints(10_000)).toBe('100.0%');
+  });
+
+  it('refuses fractional basis points (the server sends integers)', () => {
+    expect(() => formatBasisPoints(73.5)).toThrow();
+  });
+});
+
+describe('formatBucketLabel', () => {
+  it('labels weekly and monthly buckets without shifting the date', () => {
+    expect(formatBucketLabel('2026-09-21', 'week')).toBe('21 Sept');
+    expect(formatBucketLabel('2026-10-01', 'month')).toBe('Oct 2026');
   });
 });
