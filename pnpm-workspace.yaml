@@ -1,0 +1,20 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Refuse to install on a Node/pnpm older than package.json "engines" (D-052).
+engineStrict: true
+
+# Dependency install scripts are denied unless reviewed and listed here (pnpm 12 fails on unreviewed ones).
+allowBuilds:
+  # postinstall only downloads a fallback binary; the prebuilt @unrs/resolver-binding-* package is installed instead.
+  unrs-resolver: false
+
+# eslint-config-next 16 accepts ESLint >=9, but three plugins it bundles still declare peers up to ESLint 9.
+# Verified 2026-10-20 that their rules run correctly on ESLint 10 (react/jsx-key, react-hooks, jsx-a11y, @next/next
+# all reported on a probe file). ESLint 9 is deprecated on npm, so we accept these peer ranges instead.
+peerDependencyRules:
+  allowedVersions:
+    eslint-plugin-import>eslint: '10'
+    eslint-plugin-jsx-a11y>eslint: '10'
+    eslint-plugin-react>eslint: '10'

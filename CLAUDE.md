@@ -75,21 +75,21 @@ tests pass.
 
 ## Commands
 
-> Fill in exact commands as soon as Phase 1/2 scaffolding creates them. Until then these are the intended names.
+> Verified in Phase 1 Slice 1.1 (2026-10-20). Rows marked *Phase 2* do not exist yet — do not run them.
 > Keep this table true; a wrong command here wastes every future session.
 
 | Purpose | Command |
 |---|---|
-| Install | `pnpm install` |
-| Local services (Postgres, MinIO, Mailpit) | `docker compose -f infra/docker-compose.yml up -d` |
-| Dev servers | `pnpm dev` (web :3000, api :4000) |
-| Lint / format check | `pnpm lint` · `pnpm format:check` |
-| Type-check | `pnpm typecheck` |
-| Unit + integration tests | `pnpm test` (single: `pnpm --filter api test -- <pattern>`) |
-| Tenant/branch isolation suite | `pnpm --filter api test:isolation` |
-| E2E (Playwright) | `pnpm test:e2e` |
+| Install | `pnpm install` (Node 24 LTS per `.nvmrc`, pnpm 12.8.1 per `packageManager`) |
+| Local services (Postgres, MinIO, Mailpit) | *Phase 2:* `docker compose -f infra/docker-compose.yml up -d` |
+| Dev servers | `pnpm dev` (web :3000; api :4000 from Phase 2) |
+| Lint / format check / format | `pnpm lint` · `pnpm format:check` · `pnpm format` |
+| Type-check | `pnpm typecheck` (runs `next typegen` first) |
+| Unit + integration tests | `pnpm test` (single: `pnpm --filter web test -- <pattern>`; api from Phase 2) |
+| Tenant/branch isolation suite | *Phase 2:* `pnpm --filter api test:isolation` |
+| E2E (Playwright + axe) | `pnpm test:e2e` (first time: `pnpm --filter web exec playwright install chromium`) |
 | Build | `pnpm build` |
-| DB migrate (dev) / seed / reset | `pnpm --filter api db:migrate` · `db:seed` · `db:reset` |
+| DB migrate (dev) / seed / reset | *Phase 2:* `pnpm --filter api db:migrate` · `db:seed` · `db:reset` |
 | All gates (run before reporting a slice done) | `pnpm verify` = format:check + lint + typecheck + test + build |
 
 ## How to work (every slice)

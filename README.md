@@ -6,15 +6,28 @@ references and legacy evidence. **No application has been implemented yet.**
 
 ## Start here
 
-1. Install prerequisites: Git, Node.js (current Active LTS), pnpm, Docker Desktop (or Docker Engine + Compose),
-   Claude Code.
-2. Put this folder under version control if `git status` says it is not a repository yet:
-   `git init && git add -A && git commit -m "chore: starter kit v2.0"`.
-3. Open a terminal in this folder and run `claude`. `CLAUDE.md`, `.claude/rules/`, skills, agents and hooks load
+### Run the app (Phase 1 onwards)
+
+Prerequisites: Git, Node.js **24 LTS** (see `.nvmrc`), pnpm **12.8.1** (see `packageManager` in `package.json`).
+Docker is needed from Phase 2.
+
+```bash
+pnpm install                                        # refuses unsupported Node versions on a fresh install
+pnpm dev                                            # web app on http://localhost:3000
+pnpm verify                                         # format check, lint, typecheck, unit tests, production build
+pnpm --filter web exec playwright install chromium  # once per machine (CI adds --with-deps)
+pnpm test:e2e                                       # Playwright smoke + axe accessibility checks
+```
+
+Status: Phase 1 Slice 1.1 — workspace and tooling only. The web app shows a placeholder page; no features exist yet.
+
+### Working with Claude Code
+
+1. Open a terminal in this folder and run `claude`. `CLAUDE.md`, `.claude/rules/`, skills, agents and hooks load
    automatically. Run `/context` to confirm.
-4. Send the message in `prompts/00-kickoff.md`. That runs **Phase 0** (planning only, no code).
-5. Answer the decisions Claude raises (they are tracked in `docs/DECISIONS.md`).
-6. For each later phase type `/start-phase N`, approve the slice plan, and let Claude implement one slice at a time.
+2. Phase 0 (planning) is complete — see `docs/PROGRESS.md` for the current phase and next step.
+3. Answer the decisions Claude raises (they are tracked in `docs/DECISIONS.md`).
+4. For each phase type `/start-phase N`, approve the slice plan, and let Claude implement one slice at a time.
    End each session with `/handoff`. Resume with `prompts/session-resume.md`.
 
 ## What's in the kit

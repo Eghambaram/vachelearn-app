@@ -3,11 +3,21 @@
 This is a placeholder operational runbook for the greenfield project. Complete it during implementation.
 
 ## Local development
-- Document exact runtime versions after selecting them.
-- Document package manager and install commands.
-- Document how to start the web app, API and local database.
-- Document database migration and seed commands.
-- Document lint, type-check, test and build commands.
+
+Commands below were run on 2026-10-20 (Phase 1 Slice 1.1) on Ubuntu 26.04 under WSL2 with Node v24.21.0 and pnpm
+12.8.1.
+
+| Step | Command | Notes |
+|---|---|---|
+| Runtime | Node 24 LTS (`.nvmrc`), pnpm 12.8.1 (`packageManager`) | Fresh installs fail with `ERR_PNPM_UNSUPPORTED_ENGINE` on older Node (`engineStrict`) |
+| Install | `pnpm install` | Dependency install scripts are denied unless listed under `allowBuilds` in `pnpm-workspace.yaml` |
+| Web dev server | `pnpm dev` | http://localhost:3000 |
+| All gates | `pnpm verify` | format:check → lint → typecheck → test → build; stops at the first failure |
+| Format files | `pnpm format` | `docs/`, `prompts/`, `reference/`, `assets/`, `.claude/` and root `*.md` are ignored on purpose |
+| E2E browser (once) | `pnpm --filter web exec playwright install chromium` | WSL here already had the system libraries; CI uses `--with-deps` |
+| E2E | `pnpm test:e2e` | Builds, starts the app on :3100, runs smoke + axe at desktop and 360 px |
+
+API, database, migrations and seed commands arrive in Phase 2.
 
 ## Environments
 - Separate local, staging and production configuration.

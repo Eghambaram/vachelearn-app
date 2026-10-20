@@ -21,6 +21,7 @@ Answer from the top. "Confirm" rows have a Proposed default Claude will build ag
 | 1 | D-024 | Package manager / repo shape | **Confirmed 2026-10-20:** pnpm workspaces monorepo | P1 slice 1.1 |
 | 2 | D-052 | Runtime versions | **Confirmed 2026-10-20:** Node 26 LTS (from 2026-10-28; verify), current pnpm major | P1 slice 1.1 |
 | 3 | D-056 | CI provider | **Confirmed 2026-10-20:** GitHub Actions (remote is GitHub) | P1 slice 1.1 |
+| D-058 | Tooling version pins | **TypeScript ~6.0.x** (not 7.x): `typescript-eslint` 8.72 supports TS `<6.1`. **ESLint 10** with a `peerDependencyRules` exception for `eslint-plugin-import`, `-jsx-a11y`, `-react` (their peers stop at ESLint 9, but their rules were verified to run on 10; ESLint 9 is deprecated on npm). Revisit both when typescript-eslint supports TS 7 | Proposed | P1 | — | 2026-10-20 | Prevents a later "upgrade everything" from silently breaking lint; documented in `pnpm-workspace.yaml` |
 | 4 | D-038 | Marketing content policy | **Confirmed 2026-10-20:** placeholders only; no third-party logos/quotes/stats | P1 slice 1.4 |
 | 5 | D-028 | Languages | **Confirmed 2026-10-20:** English only; i18n helper from day one | P1 slice 1.4 |
 | 6 | D-034 | Market, currency, default timezone | **Confirmed 2026-10-20:** India-first, INR, Asia/Kolkata default (recommended) | P1 slice 1.5 (formatting) |
