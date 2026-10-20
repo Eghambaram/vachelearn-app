@@ -5,34 +5,76 @@ Premium, accessible enterprise SaaS. Use a neutral light workspace, deep green/t
 
 The supplied images are concept references. They do not establish final copy, actual metrics, data contracts or business rules. Replace sample metrics with real API data once available; label demo data clearly in prototypes.
 
-## Design tokens (Proposed — sampled from `assets/brand/vache-logo.jpg` and `assets/ui-ux/01-…-final.png`)
+## Design tokens (implemented in Phase 1 Slice 1.2, 2026-10-20)
 
-Contrast ratios below were computed (WCAG 2.x formula) when this kit was prepared. Re-verify in Phase 1 Slice 1.2
-after any change and record final values here.
+**Source of truth:** `apps/web/src/styles/tokens.css`. Token names carry a `vl-` prefix (`--vl-color-primary`) so they
+do not collide with Tailwind's own `--color-*` theme variables; `apps/web/src/app/globals.css` maps them onto
+Tailwind/shadcn names (`bg-primary`, `text-muted-foreground`, `ring-ring`, …). Tailwind's default palette is removed,
+so only token colours exist as utilities. Raw colour values anywhere else in `apps/web/src` fail the unit test
+`no-raw-hex.test.ts`. The developer token sheet is at `/design` (dev only, see `ENABLE_DESIGN_GALLERY`).
 
-| Token | Value | Use | Contrast check |
-|---|---|---|---|
-| `--color-primary` | `#0F6E56` | Primary buttons, links, active nav, focus ring | white text 6.20:1 ✅ · on bg 5.90:1 ✅ |
-| `--color-primary-hover` | `#075743` | Hover/pressed primary | white text 8.56:1 ✅ |
-| `--color-brand` | `#1D9F73` | Logo green, charts, progress fills, large accents | white text 3.36:1 — **large text/icons only**, never body text ⚠️ |
-| `--color-accent` | `#ED9E27` | Highlights, warning accents, chart series | 2.21:1 on white — **never as text on white**; use dark text on amber (7.89:1) ⚠️ |
-| `--color-sidebar` | `#062A22` | Authenticated workspace sidebar | white 15.42:1 ✅ · muted `#A7C4BB` 8.26:1 ✅ |
-| `--color-bg` | `#F6FAFB` | App background | ink `#111827` 16.88:1 ✅ |
-| `--color-surface` | `#FFFFFF` | Cards, tables, dialogs | — |
-| `--color-text` | `#111827` | Body text | ✅ |
-| `--color-text-muted` | `#5B6475` | Secondary text | 5.96:1 on white ✅ |
-| `--color-border` | `#D0D5DD` | Decorative dividers only | 1.47:1 — not for input boundaries |
-| `--color-border-input` | `#7A8394` | Form control boundaries (WCAG 1.4.11 needs ≥ 3:1) | 3.82:1 ✅ (`#98A2B3` fails at 2.58:1) |
-| `--color-success-700/50` | `#067647` / `#ECFDF3` | Published, Active, Compliant, Completed badges | 5.40:1 ✅ |
-| `--color-warning-700/50` | `#8A5A00` / `#FFF4E0` | Due Soon, Under Review, Trial | 5.44:1 ✅ |
-| `--color-danger-700/50` | `#B42318` / `#FEF3F2` | Overdue, Suspended, Failed, Revoked | 6.05:1 ✅ |
-| `--color-info-700/50` | `#175CD3` / `#EFF8FF` | In Progress | 5.57:1 ✅ |
-| Neutral badge | `#344054` on `#F2F4F7` | Draft, Not Started, Archived, Cancelled | verify in Phase 1 |
+Naming notes: the amber brand accent is `--vl-color-accent` but its utility is `highlight` (`bg-highlight`), because
+shadcn/ui uses "accent" for a subtle hover surface. Status colours are `success|warning|danger|info` (700 text on 50
+background) with utilities `text-success` / `bg-success-subtle` etc.
 
-Typography: one sans-serif family, self-hosted (Inter or similar — record choice in DECISIONS), scale 12/14/16/18/
-20/24/30/36, body 14–16 px, tabular numerals for tables and KPIs. Radius 8 px (controls) / 12 px (cards). Spacing on
-a 4 px grid. Shadows subtle (cards: 0 1px 2px rgb(16 24 40 / 6%)). Icons: one outline set (e.g. Lucide).
+**Contrast.** Every pair the UI may use is declared in `apps/web/src/styles/tokens.ts` and checked by
+`tokens.contrast.test.ts` (WCAG 2.2 formula). The table below is generated from those files; any token change that
+breaks a minimum fails the build gates. 4.5:1 = normal text; 3:1 = large text, icons, focus indicators and control
+boundaries (WCAG 1.4.3 / 1.4.11).
 
+| Foreground on background                 | Values                | Ratio   | Minimum | Use                                      |
+| ---------------------------------------- | --------------------- | ------- | ------- | ---------------------------------------- |
+| `text` on `bg`                           | `#111827` / `#f6fafb` | 16.88:1 | 4.5     | Body text on app background              |
+| `text` on `surface`                      | `#111827` / `#ffffff` | 17.74:1 | 4.5     | Body text on cards                       |
+| `text` on `surface-subtle`               | `#111827` / `#f2f4f7` | 16.10:1 | 4.5     | Text on secondary buttons / hover rows   |
+| `text` on `border`                       | `#111827` / `#d0d5dd` | 12.03:1 | 4.5     | Secondary button text on hover           |
+| `text-muted` on `bg`                     | `#5b6475` / `#f6fafb` | 5.67:1  | 4.5     | Secondary text on app background         |
+| `text-muted` on `surface`                | `#5b6475` / `#ffffff` | 5.96:1  | 4.5     | Secondary text on cards                  |
+| `text-muted` on `surface-subtle`         | `#5b6475` / `#f2f4f7` | 5.41:1  | 4.5     | Muted text on muted surfaces             |
+| `primary` on `bg`                        | `#0f6e56` / `#f6fafb` | 5.90:1  | 4.5     | Links on app background                  |
+| `primary` on `surface`                   | `#0f6e56` / `#ffffff` | 6.20:1  | 4.5     | Links on cards                           |
+| `on-primary` on `primary`                | `#ffffff` / `#0f6e56` | 6.20:1  | 4.5     | Primary button text                      |
+| `on-primary` on `primary-hover`          | `#ffffff` / `#075743` | 8.56:1  | 4.5     | Primary button text on hover             |
+| `on-accent` on `accent`                  | `#111827` / `#ed9e27` | 8.04:1  | 4.5     | Dark text on amber highlight             |
+| `brand` on `surface`                     | `#1d9f73` / `#ffffff` | 3.36:1  | 3       | Brand green: large text and icons only   |
+| `border-input` on `surface`              | `#7a8394` / `#ffffff` | 3.82:1  | 3       | Form control boundary on cards           |
+| `border-input` on `bg`                   | `#7a8394` / `#f6fafb` | 3.63:1  | 3       | Form control boundary on app background  |
+| `primary` on `surface`                   | `#0f6e56` / `#ffffff` | 6.20:1  | 3       | Focus ring on cards                      |
+| `primary` on `bg`                        | `#0f6e56` / `#f6fafb` | 5.90:1  | 3       | Focus ring on app background             |
+| `on-sidebar` on `sidebar`                | `#ffffff` / `#062a22` | 15.42:1 | 4.5     | Sidebar text                             |
+| `on-sidebar-muted` on `sidebar`          | `#a7c4bb` / `#062a22` | 8.26:1  | 4.5     | Sidebar secondary text                   |
+| `on-sidebar` on `sidebar-active`         | `#ffffff` / `#0f6e56` | 6.20:1  | 4.5     | Active sidebar item text                 |
+| `focus-ring-inverse` on `sidebar`        | `#a7f3d0` / `#062a22` | 12.02:1 | 3       | Focus ring in the sidebar                |
+| `focus-ring-inverse` on `sidebar-active` | `#a7f3d0` / `#0f6e56` | 4.84:1  | 3       | Focus ring on active sidebar item        |
+| `neutral-700` on `surface-subtle`        | `#344054` / `#f2f4f7` | 9.49:1  | 4.5     | Neutral status badge                     |
+| `success-700` on `success-50`            | `#067647` / `#ecfdf3` | 5.40:1  | 4.5     | Success status badge                     |
+| `warning-700` on `warning-50`            | `#8a5a00` / `#fff4e0` | 5.44:1  | 4.5     | Warning status badge                     |
+| `danger-700` on `danger-50`              | `#b42318` / `#fef3f2` | 6.05:1  | 4.5     | Danger status badge / destructive button |
+| `info-700` on `info-50`                  | `#175cd3` / `#eff8ff` | 5.57:1  | 4.5     | Info status badge                        |
+| `success-700` on `surface`               | `#067647` / `#ffffff` | 5.69:1  | 4.5     | Success message text on cards            |
+| `warning-700` on `surface`               | `#8a5a00` / `#ffffff` | 5.93:1  | 4.5     | Warning message text on cards            |
+| `danger-700` on `surface`                | `#b42318` / `#ffffff` | 6.57:1  | 4.5     | Error message text on cards              |
+| `info-700` on `surface`                  | `#175cd3` / `#ffffff` | 5.99:1  | 4.5     | Info message text on cards               |
+| `on-primary` on `danger-700`             | `#ffffff` / `#b42318` | 6.57:1  | 4.5     | Destructive button text on hover         |
+
+Changes from the kit's proposed palette: **added `--vl-color-focus-ring-inverse` `#a7f3d0`** — the primary colour as a
+focus ring on the dark sidebar is only 2.49:1 (a test documents this); dark surfaces use the class `surface-dark` to
+switch to the inverse ring. Corrected the kit's "ink on amber" figure from 7.89:1 to 8.04:1. Never use as text:
+`brand` (3.36:1, large text/icons only), `accent` amber (2.21:1 on white), `border` (decorative, 1.47:1),
+`border-input` (boundaries only).
+
+**Typography (D-059).** Inter Variable, self-hosted from `@fontsource-variable/inter` (all subsets declared with
+unicode ranges, so `₹` from latin-ext loads — the E2E suite checks this). Fallback stack: `ui-sans-serif, system-ui,
+-apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif`. Scale 12/14/16/18/20/24/30/36 = Tailwind `text-xs` …
+`text-4xl`; body 16px, line height 1.5; `tabular-nums` for tables and KPIs.
+
+**Shape, depth, layering, motion.** Radius 8px controls (`rounded-lg`) / 12px cards (`rounded-xl`); 4px spacing
+grid (Tailwind default); `shadow-card` and `shadow-overlay`; z-index tokens sticky 10 · sidebar 20 · overlay 40 ·
+modal 50 · toast 60; durations 120/200ms with a standard easing; all animation and transition durations collapse
+under `prefers-reduced-motion: reduce`. Light theme only; `dark:` utilities apply only under a `.dark` class that the
+app never sets.
+
+**Icons.** Lucide (`lucide-react`), outline style, decorative icons `aria-hidden`.
 ## Status vocabulary (use these exact labels everywhere)
 
 | Entity | Statuses |

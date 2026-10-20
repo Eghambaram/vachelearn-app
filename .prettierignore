@@ -17,3 +17,6 @@ reference/
 assets/
 .claude/
 /*.md
+
+# Vendored third-party files are kept verbatim
+apps/web/src/styles/vendor/

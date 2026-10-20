@@ -1,0 +1,118 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/inter';
+@import '../styles/vendor/shadcn-variants.css';
+@import '../styles/tokens.css';
+
+/* Light theme only (D-059): `dark:` utilities (e.g. from future shadcn components) apply only under a `.dark`
+   class that the app never sets, instead of following the OS colour scheme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Tailwind theme = VacheLearn tokens only. The default palette is removed so `bg-red-500`-style colours cannot be
+ * used; every colour utility resolves to a token. shadcn/ui semantic names (primary, muted, accent, ring, …) are
+ * mapped onto tokens here. Note: shadcn "accent" is a subtle hover surface; the amber brand accent is `highlight`.
+ */
+@theme inline {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --color-background: var(--vl-color-bg);
+  --color-foreground: var(--vl-color-text);
+  --color-card: var(--vl-color-surface);
+  --color-card-foreground: var(--vl-color-text);
+  --color-popover: var(--vl-color-surface);
+  --color-popover-foreground: var(--vl-color-text);
+  --color-primary: var(--vl-color-primary);
+  --color-primary-hover: var(--vl-color-primary-hover);
+  --color-primary-foreground: var(--vl-color-on-primary);
+  --color-secondary: var(--vl-color-surface-subtle);
+  --color-secondary-foreground: var(--vl-color-text);
+  --color-muted: var(--vl-color-surface-subtle);
+  --color-muted-foreground: var(--vl-color-text-muted);
+  --color-accent: var(--vl-color-surface-subtle);
+  --color-accent-foreground: var(--vl-color-text);
+  --color-destructive: var(--vl-color-danger-700);
+  --color-destructive-foreground: var(--vl-color-on-primary);
+  --color-border: var(--vl-color-border);
+  --color-input: var(--vl-color-border-input);
+  --color-ring: var(--vl-color-primary);
+  --color-ring-inverse: var(--vl-color-focus-ring-inverse);
+
+  --color-brand: var(--vl-color-brand);
+  --color-highlight: var(--vl-color-accent);
+  --color-highlight-foreground: var(--vl-color-on-accent);
+  --color-neutral-700: var(--vl-color-neutral-700);
+
+  --color-sidebar: var(--vl-color-sidebar);
+  --color-sidebar-foreground: var(--vl-color-on-sidebar);
+  --color-sidebar-muted: var(--vl-color-on-sidebar-muted);
+  --color-sidebar-active: var(--vl-color-sidebar-active);
+
+  --color-success: var(--vl-color-success-700);
+  --color-success-subtle: var(--vl-color-success-50);
+  --color-warning: var(--vl-color-warning-700);
+  --color-warning-subtle: var(--vl-color-warning-50);
+  --color-danger: var(--vl-color-danger-700);
+  --color-danger-subtle: var(--vl-color-danger-50);
+  --color-info: var(--vl-color-info-700);
+  --color-info-subtle: var(--vl-color-info-50);
+
+  --font-sans: var(--vl-font-sans);
+  --font-heading: var(--vl-font-sans);
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: var(--vl-radius-control);
+  --radius-xl: var(--vl-radius-card);
+  --radius-2xl: 16px;
+
+  --shadow-card: var(--vl-shadow-card);
+  --shadow-overlay: var(--vl-shadow-overlay);
+
+  --ease-standard: var(--vl-ease-standard);
+}
+
+@layer base {
+  * {
+    border-color: var(--vl-color-border);
+  }
+
+  html {
+    font-family: var(--vl-font-sans);
+    line-height: var(--vl-line-height-body);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--vl-color-bg);
+    color: var(--vl-color-text);
+    font-size: 1rem;
+  }
+
+  /* Visible focus everywhere; dark surfaces opt into the inverse ring with `.surface-dark`. */
+  :focus-visible {
+    outline: 2px solid var(--vl-color-primary);
+    outline-offset: 2px;
+  }
+
+  .surface-dark :focus-visible {
+    outline-color: var(--vl-color-focus-ring-inverse);
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

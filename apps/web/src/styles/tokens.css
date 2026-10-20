@@ -1,0 +1,66 @@
+/*
+ * VacheLearn design tokens — the ONLY place raw colour values may appear (enforced by no-raw-hex.test.ts).
+ * Names map to docs/UI_UX_SPECIFICATION.md §Design tokens with a `vl-` prefix (spec `--color-primary` = `--vl-color-primary`).
+ * Every text/UI pair used by components is listed in tokens.contrast.test.ts and must keep its WCAG ratio.
+ * Light theme only (D-059).
+ */
+:root {
+  /* Brand and actions */
+  --vl-color-primary: #0f6e56; /* buttons, links, active nav, focus ring on light surfaces */
+  --vl-color-primary-hover: #075743;
+  --vl-color-on-primary: #ffffff;
+  --vl-color-brand: #1d9f73; /* logo green: large text, icons, fills only — never body text */
+  --vl-color-accent: #ed9e27; /* amber highlight: fills only, never text on white */
+  --vl-color-on-accent: #111827;
+
+  /* Surfaces and text */
+  --vl-color-bg: #f6fafb;
+  --vl-color-surface: #ffffff;
+  --vl-color-surface-subtle: #f2f4f7; /* hover rows, neutral badge, secondary buttons */
+  --vl-color-text: #111827;
+  --vl-color-text-muted: #5b6475;
+  --vl-color-border: #d0d5dd; /* decorative dividers only (1.47:1) */
+  --vl-color-border-input: #7a8394; /* form control boundaries (WCAG 1.4.11) */
+  --vl-color-neutral-700: #344054;
+
+  /* Authenticated workspace sidebar */
+  --vl-color-sidebar: #062a22;
+  --vl-color-on-sidebar: #ffffff;
+  --vl-color-on-sidebar-muted: #a7c4bb;
+  --vl-color-sidebar-active: #0f6e56;
+  --vl-color-focus-ring-inverse: #a7f3d0; /* focus ring on the dark sidebar (primary ring is 2.49:1 there) */
+
+  /* Status (text-700 on background-50) */
+  --vl-color-success-700: #067647;
+  --vl-color-success-50: #ecfdf3;
+  --vl-color-warning-700: #8a5a00;
+  --vl-color-warning-50: #fff4e0;
+  --vl-color-danger-700: #b42318;
+  --vl-color-danger-50: #fef3f2;
+  --vl-color-info-700: #175cd3;
+  --vl-color-info-50: #eff8ff;
+
+  /* Typography — one family (D-059); sizes reuse Tailwind's 12/14/16/18/20/24/30/36 scale */
+  --vl-font-sans:
+    'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans',
+    sans-serif;
+  --vl-line-height-body: 1.5;
+
+  /* Shape and depth */
+  --vl-radius-control: 8px;
+  --vl-radius-card: 12px;
+  --vl-shadow-card: 0 1px 2px rgb(16 24 40 / 6%);
+  --vl-shadow-overlay: 0 12px 16px -4px rgb(16 24 40 / 8%), 0 4px 6px -2px rgb(16 24 40 / 3%);
+
+  /* Layering */
+  --vl-z-sticky: 10;
+  --vl-z-sidebar: 20;
+  --vl-z-overlay: 40;
+  --vl-z-modal: 50;
+  --vl-z-toast: 60;
+
+  /* Motion (disabled under prefers-reduced-motion in globals.css) */
+  --vl-duration-fast: 120ms;
+  --vl-duration-base: 200ms;
+  --vl-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
