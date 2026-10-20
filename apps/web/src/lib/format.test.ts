@@ -1,0 +1,62 @@
+import { formatDate, formatDateOnly, formatDateTime, formatMoney, formatNumber } from './format';
+
+// 18:45 UTC on 20 Oct is already 21 Oct in Kolkata (UTC+5:30) but still 20 Oct in Chicago (UTC-5 in October).
+const LATE_EVENING_UTC = '2026-10-20T18:45:00Z';
+
+describe('formatDateTime / formatDate across timezones', () => {
+  it('shows the next calendar day in Asia/Kolkata, with the IST label', () => {
+    expect(formatDateTime(LATE_EVENING_UTC)).toBe('21 Oct 2026, 00:15 IST');
+    expect(formatDate(LATE_EVENING_UTC)).toBe('21 Oct 2026');
+  });
+
+  it('shows the same instant as 20 Oct in America/Chicago, with an unambiguous zone', () => {
+    expect(formatDateTime(LATE_EVENING_UTC, { timeZone: 'America/Chicago' })).toBe(
+      '20 Oct 2026, 13:45 GMT-5',
+    );
+    expect(formatDate(LATE_EVENING_UTC, { timeZone: 'America/Chicago' })).toBe('20 Oct 2026');
+  });
+
+  it('handles the exact Kolkata midnight boundary (18:29:59Z vs 18:30:00Z)', () => {
+    expect(formatDate('2026-10-20T18:29:59Z')).toBe('20 Oct 2026');
+    expect(formatDate('2026-10-20T18:30:00Z')).toBe('21 Oct 2026');
+  });
+});
+
+describe('formatDateOnly', () => {
+  it('never shifts a calendar date, whatever the runtime timezone', () => {
+    expect(formatDateOnly('2026-10-25')).toBe('25 Oct 2026');
+  });
+
+  it('rejects anything that is not YYYY-MM-DD', () => {
+    expect(() => formatDateOnly('25/10/2026')).toThrow();
+  });
+});
+
+describe('formatMoney (integer minor units + ISO currency)', () => {
+  it('formats INR with Indian digit grouping', () => {
+    expect(formatMoney(1_250_000_050)).toBe('₹1,25,00,000.50');
+  });
+
+  it('handles small and negative amounts exactly', () => {
+    expect(formatMoney(5)).toBe('₹0.05');
+    expect(formatMoney(-5)).toBe('-₹0.05');
+  });
+
+  it('keeps precision beyond Number.MAX_SAFE_INTEGER when given a bigint', () => {
+    expect(formatMoney(12_345_678_901_234_567_89n)).toBe('₹12,34,56,78,90,12,34,567.89');
+  });
+
+  it('respects zero-decimal currencies', () => {
+    expect(formatMoney(1234, 'JPY')).toBe('JP¥1,234');
+  });
+
+  it('refuses floats', () => {
+    expect(() => formatMoney(10.5)).toThrow();
+  });
+});
+
+describe('formatNumber', () => {
+  it('uses Indian grouping by default', () => {
+    expect(formatNumber(1234567)).toBe('12,34,567');
+  });
+});

@@ -16,7 +16,7 @@ Commands below were run on 2026-10-20 (Phase 1 Slice 1.1) on Ubuntu 26.04 under 
 | Format files | `pnpm format` | `docs/`, `prompts/`, `reference/`, `assets/`, `.claude/` and root `*.md` are ignored on purpose |
 | E2E browser (once) | `pnpm --filter web exec playwright install chromium` | WSL here already had the system libraries; CI uses `--with-deps` |
 | E2E | `pnpm test:e2e` | Builds, starts the app on :3100 with `ENABLE_DESIGN_GALLERY=true`, runs smoke, `/design` and axe at desktop and 360 px |
-| Design token sheet | `pnpm dev` → http://localhost:3000/design | Dev only. Production builds return 404 unless `ENABLE_DESIGN_GALLERY=true` (verified with `next start`: 404, page title not leaked) |
+| Design token sheet + component gallery | `pnpm dev` → http://localhost:3000/design and /design/components | Dev only. Production builds return 404 unless `ENABLE_DESIGN_GALLERY=true` (verified with `next start`: 404, page title not leaked) |
 
 API, database, migrations and seed commands arrive in Phase 2.
 

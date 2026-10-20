@@ -9,7 +9,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Tailwind theme = VacheLearn tokens only. The default palette is removed so `bg-red-500`-style colours cannot be
+ * Tailwind theme = VacheLearn tokens only. The default palette is removed so default-palette colour classes cannot be
  * used; every colour utility resolves to a token. shadcn/ui semantic names (primary, muted, accent, ring, …) are
  * mapped onto tokens here. Note: shadcn "accent" is a subtle hover surface; the amber brand accent is `highlight`.
  */
@@ -44,6 +44,7 @@
   --color-highlight: var(--vl-color-accent);
   --color-highlight-foreground: var(--vl-color-on-accent);
   --color-neutral-700: var(--vl-color-neutral-700);
+  --color-scrim: var(--vl-color-scrim);
 
   --color-sidebar: var(--vl-color-sidebar);
   --color-sidebar-foreground: var(--vl-color-on-sidebar);

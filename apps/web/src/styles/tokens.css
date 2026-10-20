@@ -22,6 +22,7 @@
   --vl-color-border: #d0d5dd; /* decorative dividers only (1.47:1) */
   --vl-color-border-input: #7a8394; /* form control boundaries (WCAG 1.4.11) */
   --vl-color-neutral-700: #344054;
+  --vl-color-scrim: #101828; /* modal/drawer backdrop, used at 60% opacity (non-text) */
 
   /* Authenticated workspace sidebar */
   --vl-color-sidebar: #062a22;

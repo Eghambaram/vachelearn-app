@@ -59,7 +59,7 @@ boundaries (WCAG 1.4.3 / 1.4.11).
 
 Changes from the kit's proposed palette: **added `--vl-color-focus-ring-inverse` `#a7f3d0`** — the primary colour as a
 focus ring on the dark sidebar is only 2.49:1 (a test documents this); dark surfaces use the class `surface-dark` to
-switch to the inverse ring. Corrected the kit's "ink on amber" figure from 7.89:1 to 8.04:1. Never use as text:
+switch to the inverse ring. Slice 1.3a added **`--vl-color-scrim` `#101828`** (`bg-scrim/60`) for modal/drawer backdrops — non-text, so no contrast pair. Corrected the kit's "ink on amber" figure from 7.89:1 to 8.04:1. Never use as text:
 `brand` (3.36:1, large text/icons only), `accent` amber (2.21:1 on white), `border` (decorative, 1.47:1),
 `border-input` (boundaries only).
 
@@ -88,6 +88,42 @@ app never sets.
 | Attendance | Present · Absent · Late · Excused |
 | Order | Pending · Paid · Failed · Cancelled · Refunded · Partially Refunded |
 | Job / export | Queued · Running · Succeeded · Failed · Retrying |
+
+### Status tones (implemented in Slice 1.3a — `apps/web/src/lib/status.ts`, `StatusBadge`)
+
+Every status renders as exact label + tone colour + tone icon (icon shape differs per tone, so status never relies on
+colour alone). Tones fixed by `.claude/rules/web.md` are tested; the rest are **Proposed** (owner may change them;
+update `status.ts` and this table together).
+
+| Tone | Icon | Statuses | Source |
+|---|---|---|---|
+| Success (green) | check circle | Active, Published, Compliant, Completed | web rule |
+| Success (green) | check circle | Valid, Passed, Present, Paid, Succeeded | **Proposed** |
+| Info (blue) | loader | In Progress | web rule |
+| Info (blue) | loader | Submitted, Queued, Running | **Proposed** |
+| Warning (amber text on amber tint) | clock | Due Soon, Under Review, Trial | web rule |
+| Warning | clock | Late, Retrying, Partially Refunded | **Proposed** |
+| Danger (red) | alert circle | Overdue, Suspended, Failed, Revoked | web rule |
+| Danger (red) | alert circle | Expired, Absent | **Proposed** |
+| Neutral | dashed circle | Draft, Not Started | web rule |
+| Muted (grey) | archive | Archived, Cancelled | web rule |
+| Muted (grey) | archive | Superseded, Excused, Refunded, Not Applicable, Pending | **Proposed** |
+
+### Component conventions (Slice 1.3a)
+
+- Gallery: `/design/components` (dev only, same `ENABLE_DESIGN_GALLERY` gate as `/design`).
+- Visible text comes from props with English defaults in `apps/web/src/messages/en.ts` (routed through i18n in 1.4).
+- `FormField` wires label, "(required)" text, help and error (`aria-describedby`, `aria-invalid`, polite live region);
+  controls receive the wiring via a render prop.
+- `ConfirmDialog` (Radix AlertDialog) requires an impact statement and a named action label; focus returns to the
+  trigger; clicking outside does not dismiss it.
+- Dates: `formatDateTime` always shows the zone (`21 Oct 2026, 00:15 IST`; non-Indian zones may render as `GMT-5`
+  under the en-IN locale); date-only values (`YYYY-MM-DD`) are never timezone-shifted. Money: integer minor units +
+  ISO currency, formatted exactly (`₹1,25,00,000.50`).
+- shadcn components are added with `pnpm dlx shadcn@4.22.1 add <name>` and then reviewed (see Slice 1.3a report in
+  `docs/progress-log/2026-10.md`): import `cn` from `@/lib/utils`, no `dark:`, solid focus outlines (never
+  semi-transparent rings), list highlights with an inset outline, token variables only (a unit test fails on any
+  undefined `var(--x)` or default-palette colour class).
 
 ## Reference image caveats
 
