@@ -52,6 +52,12 @@ issued/expiring, survey request), templates per tenant (minimal), delivery state
 in-app notification list. Scheduled reminders via the job runner.
 **AC:** email outage does not roll back learning transactions; retry does not double-send.
 
+### 5.7 Bulk user import (only if D-044 schedules it here)
+CSV upload through `StorageService`, whole-file validation, preview of valid / invalid / duplicate rows, downloadable
+error report (formula-injection safe), idempotent commit as a job (creates memberships + invitations), audit.
+**AC:** spec §5 import AC — preview counts are correct; committing twice creates no duplicate memberships; a branch
+admin cannot import into another branch; invalid rows never partially commit.
+
 ## Exit gate
 
 MASTER_PROMPT §10 steps 10–11 pass · isolation suite covers all R3 resources and exports · METRICS.md covers every
@@ -60,3 +66,4 @@ displayed number · reviews by subagents · owner demo.
 ## Change log
 
 - v2.0 — from MASTER_PROMPT v1 Phase 5 / spec sprint 4.
+- Phase 0 (2026-10-20) — added slice 5.7 for bulk import (spec §5 AC 7), pending D-044.

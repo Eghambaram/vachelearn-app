@@ -34,6 +34,13 @@ CRUD + deactivate. Unique slug (global) and branch code (per tenant).
 **AC:** duplicate slug → 422 field error; branch code unique within tenant only; suspend/reactivate audited with actor
 + reason; DB rejects a branch row whose tenant does not match its parent link (integration test).
 
+### 2.3a Outbox job runner + EmailProvider
+Postgres job/outbox table (type, business key, status, attempts, run-after, sanitised last error), in-process worker
+with bounded backoff, `EmailProvider` interface with console and Mailpit (SMTP) implementations. Needed before 2.3
+because email verification and password reset send email.
+**AC:** `(type, business_key)` unique — enqueueing twice is a no-op; a failing job retries then ends `failed` with a
+sanitised error; a retried email job does not send twice (Mailpit assertion); no token or link appears in job logs.
+
 ### 2.3 Identity + authentication (per D-010)
 User, AuthSession, password hashing (Argon2id), login/logout, session cookie (httpOnly, Secure, SameSite=Lax), CSRF
 strategy, email verification, password reset (hashed single-use tokens, expiry), rate limiting, session revocation,
@@ -71,3 +78,4 @@ seed is idempotent and refuses production.
 ## Change log
 
 - v2.0 — from MASTER_PROMPT v1 Phase 2 / spec sprint 1; split into six slices; auth made explicit.
+- Phase 0 (2026-10-20) — added slice 2.3a: 2.3 needs email delivery, and the outbox runner (D-040) was not scheduled anywhere before Phase 3.

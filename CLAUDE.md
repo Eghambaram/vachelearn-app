@@ -63,8 +63,8 @@ tests pass.
   `packages/ui` (design system, only once ≥2 consumers or clear benefit), `packages/contracts` (shared Zod schemas /
   API types, if it removes duplication). `infra/` for Docker Compose and deploy assets.
 - **PostgreSQL** + **Prisma** (one ORM only). Docker Compose for local Postgres, MinIO and Mailpit.
-- Tailwind CSS + shadcn/ui with VacheLearn tokens. React Hook Form + Zod on the web. Class-validator **or** Zod DTOs in
-  the API — pick one in Phase 2 and use it everywhere.
+- Tailwind CSS + shadcn/ui with VacheLearn tokens. React Hook Form + Zod on the web. **Zod** schemas in
+  `packages/contracts` for API validation too (D-035 Confirmed) — use it everywhere.
 - REST under `/api/v1`, OpenAPI generated from code. Auth owned by the API (see D-010 in DECISIONS.md).
 - Adapters for everything external: `StorageService`, `VideoProvider`, `EmailProvider`, `PaymentProvider`,
   `PdfRenderer`. Local implementations first (MinIO, mock video, console/Mailpit email, disabled payments).

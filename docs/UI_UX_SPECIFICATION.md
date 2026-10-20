@@ -66,65 +66,115 @@ a 4 px grid. Shadows subtle (cards: 0 1px 2px rgb(16 24 40 / 6%)). Icons: one ou
 - Responsive layouts; learner flow must work on mobile.
 - WCAG 2.2 AA target for primary flows.
 
-## Screen inventory
+## Screen inventory (reconciled in Phase 0, 2026-10-20)
+
+This is the single numbered inventory. Screens 1–46 keep the kit's numbering; 47–58 are screens Phase 0 found were
+needed by the spec or the phase prompts but missing from the list. Routes follow the route groups in
+`.claude/rules/web.md` and are **Proposed**. "Demo" = Phase 1 builds it on labelled demo data; the later phase
+replaces the fixtures with real endpoints. **Flag** = shown only when that tenant feature flag (D-031) or decision
+enables it. Reference images are direction only.
+
+Route notes: tenant users never put a tenant id in the URL (tenant comes from the session). Public tenant pages use
+`/t/{tenantSlug}` only to look up **public** data (D-021); subdomains/custom domains may replace this later. Secret
+tokens (invitation, password reset, email verification) travel in the URL fragment `#t=…` so they never reach server
+or proxy logs.
 
 ### Public and tenant website
-1. VacheLearn marketing landing page.
-2. Tenant-branded public catalog.
-3. Course catalog search and filters.
-4. Course detail and enrollment.
-5. Login, invitation acceptance, registration and password reset.
-6. Checkout/payment result when commerce is enabled.
+
+| # | Screen | Route | Roles | Primary actions | Data | Phase · release | Ref | Flag / decision |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Marketing landing | `/` | Public | Go to login, view catalog | Static, placeholder content | Layout 1.4 · content P7 | 10, 05 | D-038 placeholders only |
+| 2 | Tenant public catalog home | `/t/[tenantSlug]` | Public | Browse, search | Public courses (marketing fields) | 3.7 · R2 | 05 | D-021 |
+| 3 | Catalog search + filters | `/t/[tenantSlug]/courses` · `/learn/catalog` | Public · LRN | Search, filter, paginate | Entitled courses | 3.7 · R2 | 05 | Public variant: D-021 |
+| 4 | Course detail + enrol | `/t/[tenantSlug]/courses/[slug]` · `/learn/catalog/[courseId]` | Public · LRN | Enrol (D-046) / buy (P6) / sign in | Course version marketing fields, eligibility, price | 3.7 · R2 (+4.1, 6.2) | 05 | D-046, commerce |
+| 5 | Login · invitation accept · registration · password reset · email verification | `/login` · `/invite/accept#t=` · `/register` · `/reset-password#t=` · `/verify-email#t=` | Public | Sign in, accept, reset | Session, invitation preview | 2.3, 3.1 · R1–R2 | — | `/register` only if D-033 |
+| 6 | Checkout result | `/checkout/[orderId]/result` | LRN | View order status (never grants access itself) | Order status from API | 6.2 · R4 | 05 | commerce, D-007 |
 
 ### Platform Admin
-7. Platform dashboard.
-8. Tenant list and filters.
-9. Tenant create/detail/edit/suspend/reactivate.
-10. Platform users and roles.
-11. Global course/content library if platform-owned content is supported.
-12. Integrations and system settings.
-13. Audit logs.
-14. Platform usage and subscription overview.
+
+| # | Screen | Route | Roles | Primary actions | Data | Phase · release | Ref | Flag / decision |
+|---|---|---|---|---|---|---|---|---|
+| 7 | Platform dashboard | `/platform` | PSA | Filter date range, drill down | Tenant counts by status, learners, published courses, completion rate, activity | Demo 1.5.1 · real 2.2 + 6.4 | 01 | Revenue/plan widgets: D-027; industry widget: D-048 |
+| 8 | Tenant list | `/platform/tenants` | PSA | Search, filter by status, create | Tenants | 2.2 · R1 | 01 | — |
+| 9 | Tenant create / detail / edit / suspend / reactivate | `/platform/tenants/new` · `/platform/tenants/[id]` | PSA | Create, edit, suspend (reason), reactivate, archive | Tenant, branches summary, audit | 2.2 · R1 | — | — |
+| 10 | Platform users and roles | `/platform/users` | PSA | Invite staff, assign platform roles | Platform users | 2.4 · R1 | 01 | — |
+| 11 | Global course/content library | `/platform/library` | PSA | — | — | Not scheduled | 01 | D-043 candidate — omit |
+| 12 | Integrations and system settings | `/platform/settings` | PSA | View provider status (no secrets) | Provider health | 7.4 · Launch | 01 | — |
+| 13 | Audit logs (platform) | `/platform/audit` | PSA | Search, filter | AuditEvent (platform + support sessions) | 2.2 · R1 | 01 | — |
+| 14 | Usage and subscription overview | `/platform/usage` | PSA | View | Usage, plans | 6.6 · R4 | 01 | D-027 |
 
 ### Tenant Admin
-15. Tenant dashboard.
-16. Branch list/detail/create/edit.
-17. Users and memberships.
-18. Groups and membership.
-19. Roles/permissions assignments.
-20. Invitations.
-21. Course management.
-22. Course builder: metadata, content/modules, assessment, settings, pricing, preview/publish.
-23. Assignments and enrollments.
-24. Assessment builder, question bank and results.
-25. Certificate templates and issued certificates.
-26. Compliance requirements and status.
-27. Surveys and results.
-28. Classroom sessions and attendance.
-29. Reports, filters and exports.
-30. Branding and settings.
 
-### Branch Admin/Learning Manager
-31. Branch dashboard and scoped people.
-32. Team/group learning progress.
-33. Assignment creation and overdue follow-up.
-34. Compliance dashboard and scoped reports.
+| # | Screen | Route | Roles | Primary actions | Data | Phase · release | Ref | Flag / decision |
+|---|---|---|---|---|---|---|---|---|
+| 15 | Tenant dashboard | `/admin` | TA (also BA/LM/CV, scope-aware — see 31) | Drill down | Learners, active courses, completion, compliance, deadlines, activity | Demo 1.5.2 · real 4.7 + 5.2 | 07 | Compliance tiles from P5 |
+| 16 | Branch list / detail / create / edit | `/admin/branches` · `/admin/branches/[id]` | TA (BA read) | Create, edit, deactivate | Branches, counts | 2.5 · R1 | 07 | Map widget: D-043 — omit |
+| 17 | Users and memberships | `/admin/users` · `/admin/users/[id]` | TA, BA | Search, filter, deactivate, reactivate, manage branches | Memberships (D-047 fields) | 2.5 · R1 | 07 | Bulk import button: D-044 |
+| 18 | Groups and membership | `/admin/groups` · `/admin/groups/[id]` | TA, BA, LM | Create, edit, archive, add/remove members | Groups, members | 3.2 · R2 | 07 | — |
+| 19 | Role assignments | `/admin/roles` | TA, BA (limited) | Assign, revoke | RoleAssignments | 2.4 · R1 | — | D-053 fixed roles |
+| 20 | Invitations | `/admin/invitations` | TA, BA | Invite, resend, revoke | Invitations | 3.1 · R2 | 07 | D-050 |
+| 21 | Course management | `/admin/courses` | TA (BA/LM/INS read) | Search, filter (category, level, format, status), create, archive | Courses + current version | Demo 1.5.3 · real 3.3 | 02 | "Under Review" tab: D-022; "Import": D-043 — omit |
+| 22 | Course builder (Basic info → Content → Assessment → Settings → Publish; Pricing when commerce) | `/admin/courses/[id]/build/[step]` | TA | Save draft, reorder, preview, publish | Draft CourseVersion, modules, lessons, assets | Demo 1.5.3 · real 3.3–3.6, 4.4, 6.1 | 02 | Pricing: commerce |
+| 23 | Assignments and enrollments | `/admin/assignments` · `/admin/assignments/[id]` · `/admin/enrollments/[id]` | TA, BA, LM | Create assignment, cancel, change due date, see "why this enrollment exists" | Assignments, targets, enrollments | 4.1 · R2 | 07 | D-004, D-032, D-045 |
+| 24 | Assessment builder, question bank, results | `/admin/assessments` · `/admin/question-bank` | TA (results: BA, LM, CV) | Build, version, review results | Assessments, attempts | 4.4 · R2 | 07 | D-023 |
+| 25 | Certificate templates and issued certificates | `/admin/certificates` | TA (search: BA, LM, CV) | Edit template, search, revoke, reissue | Templates, awards | 4.6 · R2 | 07 | "Expiring soon" tab from P5 |
+| 26 | Compliance requirements and status | `/admin/compliance` | TA (status: BA, LM, CV) | Define requirement, view status, drill down | Requirements, computed status | 5.1–5.2 · R3 | 07 | D-018 |
+| 27 | Surveys and results | `/admin/surveys` | TA (results: LM, CV) | Build, publish, close, view results | Surveys, aggregates | 5.4 · R3 | — | surveys flag, D-020 |
+| 28 | Classroom sessions and attendance | `/admin/classroom` | TA, BA, LM | Create session, manage roster, cancel/reopen | ClassSessions, registrations | 5.5 · R3 | 05 | classroom flag, D-019 |
+| 29 | Reports, filters and exports | `/admin/reports` · `/admin/reports/[reportKey]` | TA, BA, LM, CV | Filter, view scope banner, export CSV | Report rows + totals | Demo 1.5.8 · real 4.7, 5.2–5.3 | 07 | — |
+| 30 | Branding and settings | `/admin/settings` · `/admin/settings/branding` | TA | Edit general settings, logo, colour (contrast-checked) | TenantSetting, TenantBranding | 2.5 (general) · 3.8 (branding) | 07 | Website/page builder, email-template tabs: D-043 / 5.6 |
+
+### Branch Admin / Learning Manager
+
+These reuse the tenant admin routes; navigation and data are filtered by the actor's scope (permission-driven nav).
+
+| # | Screen | Route | Roles | Primary actions | Data | Phase · release | Ref | Flag / decision |
+|---|---|---|---|---|---|---|---|---|
+| 31 | Branch dashboard and scoped people | `/admin` · `/admin/users` (scoped) | BA, LM | As 15 and 17 within scope | Scoped | 2.5, 4.7 | 07 | D-026 |
+| 32 | Team / group learning progress | `/admin/progress` | BA, LM, INS (assigned) | Filter, drill down | Enrollments + progress | 4.7 · R2 | 07 | — |
+| 33 | Assignment creation and overdue follow-up | `/admin/assignments?status=overdue` | BA, LM | Assign, follow up | Overdue (derived, D-054) | 4.1 · R2 | 07 | Reminders: 5.6 |
+| 34 | Compliance dashboard and scoped reports | `/admin/compliance` (scoped) | BA, LM, CV | View, export | Scoped compliance | 5.2 · R3 | 07 | — |
 
 ### Instructor
-35. Instructor dashboard.
-36. Assigned courses and permitted content editing.
-37. Session calendar, roster and attendance.
-38. Assessment results and learner progress.
+
+| # | Screen | Route | Roles | Primary actions | Data | Phase · release | Ref | Flag / decision |
+|---|---|---|---|---|---|---|---|---|
+| 35 | Instructor dashboard | `/instructor` | INS | Go to sessions, results | Own sessions, learners | 5.5 · R3 | — | classroom flag |
+| 36 | Assigned courses and permitted content editing | `/instructor/courses` | INS | View (edit off by default) | Courses linked to own sessions | 5.5 · R3 | — | Editing: owner decision (matrix note) |
+| 37 | Session calendar, roster and attendance | `/instructor/sessions` · `/instructor/sessions/[id]` | INS | Mark attendance (audited) | Own sessions | 5.5 · R3 | 05 | — |
+| 38 | Assessment results and learner progress | `/instructor/results` | INS | Review attempts | Assigned learners | 4.4 (read) / 5.5 · R2–R3 | — | D-023 |
 
 ### Learner
-39. Learner dashboard.
-40. My Learning: assigned, in progress, completed, overdue, available.
-41. Course detail and learning player.
-42. Assessment taking and results.
-43. Certificates and verification.
-44. Classroom session discovery/registration.
-45. Surveys and feedback.
-46. Profile and notifications.
+
+| # | Screen | Route | Roles | Primary actions | Data | Phase · release | Ref | Flag / decision |
+|---|---|---|---|---|---|---|---|---|
+| 39 | Learner dashboard | `/learn` | LRN | Continue, start, view deadlines | Own enrollments, deadlines, recent certificates | Demo 1.5.4 · real 4.2 | 03 | Achievements, announcements, ratings, "learning plan": omit (D-043, D-025) |
+| 40 | My Learning (assigned, in progress, completed, overdue, available) | `/learn/my-learning` | LRN | Filter, continue | Own enrollments | 4.2 · R2 | 03 | Available: D-046 |
+| 41 | Course detail and learning player | `/learn/courses/[enrollmentId]` · `/learn/courses/[enrollmentId]/lessons/[lessonId]` | LRN | Play, resume, prev/next, mark complete (if allowed) | Pinned course version, progress | Demo 1.5.5 · real 4.3 | 13 | Notes, discussion, resources, bookmarks, quick quiz: omit (D-043) |
+| 42 | Assessment taking and results | `/learn/attempts/[attemptId]` | LRN | Answer, submit, see result | Attempt, timer from server | Demo 1.5.6 · real 4.4 | 05 | D-023, D-055 |
+| 43 | Certificates and public verification | `/learn/certificates` · `/verify/[verificationId]` | LRN · Public | Download PDF · verify | Own awards · minimal verification data | Demo 1.5.7 · real 4.6 | 05 | D-017 |
+| 44 | Classroom session discovery / registration | `/learn/sessions` | LRN | Register, cancel | Eligible sessions | 5.5 · R3 | — | classroom flag |
+| 45 | Surveys and feedback | `/learn/surveys` | LRN | Respond | Eligible surveys | 5.4 · R3 | — | surveys flag |
+| 46 | Profile and notifications | `/account` · `/account/notifications` | All signed-in | Edit profile, change password, preferences | Own user, notifications | 2.3 (account) · 5.6 (notifications) | 03 | — |
+
+### Added in Phase 0
+
+| # | Screen | Route | Roles | Why it is needed | Phase · release | Flag / decision |
+|---|---|---|---|---|---|---|
+| 47 | Workspace (tenant) picker | `/select-workspace` (+ switcher in the top bar) | Multi-tenant users | MASTER_PROMPT §2: one user, several tenants | 1.4 shell · 2.4 real | — |
+| 48 | Commerce admin: offers, orders, refunds, reconciliation | `/admin/commerce` | TA | Spec §14 admin reconciliation; screen 22 only covers pricing | 6.1–6.3 · R4 | commerce, D-007/D-008/D-029 |
+| 49 | Learner order history | `/learn/orders` | LRN | Spec §14 "visible to learner" | 6.3 · R4 | commerce |
+| 50 | Analytics dashboards and governed report builder | `/admin/analytics` | TA, BA, LM, CV (read) | Spec §15 saved reports; screen 29 covers basic reports only | 6.4–6.5 · R4 | — |
+| 51 | Export jobs | `/admin/exports` | Requester | Spec §11 "failed exports visible and retryable" | 5.3 · R3 | — |
+| 52 | Categories and tags | `/admin/settings/catalog` | TA | Phase 3.3; image 02 "Manage Categories" | 3.3 · R2 | — |
+| 53 | Departments and job roles | `/admin/settings/people` | TA | Spec §11 applicability by department/job role | 2.5 · R1 | D-047 |
+| 54 | Notification templates | `/admin/settings/notifications` | TA | Phase 5.6 tenant templates | 5.6 · R3 | — |
+| 55 | Support access session | `/platform/tenants/[id]/support` + banner | PSA | D-037 audited support access | 2.4 · R1 | D-037 |
+| 56 | System states: 403, 404, 500, session expired, tenant suspended | `/forbidden`, `not-found`, `error`, `/suspended` | All | Required states (spec §16) | 1.4 · 2.3 | — |
+| 57 | Dev-only design system gallery | `/design` (excluded from production builds) | Developers | Phase 1.2–1.3 gallery | 1.2 | — |
+| 58 | Branch compliance comparison | `/admin/reports/branch-comparison` | TA, LM, CV | Spec §11 "branch comparison" report | 5.2 · R3 | D-026 (grouping) |
+
+Compliance Viewer has no workspace of its own: it uses `/admin/*` with a read-only, scoped navigation.
 
 ## Platform Admin Dashboard
 - KPI row: tenant count/status, learners, published courses, completion rate, recurring revenue only when commerce/subscriptions are actually implemented.

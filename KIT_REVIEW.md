@@ -54,6 +54,9 @@ Markdown docs, `docs/VacheLearn_MVP_Implementation_Specification.docx` (24 secti
 
 ## Unchanged (still valid from v1.0)
 
+> **Superseded by Phase 0 (2026-10-20):** PRODUCT_REQUIREMENTS, ARCHITECTURE, DOMAIN_MODEL,
+> ROLE_PERMISSION_MATRIX and IMPLEMENTATION_PLAN were rewritten in Phase 0; the paragraph below describes the kit as shipped.
+
 `docs/PRODUCT_REQUIREMENTS.md`, `ARCHITECTURE.md`, `DOMAIN_MODEL.md`, `ROLE_PERMISSION_MATRIX.md`,
 `IMPLEMENTATION_PLAN.md`, `ACCEPTANCE_TESTS.md`, `MIGRATION_MAPPING.md`, `RUNBOOK.md`, `.env.example` — Phase 0 is
 instructed to expand them; they were not rewritten here to avoid pre-empting the Phase 0 discovery work.

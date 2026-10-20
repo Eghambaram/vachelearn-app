@@ -55,6 +55,12 @@ Tenant catalog (authenticated) with search/filters (category, level, format, lan
 public catalog only if D-021 enables it, exposing only public courses' marketing fields.
 **AC:** learners see only entitled courses; internal courses never appear publicly; filters + pagination bounded.
 
+### 3.8 Tenant branding
+Logo upload (via `StorageService`) and primary colour with a contrast guard (reject or map to an accessible variant
+when it fails 4.5:1 as text/button colour); used by the workspace shell, public catalog and certificate templates.
+**AC:** branding change is audited; another tenant's logo URL cannot be obtained; a colour failing contrast cannot be
+applied to text/buttons; demo branding fixtures removed for this screen.
+
 ## Exit gate
 
 Isolation specs for invitations, groups, courses, versions, assets, catalog · e2e: invite → accept → admin publishes
@@ -63,3 +69,4 @@ v1 → learner sees it · docs updated · `qa-verifier` pass.
 ## Change log
 
 - v2.0 — from MASTER_PROMPT v1 Phase 3 / spec sprint 2.
+- Phase 0 (2026-10-20) — added slice 3.8: certificates (spec §10 AC 3) and the public catalog need tenant branding, but no slice built it.
