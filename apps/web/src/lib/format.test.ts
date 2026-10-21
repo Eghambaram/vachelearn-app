@@ -1,4 +1,6 @@
 import {
+  calendarDateIn,
+  daysBetween,
   formatBasisPoints,
   formatBucketLabel,
   formatDate,
@@ -85,5 +87,19 @@ describe('formatBucketLabel', () => {
   it('labels weekly and monthly buckets without shifting the date', () => {
     expect(formatBucketLabel('2026-09-21', 'week')).toBe('21 Sept');
     expect(formatBucketLabel('2026-10-01', 'month')).toBe('Oct 2026');
+  });
+});
+
+describe('calendarDateIn / daysBetween', () => {
+  it('finds "today" in the given zone, across the UTC date line', () => {
+    // 20 Oct 2026 20:00 UTC is already 21 Oct in Kolkata but still 20 Oct in Chicago.
+    expect(calendarDateIn('2026-10-20T20:00:00Z', 'Asia/Kolkata')).toBe('2026-10-21');
+    expect(calendarDateIn('2026-10-20T20:00:00Z', 'America/Chicago')).toBe('2026-10-20');
+  });
+
+  it('counts whole calendar days, across month ends and DST changes', () => {
+    expect(daysBetween('2026-10-20', '2026-10-23')).toBe(3);
+    expect(daysBetween('2026-10-30', '2026-11-02')).toBe(3);
+    expect(daysBetween('2026-10-23', '2026-10-20')).toBe(-3);
   });
 });

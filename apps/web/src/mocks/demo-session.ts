@@ -12,6 +12,17 @@ export const DEMO_TENANTS: readonly TenantMembership[] = [
 
 export const DEFAULT_DEMO_ROLE: RoleKey = 'tenant_admin';
 
+/** Branches of every demo tenant (ids are per tenant in the fixtures). */
+export const DEMO_BRANCHES = [
+  { key: 'a1', name: 'Example Branch A1' },
+  { key: 'a2', name: 'Example Branch A2' },
+  { key: 'hq', name: 'Example Head Office' },
+] as const;
+
+export function demoBranchId(tenantId: string, key: string) {
+  return `${tenantId}-branch-${key}`;
+}
+
 /**
  * Permission keys per role, copied from docs/ROLE_PERMISSION_MATRIX.md for the keys navigation uses. The matrix is
  * the source of truth; Phase 2.4 implements it in the API and this table is deleted.
@@ -128,6 +139,11 @@ export function buildDemoSession(role: RoleKey, tenantId: string | null): Sessio
     user: { id: 'demo-user', displayName: 'Demo User', email: 'demo.user@example.invalid' },
     role,
     scopeLabel: SCOPE_LABEL[role],
+    // The demo Branch Admin manages Branch A1 only; other tenant roles are tenant-wide.
+    branchScope:
+      role === 'branch_admin' && activeTenantId
+        ? [{ id: demoBranchId(activeTenantId, 'a1'), name: DEMO_BRANCHES[0].name }]
+        : null,
     memberships,
     activeTenantId,
     permissions: DEMO_ROLE_PERMISSIONS[role],

@@ -31,3 +31,23 @@ export function demoError(status: 403 | 500): ApiResult<never> {
         error: { code: 'INTERNAL', message: 'Internal error', requestId: 'req_demo_0500' },
       };
 }
+
+/** 422 envelope with field errors, as the API's validation filter will produce it. */
+export function validationError(error: {
+  issues: readonly { path: readonly PropertyKey[]; code: string; message: string }[];
+}): ApiResult<never> {
+  return {
+    ok: false,
+    status: 422,
+    error: {
+      code: 'VALIDATION_FAILED',
+      message: 'Invalid request',
+      requestId: 'req_demo_0422',
+      fieldErrors: error.issues.map((issue) => ({
+        field: issue.path.map(String).join('.'),
+        code: issue.code,
+        message: issue.message,
+      })),
+    },
+  };
+}

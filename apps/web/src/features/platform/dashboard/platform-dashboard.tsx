@@ -6,9 +6,9 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatBasisPoints, formatNumber } from '@/lib/format';
 import { getMessages } from '@/lib/i18n';
-import { ActivityFeed } from './activity-feed';
+import { PlatformActivityFeed } from './activity-feed';
 import { EnrollmentTrendChart, TenantGrowthChart, TenantStatusChart } from './dashboard-charts';
-import { kpiChange } from './kpi-change';
+import { kpiChange } from '@/lib/kpi-change';
 import { RecentTenants } from './recent-tenants';
 
 // English only for now (D-028); becomes per-request when a second language is added.
@@ -23,7 +23,7 @@ const GRID = 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4';
  */
 export function PlatformDashboard({ data, demo }: { data: PlatformDashboardData; demo: boolean }) {
   const { kpis } = data;
-  const since = t.platformDashboard.changeSince[data.period];
+  const since = t.period.changeSince[data.period];
   return (
     <>
       <section className={GRID} aria-label={t.platformDashboard.title}>
@@ -76,7 +76,7 @@ export function PlatformDashboard({ data, demo }: { data: PlatformDashboardData;
       </div>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <TenantStatusChart data={data} demo={demo} />
-        <ActivityFeed events={data.activity} timeZone={data.timeZone} demo={demo} />
+        <PlatformActivityFeed events={data.activity} timeZone={data.timeZone} demo={demo} />
       </div>
       <RecentTenants tenants={data.recentTenants} timeZone={data.timeZone} demo={demo} />
     </>

@@ -183,12 +183,14 @@ export const en = {
     errorBody: 'Try again. If it keeps happening, contact support with the reference below.',
     home: 'Go to the home page',
   },
+  period: {
+    label: 'Period',
+    options: { '30d': 'Last 30 days', '90d': 'Last 90 days', '12m': 'Last 12 months' },
+    changeSince: { '30d': 'in 30 days', '90d': 'in 90 days', '12m': 'in 12 months' },
+  },
   platformDashboard: {
     title: 'Platform dashboard',
     description: (asOf: string) => `All tenants · as of ${asOf}`,
-    period: 'Period',
-    periods: { '30d': 'Last 30 days', '90d': 'Last 90 days', '12m': 'Last 12 months' },
-    changeSince: { '30d': 'in 30 days', '90d': 'in 90 days', '12m': 'in 12 months' },
     kpi: {
       tenants: 'Tenants',
       tenantsHelper: (active: number, suspended: number) =>
@@ -247,6 +249,61 @@ export const en = {
         'platform_user.invited': 'invited a platform user',
         'support_session.started': 'started a support session for',
       },
+    },
+  },
+  tenantDashboard: {
+    title: 'Dashboard',
+    scopeTenant: 'Scope: whole organisation',
+    scopeBranches: (names: string) => `Scope: ${names}`,
+    asOf: (asOf: string) => `as of ${asOf}`,
+    kpi: {
+      learners: 'Learners',
+      learnersHelper: 'Active learner memberships in scope',
+      courses: 'Published courses',
+      coursesHelper: 'Organisation-wide (courses are not branch-owned)',
+      completion: 'Completion rate',
+      completionHelper: (completed: string, enrolled: string) =>
+        `${completed} of ${enrolled} enrollments created in the period (cancelled excluded)`,
+      noRate: 'No enrollments',
+      overdue: 'Overdue enrollments',
+      overdueHelper: 'Past their due date and not completed, now',
+    },
+    progress: {
+      title: 'Learning progress',
+      description: 'Enrollments created and completed per bucket',
+      summary: (enrolled: string, completed: string) =>
+        `${enrolled} enrollments and ${completed} completions in the period.`,
+      enrollments: 'Enrollments',
+      completions: 'Completions (dashed)',
+      bucket: 'Period starting',
+    },
+    deadlines: {
+      title: 'Upcoming deadlines',
+      caption: 'Course due dates in the next 30 days',
+      course: 'Course',
+      due: 'Due',
+      learners: 'Learners outstanding',
+      inDays: (days: number) =>
+        days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`,
+      emptyTitle: 'Nothing due in the next 30 days',
+      viewAll: 'View assignments',
+    },
+    activity: {
+      title: 'Recent activity',
+      emptyTitle: 'No activity yet',
+      viewAll: 'View audit log',
+      actions: {
+        'membership.activated': 'joined',
+        'course.published': 'published',
+        'enrollment.completed': 'completed',
+        'certificate.issued': 'received a certificate for',
+        'group.created': 'created group',
+        'assignment.created': 'assigned',
+      },
+    },
+    compliance: {
+      title: 'Compliance status',
+      body: 'Compliance tracking arrives in Phase 5, once the due-soon and renewal rules (D‑018) are decided.',
     },
   },
   help: {

@@ -1,17 +1,15 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.5.1 done** (Platform Admin dashboard on demo data). Next: Slice
-1.5.2 (Tenant Admin dashboard).
+Phase 1 · Design system & UI foundations — **Slice 1.5.2 done** (Tenant Admin dashboard on demo data). Next: Slice
+1.5.3 (Course list + course builder steps).
 
 ## Last verified
-2026-10-20, Node v24.21.0, pnpm 12.8.1, on the final 1.5.1 tree:
-- `pnpm verify` → format OK · lint OK · typecheck OK · unit: contracts 7 passed, web 344 passed (19 files), 0 failed
-  · build OK
-- `pnpm test:e2e` → 132 passed (adds `platform-dashboard.spec.ts`: KPIs/charts/activity/recent tenants with Demo
-  badges, keyboard period filter, chart → table, loading/empty/error/forbidden states, axe, 360 px). Earlier run on a
-  loaded machine: 4 axe-scan timeouts at 30 s → global E2E timeout now 60 s
-- No `.skip`/`.only`/`.todo`. Last CI run: 39442225795 (commit 14b63ca) success; 1.5.1 not yet pushed
+2026-10-20, Node v24.21.0, pnpm 12.8.1, on the final 1.5.2 tree:
+- `pnpm verify` → format OK · lint OK · typecheck OK · unit: contracts 11 passed, web 362 passed, 0 failed · build OK
+- `pnpm test:e2e` → 144 passed (adds `tenant-dashboard.spec.ts`: TA whole-org vs BA Branch A1 scope, query tampering
+  cannot widen scope, permission-gated links, period + tenant switch recompute, all demo states, axe, 360 px)
+- No `.skip`/`.only`/`.todo`. CI: run 39457313572 (1.5.1, commit 880d3b8) success; 1.5.2 not yet pushed
 
 ## Done in this phase
 - 1.1 pnpm workspace, `apps/web` (Next 16.4.2, React 19.3.1, TS 6.0.3 strict), ESLint 10, Prettier, Vitest,
@@ -31,13 +29,18 @@ Phase 1 · Design system & UI foundations — **Slice 1.5.1 done** (Platform Adm
   rate, D-066 statuses) · `lib/api/client.ts` + `platform.ts` (contract-parsed demo layer, `?demoState=`) · `/platform`
   dashboard (KPIs, growth/enrollment/status charts with tables, activity, recent tenants; no revenue/industry) ·
   workspace catch-alls now `[...slug]` + root pages · charts without JS animation (commit 88e9422).
+- 1.5.2 `TenantDashboard` contract (scope in the response, none in the request) · `SessionView.branchScope` · tenant
+  fixture computed per branch then scoped (D-026) · `/admin` dashboard (learners, courses, completion, overdue D-054,
+  learning progress, deadlines, activity; compliance placeholder D-018) · shared PeriodFilter, ActivityFeed,
+  kpiChange, fixture time helpers · `calendarDateIn` / `daysBetween` · `tenant.*` metrics (uncommitted).
 
 ## In progress / uncommitted
-- Nothing.
+- Nothing (1.5.2 committed; see git log).
 
 ## Next step
-Push 1.5.1 (on owner request). Then Slice 1.5.2: Tenant Admin dashboard (ref 07 panel 1) at `/admin`,
-scope-aware for BA/LM/CV (D-026 pending: Proposed default), compliance tiles marked as arriving in Phase 5.
+Push 1.5.2 (on owner request). Then Slice 1.5.3: course list (`/admin/courses`, DataTable on demo data) and course
+builder steps Basic info → Content → Assessment → Settings → Publish (stepper; module/lesson tree with keyboard
+reordering), ref 02. Review step omitted unless D-022 says otherwise.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
@@ -57,6 +60,8 @@ scope-aware for BA/LM/CV (D-026 pending: Proposed default), compliance tiles mar
 - Radix modal DropdownMenu aria-hides the page (axe `aria-hidden-focus`): every DropdownMenu uses `modal={false}`.
 - Accessible names must contain the visible label (axe `label-content-name-mismatch`, WCAG 2.5.3): append screen-reader
   context instead of replacing the name with `aria-label`.
-- `pkill -f "<pattern>"` in a Bash call kills the calling shell when the pattern appears in the command itself.
+- Stopping a local `next start`: the process renames itself `next-server`, so `pkill -f "next start"` misses it (and a
+  plain pattern kills the calling shell). Kill the PID from `ss -ltnp | grep :3100`. A stale server on 3100 is
+  reused by Playwright (`reuseExistingServer`) and serves an old build.
 - `guard-secrets.mjs` blocks any shell command whose text names a real env file (even in commit messages or file
   content written via heredoc) — use the Write tool or reword; don't weaken the hook.

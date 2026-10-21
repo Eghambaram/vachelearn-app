@@ -113,3 +113,24 @@ export function formatBucketLabel(
     new Date(Date.UTC(Number(y), Number(m) - 1, Number(d))),
   );
 }
+
+/** The calendar date (YYYY-MM-DD) an instant falls on in a timezone, e.g. "today" for due-date arithmetic. */
+export function calendarDateIn(instant: Date | string, timeZone: string = DEFAULT_TIME_ZONE) {
+  // en-CA formats as YYYY-MM-DD.
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(instant));
+}
+
+/** Whole days from one calendar date to another (both YYYY-MM-DD; no timezone involved). */
+export function daysBetween(fromIsoDate: string, toIsoDate: string) {
+  const parse = (d: string) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+    if (!m) throw new Error(`Expected YYYY-MM-DD, got "${d}"`);
+    return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  };
+  return Math.round((parse(toIsoDate) - parse(fromIsoDate)) / 86_400_000);
+}

@@ -8,7 +8,7 @@ import {
   PlatformDashboard,
   PlatformDashboardSkeleton,
 } from '@/features/platform/dashboard/platform-dashboard';
-import { PeriodFilter } from '@/features/platform/dashboard/period-filter';
+import { PeriodFilter } from '@/components/period-filter';
 import { parseDemoState } from '@/lib/api/client';
 import { getPlatformDashboard } from '@/lib/api/platform';
 import { getSession } from '@/lib/api/session';

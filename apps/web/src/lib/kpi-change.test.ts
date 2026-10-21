@@ -1,4 +1,4 @@
-import { kpiChange } from './kpi-change';
+import { kpiChange } from '@/lib/kpi-change';
 
 describe('kpiChange', () => {
   it('describes growth as up and good by default', () => {

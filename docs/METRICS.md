@@ -22,5 +22,22 @@ Conventions: instants stored in UTC; buckets and "today" are cut in the **platfo
 | `platform.tenant_growth` | New tenants per bucket; non-archived total at bucket end | Tenants created in the bucket | — | — | Weekly buckets (Monday start) for 30/90 days; monthly for 12 months | Proposed |
 | `platform.enrollment_trend` | Enrollments and completions per bucket | Enrollments created in the bucket; enrollments completed in the bucket | — | Cancelled enrollments excluded from both | As tenant growth | Proposed |
 
+## Tenant metrics (Tenant Admin, Branch Admin, Learning Manager, Compliance Viewer — `report.read`)
+
+Scope comes from the session: the whole tenant, or the actor's branches. Branch scope follows D-026 (Proposed): a
+learner or enrollment is in scope if **any** of the learner's branches is in scope. Times and due dates use the
+tenant's default timezone.
+
+| Key | Definition | Numerator / value | Denominator | Filters and exclusions | Window | Status |
+|---|---|---|---|---|---|---|
+| `tenant.learners` | Learners in scope | Memberships with status `active` holding the Learner role, in scope | — | Invited/deactivated memberships excluded | Snapshot now; "previous" at period start | Proposed |
+| `tenant.published_courses` | Published courses | Courses of the tenant whose current version is `published` | — | Archived courses excluded; organisation-wide even for branch scope (courses are not branch-owned) | Snapshot; "previous" at period start | Proposed |
+| `tenant.completion_rate` | Completion rate (D-065) | `completed` enrollments in scope | Non-`cancelled` enrollments in scope | Enrollments created in the period | Selected period | **Confirmed** (D-065) |
+| `tenant.overdue_enrollments` | Overdue enrollments (D-054) | Enrollments in scope with `dueAt` before now (tenant zone), status not `completed`/`cancelled` | — | — | Now | Proposed (D-054) |
+| `tenant.learning_progress` | Enrollments and completions per bucket | As `platform.enrollment_trend`, in scope | — | Cancelled excluded | Weekly / monthly buckets | Proposed |
+| `tenant.upcoming_deadlines` | Next due dates | Per course + due date: learners in scope with that due date who have not completed | — | Due in the next 30 days, not yet overdue; soonest first; top 5 | Next 30 days | Proposed |
+
+Compliance metrics (compliance rate, due soon, overdue requirements) are defined in Phase 5 with D-018.
+
 Refresh: computed on request (no cache) until volume requires a materialised view (Phase 6.4 decides). Computed in:
 `apps/api` reporting module, `GET /api/v1/platform/dashboard` (Phase 2.2 counts; 6.4 trends and rates).

@@ -32,7 +32,7 @@ export function PeriodFilter({ value }: { value: DashboardPeriod }) {
 
   return (
     <div className="flex items-center gap-2" aria-busy={pending || undefined}>
-      <Label htmlFor={id}>{t.platformDashboard.period}</Label>
+      <Label htmlFor={id}>{t.period.label}</Label>
       <Select value={value} onValueChange={change}>
         <SelectTrigger id={id} className="h-9 w-40">
           <SelectValue />
@@ -40,7 +40,7 @@ export function PeriodFilter({ value }: { value: DashboardPeriod }) {
         <SelectContent>
           {DashboardPeriod.options.map((period) => (
             <SelectItem key={period} value={period}>
-              {t.platformDashboard.periods[period]}
+              {t.period.options[period]}
             </SelectItem>
           ))}
         </SelectContent>

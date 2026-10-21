@@ -339,6 +339,20 @@ error|forbidden` (only while demo workspaces are enabled). Data flows through `l
 the shared contract `@vachelearn/contracts` (`PlatformDashboard`). Charts render without animation (recharts' JS
 animation ignores `prefers-reduced-motion`, WCAG 2.3.3).
 
+## Tenant Admin Dashboard
+
+**Built in Slice 1.5.2 (demo data), `/admin`** for Tenant Admin, Branch Admin, Learning Manager and Compliance Viewer
+(UI spec #15 / #31, ref 07 panel 1). The scope line under the title ("Scope: whole organisation" / "Scope: Example
+Branch A1") comes from the response, which the server computes from the session (D-026 Proposed: any of the learner's
+branches); the request carries no tenant or branch. KPI cards: Learners (in scope), Published courses (organisation-
+wide), Completion rate (D-065), Overdue enrollments (D-054, replaces the reference's compliance rate); Learning
+progress chart (+ table); Upcoming deadlines (next 30 days, top 5, "in N days" in tenant calendar days); Recent
+activity (in scope; organisation-wide events such as course publishing appear for every scope). "View audit log" /
+"View assignments" links show only with `audit.read` / `assignment.create`. **Compliance** is a "not built yet" card
+until Phase 5 (D-018). **Omitted:** the reference's "Create" menu (nothing to create yet). Same period filter and
+`?demoState=` states as `/platform`. Contract `TenantDashboard` in `@vachelearn/contracts`; metrics `tenant.*` in
+`docs/METRICS.md`.
+
 ## Course Management & Builder
 - Course list: search, category, level, format, instructor, status, sorting, pagination.
 - Builder steps: Basic Information → Content Builder → Assessment → Settings → Publish.

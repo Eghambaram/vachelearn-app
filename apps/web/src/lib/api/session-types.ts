@@ -26,6 +26,11 @@ export type SessionView = {
   role: RoleKey;
   /** Human description of the role's scope, e.g. "Whole organisation" or "Example Branch A1". */
   scopeLabel: string;
+  /**
+   * Branches the role is limited to (Branch Admin, branch-scoped Learning Manager / Compliance Viewer), or null when
+   * it covers the whole tenant. Display only: the API applies the same scope to every query (D-026).
+   */
+  branchScope: readonly { id: string; name: string }[] | null;
   /** Tenants the user belongs to. Empty for platform staff (they have no implicit tenant access, D-037). */
   memberships: readonly TenantMembership[];
   activeTenantId: string | null;

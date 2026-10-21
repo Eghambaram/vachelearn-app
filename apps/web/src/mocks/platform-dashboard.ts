@@ -1,3 +1,4 @@
+import { buckets, DAY, periodStartOf, zonedMidnight } from './time';
 import type {
   DashboardPeriod,
   PlatformActivity,
@@ -12,9 +13,6 @@ import type {
  * like real data. Replaced by the API in Phases 2.2 / 6.4; definitions in docs/METRICS.md.
  */
 
-const DAY = 86_400_000;
-/** Asia/Kolkata has no DST, so a fixed offset is exact for the demo's bucket boundaries. */
-const IST_OFFSET = 330 * 60_000;
 export const PLATFORM_REPORTING_ZONE = 'Asia/Kolkata';
 
 const INDUSTRY_WORDS = [
@@ -47,38 +45,6 @@ function fixtureTenants(now: number): FixtureTenant[] {
       ).toISOString(),
     };
   });
-}
-
-/** Calendar date (YYYY-MM-DD) of an instant in the reporting zone. */
-function zonedDate(instant: number) {
-  return new Date(instant + IST_OFFSET).toISOString().slice(0, 10);
-}
-
-/** UTC instant of local midnight for a reporting-zone calendar date. */
-function zonedMidnight(isoDate: string) {
-  return Date.parse(`${isoDate}T00:00:00.000Z`) - IST_OFFSET;
-}
-
-function periodStartOf(period: DashboardPeriod, now: number) {
-  const days = period === '30d' ? 30 : period === '90d' ? 90 : 365;
-  return zonedMidnight(zonedDate(now - days * DAY));
-}
-
-/** Bucket start dates covering [start, now]: Mondays for weeks, 1st of month for months. */
-function buckets(granularity: 'week' | 'month', start: number, now: number) {
-  const starts: string[] = [];
-  const first = new Date(zonedDate(start) + 'T00:00:00.000Z');
-  if (granularity === 'week') {
-    first.setUTCDate(first.getUTCDate() - ((first.getUTCDay() + 6) % 7));
-  } else {
-    first.setUTCDate(1);
-  }
-  for (const d = first; zonedMidnight(d.toISOString().slice(0, 10)) <= now;) {
-    starts.push(d.toISOString().slice(0, 10));
-    if (granularity === 'week') d.setUTCDate(d.getUTCDate() + 7);
-    else d.setUTCMonth(d.getUTCMonth() + 1);
-  }
-  return starts;
 }
 
 function activityFor(tenants: FixtureTenant[], now: number): PlatformActivity[] {

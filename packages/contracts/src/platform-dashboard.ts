@@ -1,14 +1,20 @@
 import { z } from 'zod';
-import { BasisPoints, Count, IsoDate, IsoInstant } from './common';
+import {
+  BucketGranularity,
+  CompletionRate,
+  Count,
+  CountWithPrevious,
+  DashboardPeriod,
+  EnrollmentTrendPoint,
+  IsoDate,
+  IsoInstant,
+} from './common';
 
 /*
  * GET /api/v1/platform/dashboard?period=… — Platform Super Admin only (`analytics.read` at platform scope).
  * Every number is computed by the server from the metric definitions in docs/METRICS.md; the client only formats.
  * Revenue/subscription figures are absent until D-027 is decided; tenant industry until D-048.
  */
-
-export const DashboardPeriod = z.enum(['30d', '90d', '12m']);
-export type DashboardPeriod = z.infer<typeof DashboardPeriod>;
 
 export const PlatformDashboardQuery = z.object({
   period: DashboardPeriod.default('30d'),
@@ -18,9 +24,6 @@ export type PlatformDashboardQuery = z.infer<typeof PlatformDashboardQuery>;
 /** Domain-model tenant statuses (D-066). */
 export const TenantStatus = z.enum(['active', 'suspended', 'archived']);
 export type TenantStatus = z.infer<typeof TenantStatus>;
-
-/** A count now and at the start of the period, so the change can be shown. */
-const CountWithPrevious = z.object({ value: Count, previousValue: Count });
 
 export const PlatformKpis = z.object({
   /** Tenants that exist at `generatedAt`, by status. METRICS.md `platform.tenants`. */
@@ -33,13 +36,10 @@ export const PlatformKpis = z.object({
   learners: CountWithPrevious,
   /** Courses whose current version is published, in active tenants. METRICS.md `platform.published_courses`. */
   publishedCourses: CountWithPrevious,
-  /** D-065: completed ÷ non-cancelled enrollments created in the period. `rate` is null when `enrolled` is 0. */
-  completionRate: z.object({ completed: Count, enrolled: Count, rate: BasisPoints.nullable() }),
+  /** D-065, across active tenants. */
+  completionRate: CompletionRate,
 });
 export type PlatformKpis = z.infer<typeof PlatformKpis>;
-
-export const BucketGranularity = z.enum(['week', 'month']);
-export type BucketGranularity = z.infer<typeof BucketGranularity>;
 
 export const TenantGrowthPoint = z.object({
   /** First day of the bucket (Monday for weeks), in the platform reporting zone. */
@@ -47,12 +47,6 @@ export const TenantGrowthPoint = z.object({
   newTenants: Count,
   /** Non-archived tenants at the end of the bucket. */
   totalTenants: Count,
-});
-
-export const EnrollmentTrendPoint = z.object({
-  bucketStart: IsoDate,
-  enrollments: Count,
-  completions: Count,
 });
 
 export const RecentTenant = z.object({
