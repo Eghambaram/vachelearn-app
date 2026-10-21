@@ -1,15 +1,16 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.5.2 done** (Tenant Admin dashboard on demo data). Next: Slice
-1.5.3 (Course list + course builder steps).
+Phase 1 · Design system & UI foundations — **Slice 1.5.3a done** (course list). Next: Slice 1.5.3b (course builder,
+D-067: local edits under a "not saved" banner).
 
 ## Last verified
-2026-10-20, Node v24.21.0, pnpm 12.8.1, on the final 1.5.2 tree:
-- `pnpm verify` → format OK · lint OK · typecheck OK · unit: contracts 11 passed, web 362 passed, 0 failed · build OK
-- `pnpm test:e2e` → 144 passed (adds `tenant-dashboard.spec.ts`: TA whole-org vs BA Branch A1 scope, query tampering
-  cannot widen scope, permission-gated links, period + tenant switch recompute, all demo states, axe, 360 px)
-- No `.skip`/`.only`/`.todo`. CI: run 39457313572 (1.5.1, commit 880d3b8) success; 1.5.2 not yet pushed
+2026-10-21, Node v24.21.0, pnpm 12.8.1, on the final 1.5.3a tree:
+- `pnpm verify` → format OK · lint OK · typecheck OK · unit: contracts 18 passed, web 377 passed, 0 failed · build OK
+- `pnpm test:e2e` → 160 passed (adds `courses.spec.ts`: server-side filters/search/sort, cursor next/previous, page
+  size, read-only roles, demo states, axe, 360 px). Previous run: 4 failures = 2 test bugs (stale placeholder
+  expectation; row snapshot race) → fixed
+- No `.skip`/`.only`/`.todo`. CI: run 39535940356 (1.5.2, commit 7ad3348) success; 1.5.3a not yet pushed
 
 ## Done in this phase
 - 1.1 pnpm workspace, `apps/web` (Next 16.4.2, React 19.3.1, TS 6.0.3 strict), ESLint 10, Prettier, Vitest,
@@ -33,14 +34,18 @@ Phase 1 · Design system & UI foundations — **Slice 1.5.2 done** (Tenant Admin
   fixture computed per branch then scoped (D-026) · `/admin` dashboard (learners, courses, completion, overdue D-054,
   learning progress, deadlines, activity; compliance placeholder D-018) · shared PeriodFilter, ActivityFeed,
   kpiChange, fixture time helpers · `calendarDateIn` / `daysBetween` · `tenant.*` metrics (commit 1819242).
+- 1.5.3a contracts `cursorPage`, `ListLimit`, `Cursor`, course schemas (D-068 level/delivery) · `lib/api/courses.ts`
+  (query-bound opaque cursors, allowlisted sort, 422s) · `/admin/courses` server-driven list via server action ·
+  `previousCursor` in the pager · `formatDuration` (uncommitted).
 
 ## In progress / uncommitted
 - Nothing.
 
 ## Next step
-Push 1.5.2 (on owner request). Then Slice 1.5.3: course list (`/admin/courses`, DataTable on demo data) and course
-builder steps Basic info → Content → Assessment → Settings → Publish (stepper; module/lesson tree with keyboard
-reordering), ref 02. Review step omitted unless D-022 says otherwise.
+Slice 1.5.3b: course builder `/admin/courses/[id]/build/[step]` (Basic info → Content → Assessment → Settings →
+Publish), stepper, module/lesson tree with keyboard reordering, lesson types text/video/document/link/assessment,
+completion rules shown per D-041 (Proposed), local-only edits under the D-067 banner; "Create course" / "Open
+builder" for `course.create` / `course.update`. No review step (D-022), no SCORM (D-012).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
@@ -57,6 +62,7 @@ reordering), ref 02. Review step omitted unless D-022 says otherwise.
 - E2E is load-sensitive on WSL: full suite 6–10 min (CI < 1 min). Global per-test timeout 60 s, `components.spec.ts`
   90 s, because full-page axe scans of chart-heavy pages take 20–40 s under parallel load.
 - recharts animation is JS and ignores `prefers-reduced-motion`: set `isAnimationActive={false}` on every series.
+- Course list filters stack above the table on phones; a collapsible filter drawer is a candidate follow-up.
 - Radix modal DropdownMenu aria-hides the page (axe `aria-hidden-focus`): every DropdownMenu uses `modal={false}`.
 - Accessible names must contain the visible label (axe `label-content-name-mismatch`, WCAG 2.5.3): append screen-reader
   context instead of replacing the name with `aria-label`.

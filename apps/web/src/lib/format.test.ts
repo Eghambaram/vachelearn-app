@@ -3,6 +3,7 @@ import {
   daysBetween,
   formatBasisPoints,
   formatBucketLabel,
+  formatDuration,
   formatDate,
   formatDateOnly,
   formatDateTime,
@@ -101,5 +102,15 @@ describe('calendarDateIn / daysBetween', () => {
     expect(daysBetween('2026-10-20', '2026-10-23')).toBe(3);
     expect(daysBetween('2026-10-30', '2026-11-02')).toBe(3);
     expect(daysBetween('2026-10-23', '2026-10-20')).toBe(-3);
+  });
+});
+
+describe('formatDuration', () => {
+  it('shows minutes, hours, or both', () => {
+    expect(formatDuration(45)).toBe('45 min');
+    expect(formatDuration(60)).toBe('1 h');
+    expect(formatDuration(85)).toBe('1 h 25 min');
+    expect(formatDuration(0)).toBe('0 min');
+    expect(() => formatDuration(1.5)).toThrow();
   });
 });

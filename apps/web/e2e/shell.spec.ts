@@ -97,21 +97,22 @@ test.describe('workspace shell at 1440 px (Slice 1.4)', () => {
     page,
   }) => {
     await page.goto('/admin');
-    const courses = mainNav(page).getByRole('link', { name: 'Courses' });
+    // Groups is still a placeholder screen (slice 3.2), so this checks the D-061 page too.
+    const groups = mainNav(page).getByRole('link', { name: 'Groups' });
     for (
       let i = 0;
-      i < 30 && !(await courses.evaluate((el) => el === document.activeElement));
+      i < 30 && !(await groups.evaluate((el) => el === document.activeElement));
       i++
     ) {
       await page.keyboard.press('Tab');
     }
-    await expect(courses).toBeFocused();
+    await expect(groups).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/\/admin\/courses$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Courses' })).toBeVisible();
-    await expect(courses).toHaveAttribute('aria-current', 'page');
-    await expect(page.getByText('Planned for slice 1.5')).toBeVisible();
-    await expect(page).toHaveTitle('Courses · VacheLearn');
+    await expect(page).toHaveURL(/\/admin\/groups$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Groups' })).toBeVisible();
+    await expect(groups).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByText('Planned for slice 3.2')).toBeVisible();
+    await expect(page).toHaveTitle('Groups · VacheLearn');
   });
 
   test('demo role switcher changes workspace without JavaScript tricks (plain form)', async ({

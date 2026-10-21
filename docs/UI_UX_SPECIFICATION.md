@@ -361,6 +361,18 @@ until Phase 5 (D-018). **Omitted:** the reference's "Create" menu (nothing to cr
 - Draft changes persist; publish validates metadata/content/policy and creates immutable version.
 - Published version is never silently mutated.
 
+**Built in Slice 1.5.3a (demo data), `/admin/courses`:** server-driven DataTable for every role with `course.read`
+(courses are tenant-wide, so TA/BA/LM/CV see the same catalogue). Search (debounced, server-side), filters Status
+(Published / Draft / Archived — no "Under Review", D-022), Category, Level and Delivery mode (D-068 values), sort by
+title / duration / updated (default newest first), cursor pagination 25/50/100. Rows show title + category, status
+badge with published version and an "Unpublished changes" marker when a draft exists alongside the published version,
+level, delivery mode, modules · lessons, duration, last updated. First page is rendered on the server; later queries
+go through a server action that re-checks the session. Cursors are opaque and bound to their query and tenant
+(reusing one with other filters is a 422). Read-only until 1.5.3b adds "Create course" and "Open builder" for
+`course.create` / `course.update`. Empty: "No courses yet" vs "No courses match" when filters are applied.
+Contract `CourseListQuery` / `CourseListPage` in `@vachelearn/contracts`. Known gap: on phones the four filters stack
+above the table; a collapsible filter drawer is a candidate follow-up.
+
 ## Learner Dashboard
 - Summary of assigned, in progress, completed and overdue courses.
 - Continue Learning cards with progress and resume action.

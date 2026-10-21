@@ -54,6 +54,8 @@ export function useCursorPagination() {
     cursor: stack[stack.length - 1] ?? null,
     pageIndex: stack.length - 1,
     hasPrevious: stack.length > 1,
+    /** Cursor of the page before this one (`null` = first page); send it when going back. */
+    previousCursor: stack.length > 1 ? (stack[stack.length - 2] ?? null) : null,
     goNext: React.useCallback((cursor: string) => dispatch({ type: 'next', cursor }), []),
     goPrevious: React.useCallback(() => dispatch({ type: 'previous' }), []),
     reset: React.useCallback(() => dispatch({ type: 'reset' }), []),

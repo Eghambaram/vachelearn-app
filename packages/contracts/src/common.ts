@@ -40,6 +40,20 @@ export const CompletionRate = z.object({
   rate: BasisPoints.nullable(),
 });
 
+/** List `limit`: default 25, max 100 (CLAUDE.md list conventions). */
+export const ListLimit = z.coerce.number().int().min(1).max(100).default(25);
+
+/** Opaque cursor from a previous page. Bound to the query it came from; reusing it with other filters is a 422. */
+export const Cursor = z.string().min(1).max(512);
+
+/** List envelope: `{ data: [...], page: { nextCursor, limit } }`. */
+export function cursorPage<T extends z.ZodType>(item: T) {
+  return z.object({
+    data: z.array(item),
+    page: z.object({ nextCursor: Cursor.nullable(), limit: z.number().int().min(1).max(100) }),
+  });
+}
+
 /** Error envelope for every non-2xx response: 401, 403, 404 (hidden or missing), 409, 422, 5xx. */
 export const ApiErrorBody = z.object({
   error: z.object({

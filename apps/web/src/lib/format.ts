@@ -134,3 +134,12 @@ export function daysBetween(fromIsoDate: string, toIsoDate: string) {
   };
   return Math.round((parse(toIsoDate) - parse(fromIsoDate)) / 86_400_000);
 }
+
+/** "45 min", "1 h", "1 h 25 min" from whole minutes. */
+export function formatDuration(minutes: number) {
+  if (!Number.isInteger(minutes) || minutes < 0) throw new Error('Duration is whole minutes');
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}

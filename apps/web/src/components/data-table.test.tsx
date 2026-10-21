@@ -138,6 +138,7 @@ describe('Pagination with cursors', () => {
     return (
       <>
         <output>cursor={String(pager.cursor)}</output>
+        <output>previous={String(pager.previousCursor)}</output>
         <Pagination
           pageIndex={pager.pageIndex}
           hasPrevious={pager.hasPrevious}
@@ -160,11 +161,13 @@ describe('Pagination with cursors', () => {
     await user.click(next);
     await user.click(next);
     expect(screen.getByText('cursor=c3')).toBeInTheDocument();
+    expect(screen.getByText('previous=c2')).toBeInTheDocument();
     expect(screen.getByText('Page 3')).toBeInTheDocument();
     expect(next).toBeDisabled();
 
     await user.click(previous);
     expect(screen.getByText('cursor=c2')).toBeInTheDocument();
+    expect(screen.getByText('previous=null')).toBeInTheDocument();
     expect(screen.getByText('Page 2')).toBeInTheDocument();
   });
 });
