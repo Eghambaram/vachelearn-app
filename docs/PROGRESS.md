@@ -32,10 +32,10 @@ Phase 1 · Design system & UI foundations — **Slice 1.5.2 done** (Tenant Admin
 - 1.5.2 `TenantDashboard` contract (scope in the response, none in the request) · `SessionView.branchScope` · tenant
   fixture computed per branch then scoped (D-026) · `/admin` dashboard (learners, courses, completion, overdue D-054,
   learning progress, deadlines, activity; compliance placeholder D-018) · shared PeriodFilter, ActivityFeed,
-  kpiChange, fixture time helpers · `calendarDateIn` / `daysBetween` · `tenant.*` metrics (uncommitted).
+  kpiChange, fixture time helpers · `calendarDateIn` / `daysBetween` · `tenant.*` metrics (commit 1819242).
 
 ## In progress / uncommitted
-- Nothing (1.5.2 committed; see git log).
+- Nothing.
 
 ## Next step
 Push 1.5.2 (on owner request). Then Slice 1.5.3: course list (`/admin/courses`, DataTable on demo data) and course
