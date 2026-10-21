@@ -8,6 +8,9 @@ export default defineConfig({
   // (CI runs the whole suite in under a minute). Time only: no assertion is narrowed.
   timeout: 60_000,
   forbidOnly: !!process.env.CI,
+  // Locally (WSL, 7 GB RAM) four parallel Chromium + axe workers starve the machine and tests time out; two keep it
+  // stable. CI keeps Playwright's default.
+  workers: process.env.CI ? undefined : 2,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {

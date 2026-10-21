@@ -135,7 +135,8 @@ test.describe('workspace shell at 1440 px (Slice 1.4)', () => {
     const menu = page.getByRole('menu');
     await expect(menu).toBeVisible();
     await menu.getByRole('menuitemradio', { name: 'Example Logistics (Demo)' }).click();
-    await expect(page).toHaveURL(/\/admin$/);
+    // Server action + redirect + server render of the /admin dashboard: 5-6 s under parallel load on WSL.
+    await expect(page).toHaveURL(/\/admin$/, { timeout: 15_000 });
     await expect(
       page.getByRole('button', { name: /^Example Logistics \(Demo\).*switch workspace/ }),
     ).toBeVisible();

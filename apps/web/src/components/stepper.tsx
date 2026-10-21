@@ -23,6 +23,8 @@ type StepperProps = {
   'aria-label'?: string;
   /** Vertical always; horizontal from the `md` breakpoint when `responsive` (default). */
   orientation?: 'responsive' | 'vertical';
+  /** Makes each step label a button that jumps to that step (e.g. the course builder). Omit for display only. */
+  onStepSelect?: (index: number) => void;
   className?: string;
 };
 
@@ -39,12 +41,13 @@ const MARKER_CLASS: Record<StepState, string> = {
   error: 'border-danger bg-danger-subtle text-danger',
 };
 
-/** Progress through a multi-step flow (course builder, import wizard). Display only — it does not navigate. */
+/** Progress through a multi-step flow (course builder, import wizard). Navigates only when `onStepSelect` is given. */
 export function Stepper({
   steps,
   currentIndex,
   'aria-label': ariaLabel = t.stepper.label,
   orientation = 'responsive',
+  onStepSelect,
   className,
 }: StepperProps) {
   const responsive = orientation === 'responsive';
@@ -91,16 +94,31 @@ export function Stepper({
                 ) : null}
               </div>
               <div className="flex min-w-0 flex-col gap-0.5 pt-1 md:pt-0">
-                <span
-                  className={cn(
-                    'text-sm font-medium',
-                    state === 'upcoming' && 'text-muted-foreground',
-                    state === 'error' && 'text-danger',
-                  )}
-                >
-                  {step.label}
-                  <span className="sr-only"> ({t.stepper[state]})</span>
-                </span>
+                {onStepSelect ? (
+                  <button
+                    type="button"
+                    onClick={() => onStepSelect(index)}
+                    className={cn(
+                      '-mx-1 rounded-md px-1 text-left text-sm font-medium underline-offset-4 hover:underline',
+                      state === 'upcoming' && 'text-muted-foreground',
+                      state === 'error' && 'text-danger',
+                    )}
+                  >
+                    {step.label}
+                    <span className="sr-only"> ({t.stepper[state]})</span>
+                  </button>
+                ) : (
+                  <span
+                    className={cn(
+                      'text-sm font-medium',
+                      state === 'upcoming' && 'text-muted-foreground',
+                      state === 'error' && 'text-danger',
+                    )}
+                  >
+                    {step.label}
+                    <span className="sr-only"> ({t.stepper[state]})</span>
+                  </span>
+                )}
                 {step.description ? (
                   <span className="text-xs text-muted-foreground">{step.description}</span>
                 ) : null}

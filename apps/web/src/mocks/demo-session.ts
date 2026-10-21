@@ -24,7 +24,7 @@ export function demoBranchId(tenantId: string, key: string) {
 }
 
 /**
- * Permission keys per role, copied from docs/ROLE_PERMISSION_MATRIX.md for the keys navigation uses. The matrix is
+ * Permission keys per role, copied from docs/ROLE_PERMISSION_MATRIX.md for the keys the demo screens use. The matrix is
  * the source of truth; Phase 2.4 implements it in the API and this table is deleted.
  */
 export const DEMO_ROLE_PERMISSIONS: Record<RoleKey, readonly string[]> = {
@@ -36,6 +36,10 @@ export const DEMO_ROLE_PERMISSIONS: Record<RoleKey, readonly string[]> = {
     'platform.settings.read',
   ],
   tenant_admin: [
+    'course.create',
+    'course.update',
+    'course.publish',
+    'course.archive',
     'report.read',
     'branch.read',
     'user.read',

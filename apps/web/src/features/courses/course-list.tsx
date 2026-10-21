@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import type {
   Category,
   CourseLevel,
@@ -42,55 +43,72 @@ const STATUSES: readonly CourseStatus[] = ['published', 'draft', 'archived'];
 const LEVELS: readonly CourseLevel[] = ['beginner', 'intermediate', 'advanced'];
 const MODES: readonly DeliveryMode[] = ['online', 'classroom', 'blended'];
 
-const COLUMNS: DataTableColumn<CourseListItem>[] = [
-  {
-    id: 'title',
-    header: c.columns.course,
-    sortField: 'title',
-    className: 'whitespace-normal min-w-56',
-    cell: (row) => (
-      <div className="flex flex-col gap-0.5">
-        <span className="font-medium">{row.title}</span>
-        <span className="text-xs text-muted-foreground">
-          {row.category?.name ?? c.uncategorised}
-        </span>
-      </div>
-    ),
-  },
-  {
-    id: 'status',
-    header: c.columns.status,
-    cell: (row) => (
-      <div className="flex flex-col items-start gap-1">
-        <StatusBadge entity="course" status={row.status} />
-        {row.publishedVersion ? (
-          <span className="text-xs text-muted-foreground">{c.version(row.publishedVersion)}</span>
-        ) : null}
-        {row.hasUnpublishedChanges ? <Badge variant="outline">{c.unpublishedChanges}</Badge> : null}
-      </div>
-    ),
-  },
-  { id: 'level', header: c.columns.level, cell: (row) => c.levels[row.level] },
-  { id: 'delivery', header: c.columns.delivery, cell: (row) => c.deliveryModes[row.deliveryMode] },
-  {
-    id: 'structure',
-    header: c.columns.structure,
-    cell: (row) => c.structure(row.moduleCount, row.lessonCount),
-  },
-  {
-    id: 'duration',
-    header: c.columns.duration,
-    sortField: 'durationMinutes',
-    align: 'end',
-    cell: (row) => formatDuration(row.durationMinutes),
-  },
-  {
-    id: 'updated',
-    header: c.columns.updated,
-    sortField: 'updatedAt',
-    cell: (row) => <time dateTime={row.updatedAt}>{formatDate(row.updatedAt)}</time>,
-  },
-];
+function columnsFor(canEdit: boolean): DataTableColumn<CourseListItem>[] {
+  return [
+    {
+      id: 'title',
+      header: c.columns.course,
+      sortField: 'title',
+      className: 'whitespace-normal min-w-56',
+      cell: (row) => (
+        <div className="flex flex-col gap-0.5">
+          {canEdit && row.status !== 'archived' ? (
+            <Link
+              href={`/admin/courses/${row.id}/build`}
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              {row.title}
+            </Link>
+          ) : (
+            <span className="font-medium">{row.title}</span>
+          )}
+          <span className="text-xs text-muted-foreground">
+            {row.category?.name ?? c.uncategorised}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: 'status',
+      header: c.columns.status,
+      cell: (row) => (
+        <div className="flex flex-col items-start gap-1">
+          <StatusBadge entity="course" status={row.status} />
+          {row.publishedVersion ? (
+            <span className="text-xs text-muted-foreground">{c.version(row.publishedVersion)}</span>
+          ) : null}
+          {row.hasUnpublishedChanges ? (
+            <Badge variant="outline">{c.unpublishedChanges}</Badge>
+          ) : null}
+        </div>
+      ),
+    },
+    { id: 'level', header: c.columns.level, cell: (row) => c.levels[row.level] },
+    {
+      id: 'delivery',
+      header: c.columns.delivery,
+      cell: (row) => c.deliveryModes[row.deliveryMode],
+    },
+    {
+      id: 'structure',
+      header: c.columns.structure,
+      cell: (row) => c.structure(row.moduleCount, row.lessonCount),
+    },
+    {
+      id: 'duration',
+      header: c.columns.duration,
+      sortField: 'durationMinutes',
+      align: 'end',
+      cell: (row) => formatDuration(row.durationMinutes),
+    },
+    {
+      id: 'updated',
+      header: c.columns.updated,
+      sortField: 'updatedAt',
+      cell: (row) => <time dateTime={row.updatedAt}>{formatDate(row.updatedAt)}</time>,
+    },
+  ];
+}
 
 type Filters = {
   search: string;
@@ -116,11 +134,15 @@ export function CourseList({
   initial,
   categories,
   demoState,
+  canEdit,
 }: {
   initial: ApiResult<CourseListPage> | null;
   categories: readonly Category[];
   demoState: DemoState;
+  /** `course.update`: titles link to the builder. The builder re-checks on the server. */
+  canEdit: boolean;
 }) {
+  const columns = React.useMemo(() => columnsFor(canEdit), [canEdit]);
   const [filters, setFilters] = React.useState<Filters>(NO_FILTERS);
   const [sort, setSort] = React.useState<SortState>({ field: 'updatedAt', direction: 'desc' });
   const [limit, setLimit] = React.useState<PageLimit>(DEFAULT_PAGE_LIMIT);
@@ -171,7 +193,7 @@ export function CourseList({
   return (
     <DataTable<CourseListItem>
       caption={c.caption}
-      columns={COLUMNS}
+      columns={columns}
       rows={rows}
       getRowId={(row) => row.id}
       getRowLabel={(row) => row.title}

@@ -373,6 +373,22 @@ go through a server action that re-checks the session. Cursors are opaque and bo
 Contract `CourseListQuery` / `CourseListPage` in `@vachelearn/contracts`. Known gap: on phones the four filters stack
 above the table; a collapsible filter drawer is a candidate follow-up.
 
+**Built in Slice 1.5.3b (demo data), `/admin/courses/[id]/build?step=…` (`new` for a new course):** for
+`course.update` / `course.create` only (others: permission-denied; a course of another tenant: 404; archived: read-only
+notice). "Create course" on the list and title links appear only for those roles. Persistent banner "Demo — changes you
+make here are not saved" (D-067); "Save draft" and "Publish version N" answer "Not yet connected … Nothing was saved",
+never a success message. Steps (clickable stepper + Back/Continue; step in the URL, focus moves to the step heading):
+**Basic information** (title, summary, description, category, level, delivery mode, language fixed to English,
+objectives one per line, audience, prerequisites); **Content** (modules and lessons with visible labels: title, type,
+minutes, Required; Move up / Move down buttons keep focus on the moved item and announce "moved to position N of M";
+remove via ConfirmDialog stating the published version is unaffected; each lesson shows its D-041 completion rule);
+**Assessment** (choose an existing assessment or none; building assessments is Phase 4.4); **Settings** (visibility
+assigned-only or organisation catalogue — no public option until D-021; self-enrollment off by default, D-046;
+completion policy = all required lessons + optional passing assessment, D-016); **Publish** (checklist from the shared
+`publishIssues` rule with "Go to <step>" links; failing steps turn red in the stepper only on this step; version note
+per D-011). Drag-and-drop reordering and moving lessons between modules are not built (buttons only). Contract
+`CourseDraft`, `publishIssues`, `nextVersionNumber`, `LESSON_COMPLETION_RULE` in `@vachelearn/contracts`.
+
 ## Learner Dashboard
 - Summary of assigned, in progress, completed and overdue courses.
 - Continue Learning cards with progress and resume action.

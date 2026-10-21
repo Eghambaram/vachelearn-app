@@ -1,16 +1,17 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.5.3a done** (course list). Next: Slice 1.5.3b (course builder,
-D-067: local edits under a "not saved" banner).
+Phase 1 · Design system & UI foundations — **Slice 1.5.3b done** (course builder); Slice 1.5.3 complete. Next: Slice
+1.5.4 (Learner dashboard, ref 03).
 
 ## Last verified
-2026-10-21, Node v24.21.0, pnpm 12.8.1, on the final 1.5.3a tree:
-- `pnpm verify` → format OK · lint OK · typecheck OK · unit: contracts 18 passed, web 377 passed, 0 failed · build OK
-- `pnpm test:e2e` → 160 passed (adds `courses.spec.ts`: server-side filters/search/sort, cursor next/previous, page
-  size, read-only roles, demo states, axe, 360 px). Previous run: 4 failures = 2 test bugs (stale placeholder
-  expectation; row snapshot race) → fixed
-- No `.skip`/`.only`/`.todo`. CI: run 39535940356 (1.5.2, commit 7ad3348) success; 1.5.3a not yet pushed
+2026-10-21, Node v24.21.0, pnpm 12.8.1, on the final 1.5.3b tree:
+- `pnpm verify` → format OK · lint OK · typecheck OK · unit: contracts 23 passed, web 402 passed, 0 failed · build OK
+- `pnpm test:e2e` → 178 passed in 5.6 min (adds `course-builder.spec.ts`: entry points per role, steps keep edits,
+  keyboard reorder + announcement, add/remove with confirmation, publish checklist + "Not yet connected", 404 for
+  another tenant's course, archived read-only, axe, 360 px). Earlier full runs on this tree failed only by timeout
+  under load (1 + 3 + 1 tests) → local workers capped at 2, switcher redirect 15 s, builder spec 90 s
+- No `.skip`/`.only`/`.todo`. CI: run 39535940356 (1.5.2) success; 1.5.3a/b not yet pushed
 
 ## Done in this phase
 - 1.1 pnpm workspace, `apps/web` (Next 16.4.2, React 19.3.1, TS 6.0.3 strict), ESLint 10, Prettier, Vitest,
@@ -37,15 +38,18 @@ D-067: local edits under a "not saved" banner).
 - 1.5.3a contracts `cursorPage`, `ListLimit`, `Cursor`, course schemas (D-068 level/delivery) · `lib/api/courses.ts`
   (query-bound opaque cursors, allowlisted sort, 422s) · `/admin/courses` server-driven list via server action ·
   `previousCursor` in the pager · `formatDuration` (commit c6f1220).
+- 1.5.3b contracts `CourseDraft`, shared `publishIssues` / `nextVersionNumber` / `LESSON_COMPLETION_RULE` (D-041) ·
+  `lib/api/course-draft.ts` (404 cross-tenant, 403 without edit keys, archived flag) · draft reducer · builder at
+  `/admin/courses/[id]/build?step=` (5 steps, local edits under D-067 banner, keyboard reorder) · Stepper
+  `onStepSelect` · "Create course" / title links for editors (uncommitted).
 
 ## In progress / uncommitted
 - Nothing.
 
 ## Next step
-Slice 1.5.3b: course builder `/admin/courses/[id]/build/[step]` (Basic info → Content → Assessment → Settings →
-Publish), stepper, module/lesson tree with keyboard reordering, lesson types text/video/document/link/assessment,
-completion rules shown per D-041 (Proposed), local-only edits under the D-067 banner; "Create course" / "Open
-builder" for `course.create` / `course.update`. No review step (D-022), no SCORM (D-012).
+Push 1.5.3a + 1.5.3b (on owner request). Then Slice 1.5.4: Learner dashboard `/learn` (ref 03) on demo data —
+continue learning, my enrollments with statuses (D-054 overdue), upcoming deadlines, recent certificates; omit
+achievements, announcements, ratings, recommendations and "learning plan" (D-043, D-025); sticky "Continue" on phones.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
@@ -59,8 +63,9 @@ builder" for `course.create` / `course.update`. No review step (D-022), no SCORM
   run from `apps/web` (root ignore file not applied) reformat it —
   restore with `git checkout` after adding components.
 - Proposed status tones (UI spec §Status tones) await owner review in the gallery.
-- E2E is load-sensitive on WSL: full suite 6–10 min (CI < 1 min). Global per-test timeout 60 s, `components.spec.ts`
-  90 s, because full-page axe scans of chart-heavy pages take 20–40 s under parallel load.
+- E2E is load-sensitive on WSL (8 cores, 7 GB RAM): local workers capped at 2 (CI default); full suite ~6 min locally,
+  < 1 min on CI. Per-test timeout 60 s; `components.spec.ts` and `course-builder.spec.ts` 90 s (axe on very large
+  pages). Builder: drag-and-drop and moving lessons between modules not built (buttons only).
 - recharts animation is JS and ignores `prefers-reduced-motion`: set `isAnimationActive={false}` on every series.
 - Course list filters stack above the table on phones; a collapsible filter drawer is a candidate follow-up.
 - Radix modal DropdownMenu aria-hides the page (axe `aria-hidden-focus`): every DropdownMenu uses `modal={false}`.

@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { DemoBadge } from '@/components/demo-badge';
 import { PageHeader } from '@/components/page-header';
 import { PermissionDenied } from '@/components/permission-denied';
+import { Button } from '@/components/ui/button';
 import { CourseList } from '@/features/courses/course-list';
 import { parseDemoState } from '@/lib/api/client';
 import { listCategories, listCourses } from '@/lib/api/courses';
@@ -32,11 +35,23 @@ export default async function CoursesPage({ searchParams }: Props) {
         title={t.courses.title}
         description={t.courses.description}
         meta={session.demo ? <DemoBadge /> : null}
+        actions={
+          // Shown only to roles that may create courses; the API checks `course.create` again.
+          session.permissions.includes('course.create') ? (
+            <Button asChild>
+              <Link href="/admin/courses/new/build">
+                <Plus aria-hidden="true" />
+                {t.builder.createCourse}
+              </Link>
+            </Button>
+          ) : null
+        }
       />
       <CourseList
         initial={initial}
         categories={categories.ok ? categories.data.data : []}
         demoState={demoState}
+        canEdit={session.permissions.includes('course.update')}
       />
     </>
   );
