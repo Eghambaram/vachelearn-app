@@ -36,7 +36,7 @@ D-067: local edits under a "not saved" banner).
   kpiChange, fixture time helpers · `calendarDateIn` / `daysBetween` · `tenant.*` metrics (commit 1819242).
 - 1.5.3a contracts `cursorPage`, `ListLimit`, `Cursor`, course schemas (D-068 level/delivery) · `lib/api/courses.ts`
   (query-bound opaque cursors, allowlisted sort, 422s) · `/admin/courses` server-driven list via server action ·
-  `previousCursor` in the pager · `formatDuration` (uncommitted).
+  `previousCursor` in the pager · `formatDuration` (commit c6f1220).
 
 ## In progress / uncommitted
 - Nothing.
