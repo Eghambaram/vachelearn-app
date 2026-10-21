@@ -41,7 +41,7 @@ Phase 1 · Design system & UI foundations — **Slice 1.5.3b done** (course buil
 - 1.5.3b contracts `CourseDraft`, shared `publishIssues` / `nextVersionNumber` / `LESSON_COMPLETION_RULE` (D-041) ·
   `lib/api/course-draft.ts` (404 cross-tenant, 403 without edit keys, archived flag) · draft reducer · builder at
   `/admin/courses/[id]/build?step=` (5 steps, local edits under D-067 banner, keyboard reorder) · Stepper
-  `onStepSelect` · "Create course" / title links for editors (uncommitted).
+  `onStepSelect` · "Create course" / title links for editors (commit bfbeb43).
 
 ## In progress / uncommitted
 - Nothing.
