@@ -46,7 +46,7 @@ player, ref 13).
 - 1.5.4 contracts `LearnerDashboard`, shared `enrollmentDisplayStatus` (D-054, boundary tests Kolkata/Chicago) ·
   `mocks/enrollments.ts` (includes another learner) · `lib/api/learner.ts` (own records only, 404 for others) ·
   `/learn` dashboard + ownership-checked `/learn/courses/[enrollmentId]` stub · ProgressBar · KpiCard header wraps ·
-  `learner.*` metrics (uncommitted).
+  `learner.*` metrics (commit 1a09fcd).
 
 ## In progress / uncommitted
 - Nothing.
