@@ -1,7 +1,7 @@
 {
   "name": "vachelearn",
   "private": true,
-  "description": "VacheLearn — multi-tenant industrial learning and workforce-readiness platform",
+  "description": "VacheLearn \u2014 multi-tenant industrial learning and workforce-readiness platform",
   "packageManager": "pnpm@12.8.1",
   "engines": {
     "node": ">=24.15.0",
@@ -16,7 +16,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "test:e2e": "pnpm --filter web test:e2e",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm check:ignored-source && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "check:ignored-source": "node scripts/check-ignored-source.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

@@ -1,11 +1,19 @@
 # dependencies & build output
 node_modules/
 .pnpm-store/
-dist/
-build/
+# Anchored to the repo, app and package roots: a bare `build/` once ignored the source route
+# apps/web/src/app/(tenant)/admin/courses/[courseId]/build/ (see `check:ignored-source`).
+/dist/
+/apps/*/dist/
+/packages/*/dist/
+/build/
+/apps/*/build/
+/packages/*/build/
 .next/
-out/
-coverage/
+/apps/*/out/
+/coverage/
+/apps/*/coverage/
+/packages/*/coverage/
 playwright-report/
 test-results/
 *.tsbuildinfo
