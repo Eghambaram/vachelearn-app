@@ -1,17 +1,18 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.5.3b done** (course builder); Slice 1.5.3 complete. Next: Slice
-1.5.4 (Learner dashboard, ref 03).
+Phase 1 · Design system & UI foundations — **Slice 1.5.4 done** (Learner dashboard). Next: Slice 1.5.5 (course
+player, ref 13).
 
 ## Last verified
-2026-10-21, Node v24.21.0, pnpm 12.8.1, on the final 1.5.3b tree:
-- `pnpm verify` → format OK · lint OK · typecheck OK · unit: contracts 23 passed, web 402 passed, 0 failed · build OK
-- `pnpm test:e2e` → 178 passed in 5.6 min (adds `course-builder.spec.ts`: entry points per role, steps keep edits,
-  keyboard reorder + announcement, add/remove with confirmation, publish checklist + "Not yet connected", 404 for
-  another tenant's course, archived read-only, axe, 360 px). Earlier full runs on this tree failed only by timeout
-  under load (1 + 3 + 1 tests) → local workers capped at 2, switcher redirect 15 s, builder spec 90 s
-- No `.skip`/`.only`/`.todo`. CI: run 39535940356 (1.5.2) success; 1.5.3a/b not yet pushed
+2026-10-22, Node v24.21.0, pnpm 12.8.1, on the final 1.5.4 tree:
+- `pnpm verify` → check:ignored-source OK · format OK · lint OK · typecheck OK · unit: contracts 27 passed, web 415
+  passed, 0 failed · build OK
+- `pnpm test:e2e` → 186 passed in 13.3 min (adds `learner-dashboard.spec.ts`: own records only, progress + overdue
+  in words, completion vs certificate, Continue → own enrollment / 404 for someone else's, demo states, 360 px
+  nothing clipped + sticky Continue, axe)
+- CI: run 39731918061 (commit b9ad2b8) success, 178 E2E passed. Run 39729961568 (1.5.3 push) **failed**: the builder
+  route was git-ignored and missing from the commit → fixed in b9ad2b8. 1.5.4 not yet pushed
 
 ## Done in this phase
 - 1.1 pnpm workspace, `apps/web` (Next 16.4.2, React 19.3.1, TS 6.0.3 strict), ESLint 10, Prettier, Vitest,
@@ -41,15 +42,19 @@ Phase 1 · Design system & UI foundations — **Slice 1.5.3b done** (course buil
 - 1.5.3b contracts `CourseDraft`, shared `publishIssues` / `nextVersionNumber` / `LESSON_COMPLETION_RULE` (D-041) ·
   `lib/api/course-draft.ts` (404 cross-tenant, 403 without edit keys, archived flag) · draft reducer · builder at
   `/admin/courses/[id]/build?step=` (5 steps, local edits under D-067 banner, keyboard reorder) · Stepper
-  `onStepSelect` · "Create course" / title links for editors (commit bfbeb43).
+  `onStepSelect` · "Create course" / title links for editors (commit bfbeb43; route page only in b9ad2b8).
+- 1.5.4 contracts `LearnerDashboard`, shared `enrollmentDisplayStatus` (D-054, boundary tests Kolkata/Chicago) ·
+  `mocks/enrollments.ts` (includes another learner) · `lib/api/learner.ts` (own records only, 404 for others) ·
+  `/learn` dashboard + ownership-checked `/learn/courses/[enrollmentId]` stub · ProgressBar · KpiCard header wraps ·
+  `learner.*` metrics (uncommitted).
 
 ## In progress / uncommitted
 - Nothing.
 
 ## Next step
-Push 1.5.3a + 1.5.3b (on owner request). Then Slice 1.5.4: Learner dashboard `/learn` (ref 03) on demo data —
-continue learning, my enrollments with statuses (D-054 overdue), upcoming deadlines, recent certificates; omit
-achievements, announcements, ratings, recommendations and "learning plan" (D-043, D-025); sticky "Continue" on phones.
+Push 1.5.4 (on owner request). Then Slice 1.5.5: course player `/learn/courses/[enrollmentId]` (ref 13) replacing the
+stub — lesson tree, player area per lesson type (mock video provider, document, text, link), prev/next, progress from
+the server, "Mark complete" only where D-041 allows; Notes/Discussion/Resources omitted (D-043).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
@@ -74,5 +79,7 @@ achievements, announcements, ratings, recommendations and "learning plan" (D-043
 - Stopping a local `next start`: the process renames itself `next-server`, so `pkill -f "next start"` misses it (and a
   plain pattern kills the calling shell). Kill the PID from `ss -ltnp | grep :3100`. A stale server on 3100 is
   reused by Playwright (`reuseExistingServer`) and serves an old build.
+- `.gitignore` patterns are anchored (`/build/`, `/apps/*/build/` …): a bare `build/` hid the builder route from git.
+  `pnpm check:ignored-source` (first step of verify) fails if any source file under apps/ or packages/ is ignored.
 - `guard-secrets.mjs` blocks any shell command whose text names a real env file (even in commit messages or file
   content written via heredoc) — use the Write tool or reword; don't weaken the hook.

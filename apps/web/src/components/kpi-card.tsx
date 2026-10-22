@@ -67,7 +67,8 @@ export function KpiCard({
       className={cn('gap-2 px-(--card-spacing)', className)}
     >
       <div className="flex flex-col gap-2">
-        <div className="flex items-start justify-between gap-2">
+        {/* Wraps on narrow cards so the Demo badge and icon never get clipped. */}
+        <div className="flex flex-wrap items-start justify-between gap-2">
           <p id={labelId} className="text-sm font-medium text-muted-foreground">
             {label}
           </p>

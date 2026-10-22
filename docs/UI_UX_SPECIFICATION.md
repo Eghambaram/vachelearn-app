@@ -397,6 +397,18 @@ per D-011). Drag-and-drop reordering and moving lessons between modules are not 
 - Recommended courses only when eligibility and catalog policy permit.
 - Announcements and achievements are optional modules and must not block core learning.
 
+**Built in Slice 1.5.4 (demo data), `/learn`:** own records only (`enrollment.read` scope O; the session decides
+whose — the demo fixture includes another learner's enrollments and tests prove they never appear). "Welcome back,
+<name>"; summary cards Not started / In progress / Overdue / Completed (overdue derived per D-054 with the shared
+`enrollmentDisplayStatus`; due date met through the end of the day in the tenant zone); Continue learning cards
+(pinned version, `progressbar` + "N% of required lessons done" per D-016, next lesson, due/overdue in words,
+"Continue <course>"); Upcoming deadlines (overdue + next 30 days); Recently completed, showing completion and
+certificate issuance separately ("No certificate for this course"). Phones: sticky "Continue <course>" via
+`StickyActions`. "Continue" goes to `/learn/courses/[enrollmentId]`, an ownership-checked stub until the player
+(1.5.5): another learner's enrollment id is a 404. **Omitted until decided/built:** recommendations (D-021/D-046),
+achievements and announcements (D-043), learning plans (D-025), instructor-led sessions (classroom flag). Contract
+`LearnerDashboard`, metrics `learner.*` in `docs/METRICS.md`.
+
 ## Course Learning Player
 - Left lesson/module navigation with completion indicators and durations.
 - Main content player for video, text or documents.

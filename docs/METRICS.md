@@ -39,5 +39,14 @@ tenant's default timezone.
 
 Compliance metrics (compliance rate, due soon, overdue requirements) are defined in Phase 5 with D-018.
 
+## Learner metrics (own records only — `enrollment.read` scope O)
+
+| Key | Definition | Value | Filters and exclusions | Window | Status |
+|---|---|---|---|---|---|
+| `learner.progress_percent` | Progress through one enrollment | Required lessons completed ÷ required lessons in the **enrolled version**, as an integer percent (rounded down) | Optional lessons do not count (D-016) | Now | Proposed (D-016) |
+| `learner.display_status` | Status shown for an enrollment | Stored lifecycle, except **overdue** when not completed/cancelled and the due date is before today in the tenant zone; the due date itself is not overdue (`enrollmentDisplayStatus`) | — | Now | Proposed (D-054) |
+| `learner.summary` | Own enrollments by display status | Counts of not started / in progress / overdue / completed | Cancelled excluded | Now | Proposed |
+| `learner.deadlines` | Upcoming and missed due dates | Not completed, due within 30 days or overdue; soonest first; top 5 | Cancelled excluded | Next 30 days + overdue | Proposed |
+
 Refresh: computed on request (no cache) until volume requires a materialised view (Phase 6.4 decides). Computed in:
 `apps/api` reporting module, `GET /api/v1/platform/dashboard` (Phase 2.2 counts; 6.4 trends and rates).
