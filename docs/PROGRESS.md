@@ -1,8 +1,8 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.5.6 done, not committed** (Assessment taking + result). Next:
-commit, then Slice 1.5.7 (certificate view + public verification, ref 05 panel 7).
+Phase 1 · Design system & UI foundations — **Slice 1.5.6 done** (Assessment taking + result, commit cb5a4d8). Next:
+Slice 1.5.7 (certificate view + public verification, ref 05 panel 7).
 
 ## Last verified
 2026-10-23, Node v24.21.0, pnpm 12.8.1, on the final 1.5.6 tree:
@@ -29,17 +29,15 @@ Detail per slice: `docs/progress-log/2026-10.md`.
   `scoreAttempt` (D-042, D-072) / `answerIssues` / `canStartAttempt` (D-073) · `mocks/attempts.ts` (key server-side)
   · `getAttempt` (own, non-cancelled; 404 in every demo state; expired open attempt graded on read, D-055) ·
   `/learn/attempts/[id]` taking (timer, navigator, review, submit not connected, D-071) and result (score only, D-023;
-  history; retake only after a fail) · player lists attempts · client-boundary guard test · `formatPercentTenths`.
+  history; retake only after a fail) · player lists attempts · client-boundary guard test (commit cb5a4d8).
 
 ## In progress / uncommitted
-- Slice 1.5.6, complete and verified but uncommitted: contracts `assessment-attempt.ts`, `features/learn/attempt/`,
-  `/learn/attempts/[attemptId]`, `mocks/attempts.ts`, learner API + tests, `e2e/attempts.spec.ts`, docs (D-023
-  Confirmed, D-071–D-073, METRICS, UI spec #42, DOMAIN_MODEL attempt/answer rules).
+- Nothing.
 
 ## Next step
-Commit 1.5.6 (on owner request). Then Slice 1.5.7: certificate view `/learn/certificates` (own awards, completion vs
+Slice 1.5.7: certificate view `/learn/certificates` (own awards, completion vs
 certificate, Download PDF not connected) and public `/verify/[verificationId]` (opaque id, minimal data per D-017,
-learner name only if the owner agrees; revoked/expired states). Check D-017 with the owner first.
+learner name only if the owner agrees; revoked/expired states). D-017 answered 2026-10-23 (masked name, revoked + date only, on-screen preview).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
