@@ -1,8 +1,8 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.5.5 done, not committed** (Course player). Next: commit, then
-Slice 1.5.6 (assessment taking + result, ref 05).
+Phase 1 · Design system & UI foundations — **Slice 1.5.5 done** (Course player, commit 108952f). Next: Slice 1.5.6
+(assessment taking + result, ref 05).
 
 ## Last verified
 2026-10-23, Node v24.21.0, pnpm 12.8.1, on the final 1.5.5 tree:
@@ -41,15 +41,13 @@ Detail per slice: `docs/progress-log/2026-10.md`.
   (D-070) · `mocks/course-player.ts` (5×5 outline; dashboard progress + next lesson now derived from it) ·
   `getCoursePlayer` / `getLessonView` (own enrollment, pinned-version lessons, 404 in every demo state) · `/learn/
   courses/[id]` → resume redirect · `/lessons/[lessonId]` player (tree, per-type panels, prev/next, sticky on phones,
-  completion actions "Not yet connected", D-069) · `formatClock`, `formatFileSize` · isolation audit: 2 Low fixed.
+  completion actions "Not yet connected", D-069) · `formatClock`, `formatFileSize` · isolation audit: 2 Low fixed (commit 108952f).
 
 ## In progress / uncommitted
-- Slice 1.5.5, complete and verified but uncommitted: contracts `course-player.ts`, `apps/web/src/features/learn/player/`,
-  lesson route, `mocks/course-player.ts`, learner API + tests, `e2e/course-player.spec.ts`, docs (D-069, D-070,
-  METRICS, UI spec #41).
+- Nothing.
 
 ## Next step
-Commit 1.5.5 (on owner request). Then Slice 1.5.6: assessment taking + result `/learn/attempts/[attemptId]` (ref 05) —
+Slice 1.5.6: assessment taking + result `/learn/attempts/[attemptId]` (ref 05) —
 question flow, timer from the server (D-055), submit, result with pass/fail and score computed server-side (D-042),
 completion vs pass shown separately; wire the player's assessment lesson to it.
 
