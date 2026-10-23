@@ -6,6 +6,7 @@ import {
   type PlayerLesson,
   type PlayerModule,
 } from '@vachelearn/contracts';
+import { DEMO_ASSESSMENT, DEMO_QUESTIONS } from './attempts';
 
 /*
  * Phase 1 demo course outlines for the player (slice 1.5.5). Every demo course version has the same shape: 5 modules
@@ -166,9 +167,14 @@ export function demoLessonContent(lesson: PlayerLesson, seed: number): LessonCon
     case 'assessment':
       return {
         type: 'assessment',
-        assessmentTitle: 'Final check (Demo)',
-        questionCount: 10,
-        passMarkPercent: 70,
+        assessmentTitle: DEMO_ASSESSMENT.title,
+        questionCount: DEMO_QUESTIONS.length,
+        passMarkPercent: DEMO_ASSESSMENT.passMarkPercent,
+        attemptLimit: DEMO_ASSESSMENT.attemptLimit,
+        timeLimitSeconds: DEMO_ASSESSMENT.timeLimitSeconds,
+        // The caller adds the learner's own attempts (they depend on the enrollment, not the lesson).
+        attempts: [],
+        canStartAttempt: true,
       };
   }
 }

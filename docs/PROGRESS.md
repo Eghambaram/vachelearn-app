@@ -1,16 +1,16 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.5.5 done** (Course player, commit 108952f). Next: Slice 1.5.6
-(assessment taking + result, ref 05).
+Phase 1 · Design system & UI foundations — **Slice 1.5.6 done, not committed** (Assessment taking + result). Next:
+commit, then Slice 1.5.7 (certificate view + public verification, ref 05 panel 7).
 
 ## Last verified
-2026-10-23, Node v24.21.0, pnpm 12.8.1, on the final 1.5.5 tree:
-- `pnpm verify` → check:ignored-source OK · format OK · lint OK · typecheck OK · unit: contracts 35 passed, web 444
-  passed, 0 failed · build OK
-- `pnpm test:e2e` → 198 passed in 5.0 min (adds `course-player.spec.ts`: resume, tree + prev/next, not-connected
-  completion, 404s incl. every demo state, 360 px, axe)
-- CI: 1.5.4 pushed 2026-10-23 (`b9ad2b8..cda632d`); CI result for that push not checked in this session
+2026-10-23, Node v24.21.0, pnpm 12.8.1, on the final 1.5.6 tree:
+- `pnpm verify` → check:ignored-source OK · format OK · lint OK · typecheck OK · unit: contracts 42 passed, web 470
+  passed (28 files), 0 failed · build OK
+- `pnpm test:e2e` → 210 passed in 7.9 min (adds `attempts.spec.ts`: lesson → open attempt, keyboard-only
+  answer/review/submit not connected, score-only results, 404 in every demo state, 360 px, axe)
+- CI: run 39963709180 (1.5.5, commit 108952f) success; run 39905603553 (1.5.4) success
 
 ## Done in this phase
 Detail per slice: `docs/progress-log/2026-10.md`.
@@ -18,38 +18,28 @@ Detail per slice: `docs/progress-log/2026-10.md`.
 - 1.2 tokens as the single style source, Tailwind 4 theme, shadcn/ui, Inter (D-059), contrast tests (ca61cf9).
 - 1.3a/b primitives + composites (FormField, StatusBadge, DataTable, ChartCard, Stepper, states…) (939e9a4, 101740e).
 - 1.4 logo (D-064), i18n helper, `SessionView`, permission-driven nav, AppShell, system pages, D-061/D-063 (83bd1ef).
-- 1.5.1 `packages/contracts` (Zod 4, D-035: error envelope, `PlatformDashboard`) · `docs/METRICS.md` (D-065 completion
-  rate, D-066 statuses) · `lib/api/client.ts` + `platform.ts` (contract-parsed demo layer, `?demoState=`) · `/platform`
-  dashboard (KPIs, growth/enrollment/status charts with tables, activity, recent tenants; no revenue/industry) ·
-  workspace catch-alls now `[...slug]` + root pages · charts without JS animation (commit 88e9422).
-- 1.5.2 `TenantDashboard` contract (scope in the response, none in the request) · `SessionView.branchScope` · tenant
-  fixture computed per branch then scoped (D-026) · `/admin` dashboard (learners, courses, completion, overdue D-054,
-  learning progress, deadlines, activity; compliance placeholder D-018) · shared PeriodFilter, ActivityFeed,
-  kpiChange, fixture time helpers · `calendarDateIn` / `daysBetween` · `tenant.*` metrics (commit 1819242).
-- 1.5.3a contracts `cursorPage`, `ListLimit`, `Cursor`, course schemas (D-068 level/delivery) · `lib/api/courses.ts`
-  (query-bound opaque cursors, allowlisted sort, 422s) · `/admin/courses` server-driven list via server action ·
-  `previousCursor` in the pager · `formatDuration` (commit c6f1220).
-- 1.5.3b contracts `CourseDraft`, shared `publishIssues` / `nextVersionNumber` / `LESSON_COMPLETION_RULE` (D-041) ·
-  `lib/api/course-draft.ts` (404 cross-tenant, 403 without edit keys, archived flag) · draft reducer · builder at
-  `/admin/courses/[id]/build?step=` (5 steps, local edits under D-067 banner, keyboard reorder) · Stepper
-  `onStepSelect` · "Create course" / title links for editors (commit bfbeb43; route page only in b9ad2b8).
-- 1.5.4 contracts `LearnerDashboard`, shared `enrollmentDisplayStatus` (D-054, boundary tests Kolkata/Chicago) ·
-  `mocks/enrollments.ts` (includes another learner) · `lib/api/learner.ts` (own records only, 404 for others) ·
-  `/learn` dashboard + ownership-checked `/learn/courses/[enrollmentId]` stub · ProgressBar · KpiCard header wraps ·
-  `learner.*` metrics (commit 1a09fcd).
-- 1.5.5 contracts `CoursePlayer`, `LessonView`, `LessonCompletionRule`, shared `courseProgress` / `resumeLesson`
-  (D-070) · `mocks/course-player.ts` (5×5 outline; dashboard progress + next lesson now derived from it) ·
-  `getCoursePlayer` / `getLessonView` (own enrollment, pinned-version lessons, 404 in every demo state) · `/learn/
-  courses/[id]` → resume redirect · `/lessons/[lessonId]` player (tree, per-type panels, prev/next, sticky on phones,
-  completion actions "Not yet connected", D-069) · `formatClock`, `formatFileSize` · isolation audit: 2 Low fixed (commit 108952f).
+- 1.5.1 `packages/contracts` (Zod 4, D-035), `docs/METRICS.md`, contract-parsed demo client, `/platform` (88e9422).
+- 1.5.2 `TenantDashboard` (scope in the response), branch-scoped fixture (D-026), `/admin` dashboard (1819242).
+- 1.5.3a/b course list (opaque query-bound cursors) and 5-step builder with local edits (D-067) (c6f1220, bfbeb43).
+- 1.5.4 `LearnerDashboard`, shared `enrollmentDisplayStatus` (D-054), `/learn` own records only (1a09fcd).
+- 1.5.5 contracts `CoursePlayer`, `LessonView`, shared `courseProgress` / `resumeLesson` (D-070) · demo outline drives
+  dashboard figures · `/learn/courses/[id]` → resume · lesson player (tree, per-type panels, prev/next, completion
+  actions not connected, D-069) (commit 108952f).
+- 1.5.6 contracts `AttemptView` (strict questions, no answer key; no questions after the deadline), shared
+  `scoreAttempt` (D-042, D-072) / `answerIssues` / `canStartAttempt` (D-073) · `mocks/attempts.ts` (key server-side)
+  · `getAttempt` (own, non-cancelled; 404 in every demo state; expired open attempt graded on read, D-055) ·
+  `/learn/attempts/[id]` taking (timer, navigator, review, submit not connected, D-071) and result (score only, D-023;
+  history; retake only after a fail) · player lists attempts · client-boundary guard test · `formatPercentTenths`.
 
 ## In progress / uncommitted
-- Nothing.
+- Slice 1.5.6, complete and verified but uncommitted: contracts `assessment-attempt.ts`, `features/learn/attempt/`,
+  `/learn/attempts/[attemptId]`, `mocks/attempts.ts`, learner API + tests, `e2e/attempts.spec.ts`, docs (D-023
+  Confirmed, D-071–D-073, METRICS, UI spec #42, DOMAIN_MODEL attempt/answer rules).
 
 ## Next step
-Slice 1.5.6: assessment taking + result `/learn/attempts/[attemptId]` (ref 05) —
-question flow, timer from the server (D-055), submit, result with pass/fail and score computed server-side (D-042),
-completion vs pass shown separately; wire the player's assessment lesson to it.
+Commit 1.5.6 (on owner request). Then Slice 1.5.7: certificate view `/learn/certificates` (own awards, completion vs
+certificate, Download PDF not connected) and public `/verify/[verificationId]` (opaque id, minimal data per D-017,
+learner name only if the owner agrees; revoked/expired states). Check D-017 with the owner first.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
@@ -77,5 +67,7 @@ completion vs pass shown separately; wire the player's assessment lesson to it.
   reused by Playwright (`reuseExistingServer`) and serves an old build.
 - `.gitignore` patterns are anchored (`/build/`, `/apps/*/build/` …): a bare `build/` hid the builder route from git.
   `pnpm check:ignored-source` (first step of verify) fails if any source file under apps/ or packages/ is ignored.
+- Radix radio groups select on arrow-key focus only while the key is held (focus moves in a `setTimeout`): Playwright
+  tests use `keyboard.down`/`up`, not `press` (`e2e/attempts.spec.ts`).
 - `guard-secrets.mjs` blocks any shell command whose text names a real env file (even in commit messages or file
   content written via heredoc) — use the Write tool or reword; don't weaken the hook.

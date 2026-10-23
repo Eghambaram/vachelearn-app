@@ -166,5 +166,19 @@ export function formatFileSize(
         : bytes >= 1e3
           ? [bytes / 1e3, 'KB']
           : [bytes, 'bytes'];
-  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: unit === 'bytes' || unit === 'KB' ? 0 : 1 }).format(value)} ${unit}`;
+  const digits = unit === 'bytes' || unit === 'KB' ? 0 : 1;
+  const number = new Intl.NumberFormat(locale, { maximumFractionDigits: digits }).format(value);
+  return `${number} ${unit}`;
+}
+
+/** A score in integer tenths of a percent (D-042) as "92.5%", always with one decimal. */
+export function formatPercentTenths(
+  tenths: number,
+  { locale = DEFAULT_LOCALE }: { locale?: string } = {},
+) {
+  const format = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+  return `${format.format(tenths / 10)}%`;
 }

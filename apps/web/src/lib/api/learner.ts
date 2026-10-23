@@ -1,15 +1,21 @@
 import {
+  AttemptView,
+  scoreAttempt,
+  canStartAttempt,
   courseProgress,
   CoursePlayer,
   enrollmentDisplayStatus,
   LearnerDashboard,
   LessonView,
   resumeLesson,
+  type AttemptSummary,
+  type AttemptView as AttemptViewData,
   type CoursePlayer as CoursePlayerData,
   type LearnerDashboard as LearnerDashboardData,
   type LessonView as LessonViewData,
 } from '@vachelearn/contracts';
 import { calendarDateIn, daysBetween } from '@/lib/format';
+import { DEMO_ASSESSMENT, DEMO_QUESTIONS, demoAttempts, type DemoAttempt } from '@/mocks/attempts';
 import { demoLessonContent } from '@/mocks/course-player';
 import { demoEnrollments, type DemoEnrollment } from '@/mocks/enrollments';
 import { DEMO_TENANT_ZONE } from '@/mocks/tenant-dashboard';
@@ -17,9 +23,11 @@ import { demoError, type ApiResult, type DemoState } from './client';
 import { getSession } from './session';
 
 /*
- * The learner's own learning: GET /api/v1/me/dashboard and, for the player, GET /api/v1/me/enrollments/:id/outline
- * and …/lessons/:lessonId (contracts `course-player.ts`). The user and tenant come from the session only — there is no parameter that could name someone else. Phase 1 serves the demo fixture through
- * the shared contract and the shared D-054 status rule; Phase 4 serves the same shapes from the API.
+ * The learner's own learning: GET /api/v1/me/dashboard; for the player GET /api/v1/me/enrollments/:id/outline and
+ * …/lessons/:lessonId (contracts `course-player.ts`); for assessments GET /api/v1/me/attempts/:id
+ * (`assessment-attempt.ts`). The user and tenant come from the session only — there is no parameter that could name
+ * someone else. Phase 1 serves the demo fixtures through the shared contracts and rules; Phase 4 serves the same
+ * shapes from the API.
  */
 
 function notFound(): ApiResult<never> {
@@ -175,7 +183,104 @@ export async function getLessonView(
       lessonId: lesson.id,
       summary: `Demo summary: what “${lesson.title}” covers and what you will be able to do after it.`,
       completedAt,
-      content: content.type === 'document' ? { ...content, acknowledgedAt: completedAt } : content,
+      content:
+        content.type === 'document'
+          ? { ...content, acknowledgedAt: completedAt }
+          : content.type === 'assessment'
+            ? withAttempts(content, demoAttempts(enrollment, now.getTime()))
+            : content,
+    }),
+  };
+}
+
+function attemptSummary(attempt: DemoAttempt): AttemptSummary {
+  return {
+    id: attempt.id,
+    attemptNumber: attempt.attemptNumber,
+    status: attempt.status,
+    startedAt: attempt.startedAt,
+    submittedAt: attempt.submittedAt,
+    scorePercentTenths:
+      attempt.status === 'in_progress'
+        ? null
+        : scoreAttempt(DEMO_QUESTIONS, attempt.answers, DEMO_ASSESSMENT.passMarkPercent)
+            .scorePercentTenths,
+    timedOut: attempt.timedOut,
+  };
+}
+
+function withAttempts<C extends { attemptLimit: number | null }>(
+  content: C,
+  attempts: DemoAttempt[],
+) {
+  const history = attempts.map(attemptSummary);
+  return {
+    ...content,
+    attempts: history,
+    canStartAttempt: canStartAttempt(history, content.attemptLimit),
+  };
+}
+
+/**
+ * One of the caller's own assessment attempts (UI spec #42). Found only among the attempts of the caller's own,
+ * non-cancelled enrollments, so anyone else's attempt id is a 404 in every demo state. An open attempt carries the
+ * questions without the answer key (D-023) and the answers the server already holds; a graded one carries the score
+ * only.
+ */
+export async function getAttempt(
+  attemptId: string,
+  { demoState = 'ready', now = new Date() }: { demoState?: DemoState; now?: Date } = {},
+): Promise<ApiResult<AttemptViewData>> {
+  const own = await ownEnrollments(now);
+  if (!own) return demoError(403);
+  const found = own.mine
+    .filter((e) => e.status !== 'cancelled')
+    .flatMap((enrollment) =>
+      demoAttempts(enrollment, now.getTime()).map((attempt, _, all) => ({
+        enrollment,
+        attempt,
+        all,
+      })),
+    )
+    .find((entry) => entry.attempt.id === attemptId);
+  if (!found) return notFound();
+  if (demoState === 'forbidden') return demoError(403);
+  if (demoState === 'error') return demoError(500);
+
+  const { enrollment, attempt, all } = found;
+  const history = all.map(attemptSummary);
+  return {
+    ok: true,
+    data: AttemptView.parse({
+      generatedAt: now.toISOString(),
+      timeZone: DEMO_TENANT_ZONE,
+      enrollment: {
+        id: enrollment.id,
+        courseTitle: enrollment.courseTitle,
+        lessonId: attempt.lessonId,
+      },
+      assessment: { ...DEMO_ASSESSMENT, questionCount: DEMO_QUESTIONS.length },
+      attempt: { ...attemptSummary(attempt), deadlineAt: attempt.deadlineAt },
+      history,
+      canRetake: canStartAttempt(history, DEMO_ASSESSMENT.attemptLimit),
+      body:
+        attempt.status === 'in_progress'
+          ? {
+              kind: 'taking',
+              // The answer key stays on the server: only the learner-facing fields are copied (D-023).
+              questions: DEMO_QUESTIONS.map(({ id, type, stem, points, options }) => ({
+                id,
+                type,
+                stem,
+                points,
+                options,
+              })),
+              savedAnswers: attempt.answers,
+            }
+          : {
+              kind: 'result',
+              score: scoreAttempt(DEMO_QUESTIONS, attempt.answers, DEMO_ASSESSMENT.passMarkPercent),
+            },
     }),
   };
 }

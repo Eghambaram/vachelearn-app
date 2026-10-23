@@ -5,7 +5,8 @@ import { demoEnrollments } from '@/mocks/enrollments';
 let current = buildDemoSession('learner', 'demo-tenant-1');
 vi.mock('./session', () => ({ getSession: async () => current }));
 
-const { getCoursePlayer, getLearnerDashboard, getLessonView } = await import('./learner');
+const { getAttempt, getCoursePlayer, getLearnerDashboard, getLessonView } =
+  await import('./learner');
 
 // Fixed clock: 22 Oct 2026, 15:00 IST.
 const NOW = new Date('2026-10-22T09:30:00.000Z');
@@ -218,5 +219,100 @@ describe('getLessonView', () => {
       throw new Error('expected a document');
     expect(docView.data.completedAt).not.toBeNull();
     expect(docView.data.content.acknowledgedAt).toBe(docView.data.completedAt);
+  });
+});
+
+describe('getAttempt (own attempts only; D-023, D-042, D-073)', () => {
+  const OPEN = 'demo-tenant-1-demo-user-enr-03-att-2'; // Hazard Identification, in progress
+  const FAILED = 'demo-tenant-1-demo-user-enr-03-att-1';
+
+  async function attempt(id: string) {
+    current = buildDemoSession('learner', 'demo-tenant-1');
+    const result = await getAttempt(id, { now: NOW });
+    if (!result.ok) throw new Error(`expected data, got ${result.status}`);
+    return result.data;
+  }
+
+  it("404s for someone else's, another tenant's or an unknown attempt, in every demo state", async () => {
+    current = buildDemoSession('learner', 'demo-tenant-1');
+    for (const id of [
+      'demo-tenant-1-demo-other-learner-enr-01-att-1',
+      'demo-tenant-2-demo-user-enr-03-att-2',
+      'demo-tenant-1-demo-user-enr-03-att-9',
+      'demo-tenant-1-demo-user-enr-10-att-1', // own attempt, but on a cancelled enrollment
+    ]) {
+      for (const demoState of ['ready', 'error', 'forbidden'] as const) {
+        expect(await getAttempt(id, { now: NOW, demoState })).toMatchObject({ status: 404 });
+      }
+    }
+  });
+
+  it('an open attempt has questions without the answer key, saved answers and a server deadline', async () => {
+    const data = await attempt(OPEN);
+    if (data.body.kind !== 'taking') throw new Error('expected an open attempt');
+    expect(JSON.stringify(data)).not.toMatch(/isCorrect|correctOption/);
+    expect(data.body.questions).toHaveLength(10);
+    expect(Object.keys(data.body.savedAnswers)).toEqual(['demo-q1', 'demo-q2', 'demo-q3']);
+    expect(Date.parse(data.attempt.deadlineAt!) - Date.parse(data.attempt.startedAt)).toBe(
+      15 * 60_000,
+    );
+    expect(data.attempt.attemptNumber).toBe(2);
+    // An attempt is open, so no new one can start (D-073).
+    expect(data.canRetake).toBe(false);
+  });
+
+  it('a graded attempt carries the score only (D-023), scored with the shared rule (D-042)', async () => {
+    const data = await attempt(FAILED);
+    expect(data.body).toEqual({
+      kind: 'result',
+      score: { scorePoints: 7, possiblePoints: 12, scorePercentTenths: 583, passed: false },
+    });
+    expect(data.attempt.status).toBe('failed');
+    expect(data.history.map((h) => [h.attemptNumber, h.status])).toEqual([
+      [1, 'failed'],
+      [2, 'in_progress'],
+    ]);
+  });
+
+  it('a pass is final: no retake after passing; a timed-out attempt is flagged (D-055)', async () => {
+    const passed = await attempt('demo-tenant-1-demo-user-enr-07-att-2');
+    expect(passed.attempt.status).toBe('passed');
+    expect(passed.canRetake).toBe(false);
+    const timedOut = await attempt('demo-tenant-1-demo-user-enr-02-att-1');
+    expect(timedOut.attempt).toMatchObject({ status: 'failed', timedOut: true });
+    expect(timedOut.attempt.submittedAt).toBe(timedOut.attempt.deadlineAt);
+    expect(timedOut.canRetake).toBe(true);
+  });
+
+  it('the assessment lesson in the player lists the same attempts', async () => {
+    const outline = await player('demo-tenant-1-demo-user-enr-03');
+    const lesson = outline.modules.flatMap((m) => m.lessons).find((l) => l.type === 'assessment')!;
+    const view = await getLessonView('demo-tenant-1-demo-user-enr-03', lesson.id, { now: NOW });
+    if (!view.ok || view.data.content.type !== 'assessment')
+      throw new Error('expected an assessment');
+    expect(view.data.content.attempts.map((a) => a.id)).toEqual([FAILED, OPEN]);
+    expect(view.data.content.canStartAttempt).toBe(false);
+  });
+
+  it('an open attempt read after its deadline comes back graded and timed out (D-055)', async () => {
+    const data = await attempt('demo-tenant-1-demo-user-enr-01-att-1');
+    expect(data.body.kind).toBe('result');
+    expect(data.attempt).toMatchObject({ status: 'failed', timedOut: true });
+    expect(data.attempt.submittedAt).toBe(data.attempt.deadlineAt);
+    // Graded from the answers saved before the deadline, and a retake is open again.
+    expect(data.body).toMatchObject({ score: { scorePoints: 2, possiblePoints: 12 } });
+    expect(data.canRetake).toBe(true);
+  });
+
+  it('a lesson view lists only its own enrollment’s attempts', async () => {
+    const outline = await player('demo-tenant-1-demo-user-enr-07');
+    const lesson = outline.modules.flatMap((m) => m.lessons).find((l) => l.type === 'assessment')!;
+    const view = await getLessonView('demo-tenant-1-demo-user-enr-07', lesson.id, { now: NOW });
+    if (!view.ok || view.data.content.type !== 'assessment')
+      throw new Error('expected an assessment');
+    expect(view.data.content.attempts.map((a) => a.id)).toEqual([
+      'demo-tenant-1-demo-user-enr-07-att-1',
+      'demo-tenant-1-demo-user-enr-07-att-2',
+    ]);
   });
 });

@@ -49,10 +49,7 @@ export default async function CourseBuilderPage({ params, searchParams }: Props)
     <>
       <PageHeader
         title={title}
-        breadcrumbs={[
-          { label: b.breadcrumbCourses, href: '/admin/courses' },
-          { label: title },
-        ]}
+        breadcrumbs={[{ label: b.breadcrumbCourses, href: '/admin/courses' }, { label: title }]}
         meta={
           <>
             {courseId === 'new' ? null : <StatusBadge entity="course" status={status} />}

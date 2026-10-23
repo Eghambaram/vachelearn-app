@@ -428,11 +428,34 @@ screen-reader text, duration, "Optional", `aria-current` on the open lesson; on 
 ("Course content · x of y done") above the lesson so the lesson comes first. Lesson: module + "Lesson n of N", numbered
 title, summary, type / duration / requirement, the player area per type (text; mock video panel with saved position,
 % watched and captions flag — no media in Phase 1; document card without file; https-only external link opening in a
-new tab with `noopener noreferrer`; assessment summary pointing to 1.5.6), then how the lesson completes (D-041,
+new tab with `noopener noreferrer`; assessment summary with the learner's attempts — continue / view result — and
+"Start attempt n of N" only when D-073 allows, not connected), then how the lesson completes (D-041,
 labelled proposed) and the completion action only where the rule allows it — not connected (D-069). Previous / Next
 lesson cross module boundaries, are disabled at the ends, and sit in `StickyActions` on phones. **Omitted (D-043):**
 notes, discussion, resources, bookmarks, lesson search, quick quiz, the right-hand panel. Contracts `CoursePlayer`,
 `LessonView`; shared `courseProgress`, `resumeLesson`.
+
+## Assessment Taking and Result
+
+**Built in Slice 1.5.6 (demo data), `/learn/attempts/[attemptId]` (ref 05 panel 6):** the learner's own attempts only;
+anyone else's or another tenant's attempt id is a 404 in every demo state. Header: assessment title, attempt status
+badge, Demo badge, "Attempt n of N · Version v · pass mark p%"; breadcrumb back to the course lesson.
+**Open attempt:** persistent "Demo — answers are not saved" banner (D-071); "x of y answered" with a progress bar; a
+countdown anchored to the server's `generatedAt`/`deadlineAt` (`role="timer"`, announced only at 5 min, 1 min and time
+up; turns red in the last minute); when time is up answering locks and the page states D-055's proposed rule. Question
+navigator (`<nav aria-label="Questions">`, answered state by icon **and** name, `aria-current="step"`). One question at
+a time: "Question n of N · k points", the stem as the heading (focused on change), "Select one answer." / "Select all
+that apply.", single choice and true/false as a labelled radio group (arrow keys), multiple select as checkboxes,
+option letters decorative. Previous / Next question in `StickyActions`; the last question leads to **Review**: every
+question answered / not answered with "Go to question n", "Unanswered questions score 0", Submit through ConfirmDialog
+stating the impact (no changes after submitting, attempt n of N, unanswered count), then "Not yet connected … Nothing
+was submitted." Selections start from the answers the server holds.
+**Result:** status badge, score as "58.3%" (D-042, one decimal) and "7 of 12 points", pass mark, submitted time with
+zone, a timed-out notice (D-055), "You passed. Passing this assessment is one requirement for completing <course>…"
+(not course completion, not a certificate), "Individual answers and correct options are not shown" (D-023 — no
+questions or per-question correctness are sent), "Start attempt n of N" only when D-073 allows (not connected), and a
+table of every attempt (a retake never overwrites a result). Contract `AttemptView`; shared `scoreAttempt`,
+`answerIssues`, `canStartAttempt`.
 
 ## Screen implementation order
 1. Design system and responsive shell.

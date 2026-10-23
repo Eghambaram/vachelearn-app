@@ -568,8 +568,74 @@ export const en = {
     assessment: {
       details: (questions: number, passMark: number) =>
         `${questions} questions · pass mark ${passMark}%`,
-      notYet: 'Taking assessments arrives in slice 1.5.6.',
+      attemptsTitle: 'Your attempts',
+      noAttempts: 'You have not started this assessment yet.',
+      continueAttempt: (n: number) => `Continue attempt ${n}`,
+      viewResult: (n: number) => `View result of attempt ${n}`,
     },
+  },
+  attempt: {
+    demoBanner: 'Demo — answers are not saved. Selecting answers works in this page only.',
+    attemptOf: (n: number, limit: number | null) =>
+      limit === null ? `Attempt ${n}` : `Attempt ${n} of ${limit}`,
+    versionPassMark: (version: number, passMark: number) =>
+      `Version ${version} · pass mark ${passMark}%`,
+    questionOf: (n: number, total: number) => `Question ${n} of ${total}`,
+    answeredOf: (n: number, total: number) => `${n} of ${total} answered`,
+    points: (n: number) => (n === 1 ? '1 point' : `${n} points`),
+    selectOne: 'Select one answer.',
+    selectAll: 'Select all that apply.',
+    timeRemaining: 'Time remaining',
+    minutesLeft: (minutes: number) =>
+      minutes === 1 ? '1 minute remaining' : `${minutes} minutes remaining`,
+    timeUp: 'Time is up. Your answers can no longer be changed.',
+    timeUpRule:
+      'In the live product, the answers saved before the deadline are graded (D-055, proposed).',
+    questionsLabel: 'Questions',
+    answered: 'answered',
+    notAnswered: 'not answered',
+    navItem: (n: number, answered: boolean) =>
+      `Question ${n}, ${answered ? 'answered' : 'not answered'}`,
+    previousQuestion: 'Previous question',
+    nextQuestion: 'Next question',
+    reviewAnswers: 'Review answers',
+    backToQuestion: (n: number) => `Back to question ${n}`,
+    reviewTitle: 'Review your answers',
+    reviewSummary: (answered: number, total: number) =>
+      `You have answered ${answered} of ${total} questions. Unanswered questions score 0.`,
+    goToQuestion: (n: number) => `Go to question ${n}`,
+    submit: 'Submit answers',
+    submitTitle: 'Submit your answers?',
+    submitImpact: (attempt: string, unanswered: number) =>
+      `You cannot change your answers after submitting. This is ${attempt}.` +
+      (unanswered > 0
+        ? ` ${unanswered} unanswered ${unanswered === 1 ? 'question scores' : 'questions score'} 0.`
+        : ''),
+    notConnected:
+      'Not yet connected: saving and submitting answers arrive in Phase 4. Nothing was submitted.',
+    resultTitle: 'Your result',
+    scoreLabel: 'Score',
+    scoreDetail: (points: number, possible: number) => `${points} of ${possible} points`,
+    passMark: (percent: number) => `Pass mark ${percent}%`,
+    submittedOn: (date: string) => `Submitted ${date}`,
+    timedOut: 'Time ran out: the answers saved before the deadline were graded.',
+    passedNote: (course: string) =>
+      `You passed. Passing this assessment is one requirement for completing ${course}; course completion and any certificate are shown separately.`,
+    failedNote: 'You did not reach the pass mark this time.',
+    keyNote: 'Individual answers and correct options are not shown (D-023).',
+    startAttempt: (n: number, limit: number | null) =>
+      limit === null ? `Start attempt ${n}` : `Start attempt ${n} of ${limit}`,
+    startNotConnected:
+      'Not yet connected: starting an attempt arrives in Phase 4. No attempt was started.',
+    noAttemptsLeft: 'No attempts remain. Ask your administrator if you need another attempt.',
+    historyTitle: 'Your attempts',
+    historyAttempt: 'Attempt',
+    historySubmitted: 'Submitted',
+    historyScore: 'Score',
+    historyResult: 'Result',
+    thisAttempt: '(this attempt)',
+    notSubmitted: 'Not submitted',
+    backToCourse: 'Back to the course',
   },
   help: {
     title: 'Help',

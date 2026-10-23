@@ -5,6 +5,7 @@ import {
   formatBucketLabel,
   formatClock,
   formatFileSize,
+  formatPercentTenths,
   formatDuration,
   formatDate,
   formatDateOnly,
@@ -132,5 +133,14 @@ describe('formatFileSize', () => {
     expect(formatFileSize(180_000)).toBe('180 KB');
     expect(formatFileSize(1_430_000)).toBe('1.4 MB');
     expect(formatFileSize(2_000_000_000)).toBe('2 GB');
+  });
+});
+
+describe('formatPercentTenths', () => {
+  it('always shows one decimal', () => {
+    expect(formatPercentTenths(925)).toBe('92.5%');
+    expect(formatPercentTenths(700)).toBe('70.0%');
+    expect(formatPercentTenths(1000)).toBe('100.0%');
+    expect(formatPercentTenths(0)).toBe('0.0%');
   });
 });

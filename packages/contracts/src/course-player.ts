@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AttemptSummary } from './assessment-attempt';
 import { Count, IsoDate, IsoInstant } from './common';
 import { LessonCompletionRule, LessonType } from './course-draft';
 import { EnrollmentDisplayStatus } from './enrollment-status';
@@ -90,6 +91,12 @@ export const LessonContent = z.discriminatedUnion('type', [
     assessmentTitle: z.string(),
     questionCount: z.number().int().min(1),
     passMarkPercent: z.number().int().min(1).max(100),
+    attemptLimit: z.number().int().positive().nullable(),
+    timeLimitSeconds: z.number().int().positive().nullable(),
+    /** The learner's attempts at this assessment version, oldest first. */
+    attempts: z.array(AttemptSummary),
+    /** D-073, computed by the server. */
+    canStartAttempt: z.boolean(),
   }),
 ]);
 export type LessonContent = z.infer<typeof LessonContent>;

@@ -112,13 +112,30 @@ describe('completion actions follow the lesson’s rule (D-041) and are not conn
     expect(screen.getByText(/Demo video: there is no media/)).toBeInTheDocument();
   });
 
-  it('an assessment lesson explains assessments are not built yet', async () => {
-    await renderLesson((lessons) => lessons.find((l) => l.type === 'assessment')!);
+  it('an assessment lesson with no attempts offers to start one, which is not connected (D-071)', async () => {
+    await renderLesson(
+      (lessons) => lessons.find((l) => l.type === 'assessment')!,
+      'demo-tenant-1-demo-user-enr-04',
+    );
     expect(screen.queryByRole('button', { name: 'Mark as complete' })).toBeNull();
-    expect(
-      screen.getByText('Completes when you pass the assessment.', { exact: false }),
-    ).toBeVisible();
-    expect(screen.getByText('Taking assessments arrives in slice 1.5.6.')).toBeInTheDocument();
+    expect(screen.getByText(/Completes when you pass the assessment\./)).toBeVisible();
+    expect(screen.getByText('You have not started this assessment yet.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Start attempt 1 of 3' }));
+    expect(screen.getByRole('status')).toHaveTextContent('No attempt was started.');
+  });
+
+  it('an assessment lesson lists the learner’s attempts and offers no new one while one is open (D-073)', async () => {
+    await renderLesson(
+      (lessons) => lessons.find((l) => l.type === 'assessment')!,
+      'demo-tenant-1-demo-user-enr-03',
+    );
+    expect(screen.getByRole('link', { name: 'View result of attempt 1' })).toHaveAttribute(
+      'href',
+      '/learn/attempts/demo-tenant-1-demo-user-enr-03-att-1',
+    );
+    expect(screen.getByRole('link', { name: 'Continue attempt 2' })).toBeInTheDocument();
+    expect(screen.getByText('58.3%')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Start attempt/ })).toBeNull();
   });
 
   it('a completed lesson shows when it was completed and offers no action', async () => {

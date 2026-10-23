@@ -9,12 +9,14 @@ import {
   PlayCircle,
 } from 'lucide-react';
 import type {
+  AttemptSummary,
   CoursePlayer as CoursePlayerData,
   LessonContent,
   LessonView,
   PlayerLesson,
 } from '@vachelearn/contracts';
 import { ProgressBar } from '@/components/progress-bar';
+import { StatusBadge } from '@/components/status-badge';
 import { StickyActions } from '@/components/shell/sticky-actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,10 +27,11 @@ import {
   formatDateOnly,
   formatDuration,
   formatFileSize,
+  formatPercentTenths,
 } from '@/lib/format';
 import { getMessages } from '@/lib/i18n';
 import { LessonTree } from './lesson-tree';
-import { lessonHref } from './paths';
+import { attemptHref, lessonHref } from './paths';
 import { NotConnectedAction } from './not-connected-action';
 
 // English only for now (D-028); becomes per-request when a second language is added.
@@ -256,10 +259,62 @@ function LessonBody({ content, timeZone }: { content: LessonContent; timeZone: s
           <p className="text-sm text-muted-foreground">
             {p.assessment.details(content.questionCount, content.passMarkPercent)}
           </p>
-          <p className="text-sm">{p.assessment.notYet}</p>
+          <AssessmentAttempts content={content} />
         </div>
       );
   }
+}
+
+/** The learner's attempts at the lesson's assessment, and starting a new one only when D-073 allows it. */
+function AssessmentAttempts({
+  content,
+}: {
+  content: Extract<LessonContent, { type: 'assessment' }>;
+}) {
+  const a = t.attempt;
+  const next = content.attempts.length + 1;
+  return (
+    <div className="flex flex-col gap-3">
+      <h3 className="text-sm font-semibold">{p.assessment.attemptsTitle}</h3>
+      {content.attempts.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{p.assessment.noAttempts}</p>
+      ) : (
+        <ul className="flex flex-col divide-y rounded-md border">
+          {content.attempts.map((attempt: AttemptSummary) => (
+            <li
+              key={attempt.id}
+              className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm"
+            >
+              <span className="flex flex-wrap items-center gap-2">
+                {a.attemptOf(attempt.attemptNumber, content.attemptLimit)}
+                <StatusBadge entity="attempt" status={attempt.status} />
+                {attempt.scorePercentTenths === null ? null : (
+                  <span className="tabular-nums">
+                    {formatPercentTenths(attempt.scorePercentTenths)}
+                  </span>
+                )}
+              </span>
+              <Link
+                href={attemptHref(attempt.id)}
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                {attempt.status === 'in_progress'
+                  ? p.assessment.continueAttempt(attempt.attemptNumber)
+                  : p.assessment.viewResult(attempt.attemptNumber)}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      {content.canStartAttempt ? (
+        <NotConnectedAction
+          label={a.startAttempt(next, content.attemptLimit)}
+          message={a.startNotConnected}
+          icon={<ClipboardCheck aria-hidden="true" />}
+        />
+      ) : null}
+    </div>
+  );
 }
 
 /** How this lesson completes (D-041) and, only where the rule allows it, the learner's completion action. */

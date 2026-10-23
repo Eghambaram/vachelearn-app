@@ -9,20 +9,28 @@ import { getMessages } from '@/lib/i18n';
 const t = getMessages();
 
 /**
- * A completion action whose write arrives in Phase 4 (POST …/lessons/:id/complete or …/acknowledge). It says so
- * instead of faking success: nothing changes and the lesson stays as the server reported it (D-069,
- * Confirmed by the product owner).
+ * An action whose write arrives in Phase 4 (e.g. POST …/lessons/:id/complete, …/attempts). It says so instead of
+ * faking success: nothing changes and the page stays as the server reported it (D-069, D-071, Confirmed by the
+ * product owner).
  */
-export function NotConnectedAction({ label }: { label: string }) {
+export function NotConnectedAction({
+  label,
+  message = t.player.notConnected,
+  icon = <Check aria-hidden="true" />,
+}: {
+  label: string;
+  message?: string;
+  icon?: React.ReactNode;
+}) {
   const [pressed, setPressed] = React.useState(false);
   return (
     <div className="flex flex-col items-start gap-2">
       <Button type="button" onClick={() => setPressed(true)}>
-        <Check aria-hidden="true" />
+        {icon}
         {label}
       </Button>
       <p role="status" className="text-sm font-medium text-warning">
-        {pressed ? t.player.notConnected : ''}
+        {pressed ? message : ''}
       </p>
     </div>
   );
