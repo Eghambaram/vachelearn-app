@@ -44,11 +44,13 @@ test.describe('Learner dashboard on demo data (Slice 1.5.4)', () => {
   }) => {
     await page.goto('/learn');
     await page.getByRole('link', { name: 'Continue Fire Safety Refresher (Demo)' }).first().click();
-    await expect(page).toHaveURL(/\/learn\/courses\/demo-tenant-1-demo-user-enr-01$/);
+    // The player resumes at the lesson the server reports (slice 1.5.5).
+    await expect(page).toHaveURL(
+      /\/learn\/courses\/demo-tenant-1-demo-user-enr-01\/lessons\/[^/]+$/,
+    );
     await expect(
       page.getByRole('heading', { level: 1, name: 'Fire Safety Refresher (Demo)' }),
     ).toBeVisible();
-    await expect(page.getByText('The course player arrives in slice 1.5.5.')).toBeVisible();
     const response = await page.goto('/learn/courses/demo-tenant-1-demo-other-learner-enr-01');
     expect(response?.status()).toBe(404);
   });

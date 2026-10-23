@@ -5,3 +5,4 @@ export * from './courses';
 export * from './course-draft';
 export * from './enrollment-status';
 export * from './learner-dashboard';
+export * from './course-player';

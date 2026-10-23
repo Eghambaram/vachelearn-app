@@ -506,10 +506,70 @@ export const en = {
     emptyTitle: 'No learning assigned yet',
     emptyBody: 'When your organisation assigns you a course, it will appear here.',
   },
-  playerStub: {
-    heading: 'The course player is not built yet',
-    body: 'The course player arrives in slice 1.5.5. This page confirms the enrollment is yours.',
-    back: 'Back to my dashboard',
+  player: {
+    contentTitle: 'Course content',
+    contentToggle: (done: number, total: number) => `Course content · ${done} of ${total} done`,
+    moduleProgress: (done: number, total: number) => `${done} of ${total} done`,
+    lessonState: {
+      completed: 'Completed',
+      in_progress: 'In progress',
+      not_started: 'Not started',
+    },
+    current: 'Current lesson',
+    optional: 'Optional',
+    required: 'Required',
+    typeLabel: 'Type',
+    durationLabel: 'Duration',
+    requirementLabel: 'Requirement',
+    completionLabel: 'Lesson completion',
+    progress: (title: string) => `Progress in ${title}`,
+    progressText: (percent: number, done: number, total: number) =>
+      `${percent}% complete · ${done} of ${total} required lessons`,
+    position: (n: number, total: number) => `Lesson ${n} of ${total}`,
+    lessonType: {
+      text: 'Reading',
+      video: 'Video',
+      document: 'Document',
+      link: 'External link',
+      assessment: 'Assessment',
+    },
+    rule: {
+      manual: 'Completes when you select “Mark as complete”.',
+      watched_90: 'Completes automatically when you have watched 90% of the video.',
+      acknowledged: 'Completes when you confirm you have read the document.',
+      passed: 'Completes when you pass the assessment.',
+    },
+    ruleProposed: 'Completion rules are proposed defaults until confirmed (D-041).',
+    completedOn: (date: string) => `You completed this lesson on ${date}.`,
+    markComplete: 'Mark as complete',
+    acknowledge: 'I have read this document',
+    notConnected: 'Not yet connected: lesson progress is saved from Phase 4. Nothing was saved.',
+    previous: 'Previous lesson',
+    next: 'Next lesson',
+    backToDashboard: 'Back to my dashboard',
+    video: {
+      label: 'Video player',
+      noMedia:
+        'Demo video: there is no media in Phase 1. Playback with captions and keyboard controls arrives with the video provider.',
+      position: (at: string, total: string) => `Saved position ${at} of ${total}`,
+      watched: (percent: number) => `${percent}% watched`,
+      captions: 'Captions available',
+    },
+    document: {
+      details: (pages: number, size: string) => `PDF · ${pages} pages · ${size}`,
+      noFile:
+        'Demo document: no file is attached in Phase 1. Viewing and downloading arrive with file storage.',
+      acknowledgedOn: (date: string) => `You confirmed you read this on ${date}.`,
+    },
+    link: {
+      opensNewTab: '(opens in a new tab)',
+      note: 'This resource is on another website. Come back here to mark the lesson complete.',
+    },
+    assessment: {
+      details: (questions: number, passMark: number) =>
+        `${questions} questions · pass mark ${passMark}%`,
+      notYet: 'Taking assessments arrives in slice 1.5.6.',
+    },
   },
   help: {
     title: 'Help',

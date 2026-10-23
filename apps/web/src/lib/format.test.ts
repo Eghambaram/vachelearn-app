@@ -3,6 +3,8 @@ import {
   daysBetween,
   formatBasisPoints,
   formatBucketLabel,
+  formatClock,
+  formatFileSize,
   formatDuration,
   formatDate,
   formatDateOnly,
@@ -112,5 +114,23 @@ describe('formatDuration', () => {
     expect(formatDuration(85)).toBe('1 h 25 min');
     expect(formatDuration(0)).toBe('0 min');
     expect(() => formatDuration(1.5)).toThrow();
+  });
+});
+
+describe('formatClock', () => {
+  it('shows m:ss, or h:mm:ss from an hour', () => {
+    expect(formatClock(0)).toBe('0:00');
+    expect(formatClock(252)).toBe('4:12');
+    expect(formatClock(3725)).toBe('1:02:05');
+    expect(() => formatClock(-1)).toThrow();
+  });
+});
+
+describe('formatFileSize', () => {
+  it('picks a unit and keeps one decimal from MB', () => {
+    expect(formatFileSize(512)).toBe('512 bytes');
+    expect(formatFileSize(180_000)).toBe('180 KB');
+    expect(formatFileSize(1_430_000)).toBe('1.4 MB');
+    expect(formatFileSize(2_000_000_000)).toBe('2 GB');
   });
 });

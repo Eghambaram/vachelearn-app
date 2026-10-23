@@ -1,10 +1,17 @@
-import type { EnrollmentLifecycle } from '@vachelearn/contracts';
+import {
+  courseProgress,
+  resumeLesson,
+  type EnrollmentLifecycle,
+  type PlayerModule,
+} from '@vachelearn/contracts';
+import { demoOutline } from './course-player';
 import { DAY, zonedDate, zonedMidnight } from './time';
 
 /*
  * Phase 1 demo enrollments (learner workspace). Deterministic for a tenant and `now`; titles are the demo course
  * titles. The fixture deliberately also holds another learner's enrollments so the "own records only" rule is tested,
- * not assumed. Replaced by the API in Phase 4 (enrollments, progress, certificates).
+ * not assumed. Progress and the next lesson are derived from the course outline (`demoOutline`), exactly as the
+ * server derives them from lesson progress, so the dashboard and the player agree. Replaced by the API in Phase 4.
  */
 
 export type DemoEnrollment = {
@@ -13,10 +20,14 @@ export type DemoEnrollment = {
   userId: string;
   courseTitle: string;
   courseVersion: number;
+  /** Seeds the demo outline and lesson content. */
+  seed: number;
   status: EnrollmentLifecycle;
   dueOn: string | null;
   progressPercent: number;
   nextLessonTitle: string | null;
+  /** The pinned version's modules with this enrollment's lesson progress. */
+  modules: PlayerModule[];
   lastActivityAt: string | null;
   completedAt: string | null;
   certificate: { awardId: string; issuedAt: string } | null;
@@ -27,60 +38,70 @@ type Row = [
   status: EnrollmentLifecycle,
   dueInDays: number | null,
   progress: number,
-  nextLesson: string | null,
   activeDaysAgo: number | null,
   certificate: boolean,
 ];
 
-/** [title, status, due in N days (negative = past), progress %, next lesson, last activity N days ago, certificate] */
+/** [title, status, due in N days (negative = past), progress %, last activity N days ago, certificate] */
 const MINE: Row[] = [
-  ['Fire Safety Refresher (Demo)', 'in_progress', 3, 60, 'Lesson 2.1 (Demo)', 0.2, false],
-  ['Forklift Operation Basics (Demo)', 'in_progress', -2, 30, 'Lesson 1.3 (Demo)', 4, false],
-  ['Hazard Identification (Demo)', 'in_progress', 12, 75, 'Lesson 4.2 (Demo)', 1, false],
-  ['PPE and Equipment (Demo)', 'not_started', 9, 0, null, null, false],
-  ['Machine Guarding (Demo)', 'not_started', -6, 0, null, null, false],
-  ['Lockout / Tagout (Demo)', 'not_started', null, 0, null, null, false],
-  ['First Aid Essentials (Demo)', 'completed', null, 100, null, 6, true],
-  ['Working at Height (Demo)', 'completed', null, 100, null, 18, false],
-  ['Chemical Handling (Demo)', 'completed', null, 100, null, 33, true],
-  ['Confined Space Entry (Demo)', 'cancelled', 5, 10, null, 40, false],
+  ['Fire Safety Refresher (Demo)', 'in_progress', 3, 60, 0.2, false],
+  ['Forklift Operation Basics (Demo)', 'in_progress', -2, 30, 4, false],
+  ['Hazard Identification (Demo)', 'in_progress', 12, 75, 1, false],
+  ['PPE and Equipment (Demo)', 'not_started', 9, 0, null, false],
+  ['Machine Guarding (Demo)', 'not_started', -6, 0, null, false],
+  ['Lockout / Tagout (Demo)', 'not_started', null, 0, null, false],
+  ['First Aid Essentials (Demo)', 'completed', null, 100, 6, true],
+  ['Working at Height (Demo)', 'completed', null, 100, 18, false],
+  ['Chemical Handling (Demo)', 'completed', null, 100, 33, true],
+  ['Confined Space Entry (Demo)', 'cancelled', 5, 10, 40, false],
 ];
 
 /** Another learner in the same tenant: must never appear on Demo User's dashboard. */
 const SOMEONE_ELSE: Row[] = [
-  ['Electrical Safety (Demo)', 'in_progress', 1, 90, 'Lesson 3.1 (Demo)', 0.1, false],
-  ['Crane Signalling (Demo)', 'completed', null, 100, null, 2, true],
+  ['Electrical Safety (Demo)', 'in_progress', 1, 90, 0.1, false],
+  ['Crane Signalling (Demo)', 'completed', null, 100, 2, true],
 ];
 
 function build(tenantId: string, userId: string, rows: Row[], now: number): DemoEnrollment[] {
   const today = zonedMidnight(zonedDate(now));
-  return rows.map(
-    ([courseTitle, status, dueIn, progressPercent, nextLessonTitle, activeAgo, cert], i) => {
-      const lastActivityAt =
-        activeAgo === null ? null : new Date(now - activeAgo * DAY).toISOString();
-      const completedAt = status === 'completed' ? lastActivityAt : null;
-      return {
-        id: `${tenantId}-${userId}-enr-${String(i + 1).padStart(2, '0')}`,
-        tenantId,
-        userId,
-        courseTitle,
-        courseVersion: 1 + (i % 3),
-        status,
-        dueOn: dueIn === null ? null : zonedDate(today + dueIn * DAY),
-        progressPercent,
-        nextLessonTitle,
-        lastActivityAt,
-        completedAt,
-        certificate:
-          cert && completedAt
-            ? {
-                awardId: `${tenantId}-${userId}-cert-${i + 1}`,
-                issuedAt: new Date(Date.parse(completedAt) + 60_000).toISOString(),
-              }
-            : null,
-      };
-    },
-  );
+  return rows.map(([courseTitle, status, dueIn, targetPercent, activeAgo, cert], i) => {
+    const lastActivityAt =
+      activeAgo === null ? null : new Date(now - activeAgo * DAY).toISOString();
+    const completedAt = status === 'completed' ? lastActivityAt : null;
+    const courseVersion = 1 + (i % 3);
+    const slug = courseTitle
+      .replace(/ \(Demo\)$/, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-');
+    const modules = demoOutline({
+      courseKey: `${tenantId}-${slug}-v${courseVersion}`,
+      seed: i,
+      status,
+      targetPercent,
+    });
+    return {
+      id: `${tenantId}-${userId}-enr-${String(i + 1).padStart(2, '0')}`,
+      tenantId,
+      userId,
+      courseTitle,
+      courseVersion,
+      seed: i,
+      status,
+      dueOn: dueIn === null ? null : zonedDate(today + dueIn * DAY),
+      progressPercent: courseProgress(modules.flatMap((m) => m.lessons)).percent,
+      nextLessonTitle: status === 'in_progress' ? resumeLesson(modules).title : null,
+      modules,
+      lastActivityAt,
+      completedAt,
+      certificate:
+        cert && completedAt
+          ? {
+              awardId: `${tenantId}-${userId}-cert-${i + 1}`,
+              issuedAt: new Date(Date.parse(completedAt) + 60_000).toISOString(),
+            }
+          : null,
+    };
+  });
 }
 
 /** Every demo enrollment in a tenant (all learners). Callers must filter to the session user. */

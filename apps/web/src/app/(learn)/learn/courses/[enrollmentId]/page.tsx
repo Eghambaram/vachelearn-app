@@ -1,58 +1,32 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { PlayCircle } from 'lucide-react';
-import { DemoBadge } from '@/components/demo-badge';
-import { EmptyState } from '@/components/empty-state';
-import { PageHeader } from '@/components/page-header';
+import { notFound, redirect } from 'next/navigation';
 import { PermissionDenied } from '@/components/permission-denied';
-import { Button } from '@/components/ui/button';
-import { getMyEnrollment } from '@/lib/api/learner';
+import { ErrorState } from '@/components/error-state';
+import { lessonHref } from '@/features/learn/player/paths';
+import { parseDemoState } from '@/lib/api/client';
+import { getCoursePlayer } from '@/lib/api/learner';
 import { getSession } from '@/lib/api/session';
-import { getMessages } from '@/lib/i18n';
 
-// English only for now (D-028); becomes per-request when a second language is added.
-const t = getMessages();
-
-type Props = { params: Promise<{ enrollmentId: string }> };
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const result = await getMyEnrollment((await params).enrollmentId);
-  return { title: result.ok ? result.data.courseTitle : t.system.notFoundTitle };
-}
+type Props = {
+  params: Promise<{ enrollmentId: string }>;
+  searchParams: Promise<{ demoState?: string }>;
+};
 
 /**
- * Target of "Continue" until the course player (slice 1.5.5). It already enforces the rule the player needs: only the
- * learner's own enrollment opens; anyone else's id is a 404.
+ * "Continue" lands here and is sent on to the lesson the server says to resume (UI spec #41). Only the learner's own
+ * enrollment resolves; anyone else's id is a 404.
  */
-export default async function CoursePlayerStub({ params }: Props) {
+export default async function ResumeCourse({ params, searchParams }: Props) {
   const session = await getSession();
-  const result = await getMyEnrollment((await params).enrollmentId);
+  const demoState = session.demo ? parseDemoState((await searchParams).demoState) : 'ready';
+  const { enrollmentId } = await params;
+  const result = await getCoursePlayer(enrollmentId, {
+    demoState: demoState === 'loading' ? 'ready' : demoState,
+  });
   if (!result.ok) {
     if (result.status === 404) notFound();
-    return <PermissionDenied headingLevel="h1" />;
+    if (result.status === 403) return <PermissionDenied headingLevel="h1" />;
+    return <ErrorState requestId={result.error.requestId} />;
   }
-  return (
-    <>
-      <PageHeader
-        title={result.data.courseTitle}
-        breadcrumbs={[
-          { label: t.nav.dashboard, href: '/learn' },
-          { label: result.data.courseTitle },
-        ]}
-        meta={session.demo ? <DemoBadge /> : null}
-        description={t.learnerDashboard.version(result.data.courseVersion)}
-      />
-      <EmptyState
-        icon={<PlayCircle />}
-        title={t.playerStub.heading}
-        description={t.playerStub.body}
-        action={
-          <Button asChild variant="outline">
-            <Link href="/learn">{t.playerStub.back}</Link>
-          </Button>
-        }
-      />
-    </>
-  );
+  const query = demoState === 'ready' ? '' : `?demoState=${demoState}`;
+  redirect(`${lessonHref(enrollmentId, result.data.resumeLessonId)}${query}`);
 }

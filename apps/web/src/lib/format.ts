@@ -143,3 +143,28 @@ export function formatDuration(minutes: number) {
   if (h === 0) return `${m} min`;
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
+
+/** Media time as "m:ss" or "h:mm:ss" from whole seconds. */
+export function formatClock(seconds: number) {
+  if (!Number.isInteger(seconds) || seconds < 0) throw new Error('Clock time is whole seconds');
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = String(seconds % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+}
+
+/** "820 KB", "1.4 MB" from bytes (1 KB = 1000 bytes, as file managers show it). */
+export function formatFileSize(
+  bytes: number,
+  { locale = DEFAULT_LOCALE }: { locale?: string } = {},
+) {
+  const [value, unit] =
+    bytes >= 1e9
+      ? [bytes / 1e9, 'GB']
+      : bytes >= 1e6
+        ? [bytes / 1e6, 'MB']
+        : bytes >= 1e3
+          ? [bytes / 1e3, 'KB']
+          : [bytes, 'bytes'];
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: unit === 'bytes' || unit === 'KB' ? 0 : 1 }).format(value)} ${unit}`;
+}

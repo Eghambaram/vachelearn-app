@@ -16,10 +16,10 @@ export type LessonType = z.infer<typeof LessonType>;
  * How each lesson type is completed (D-041, Proposed until decided): shown in the builder so authors know what
  * learners must do. The server decides completion; the client never marks a lesson complete by itself.
  */
-export const LESSON_COMPLETION_RULE: Record<
-  LessonType,
-  'manual' | 'watched_90' | 'acknowledged' | 'passed'
-> = {
+export const LessonCompletionRule = z.enum(['manual', 'watched_90', 'acknowledged', 'passed']);
+export type LessonCompletionRule = z.infer<typeof LessonCompletionRule>;
+
+export const LESSON_COMPLETION_RULE: Record<LessonType, LessonCompletionRule> = {
   text: 'manual',
   link: 'manual',
   video: 'watched_90',

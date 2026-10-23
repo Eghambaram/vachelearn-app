@@ -1,17 +1,24 @@
 import {
+  courseProgress,
+  CoursePlayer,
   enrollmentDisplayStatus,
   LearnerDashboard,
+  LessonView,
+  resumeLesson,
+  type CoursePlayer as CoursePlayerData,
   type LearnerDashboard as LearnerDashboardData,
+  type LessonView as LessonViewData,
 } from '@vachelearn/contracts';
 import { calendarDateIn, daysBetween } from '@/lib/format';
+import { demoLessonContent } from '@/mocks/course-player';
 import { demoEnrollments, type DemoEnrollment } from '@/mocks/enrollments';
 import { DEMO_TENANT_ZONE } from '@/mocks/tenant-dashboard';
 import { demoError, type ApiResult, type DemoState } from './client';
 import { getSession } from './session';
 
 /*
- * The learner's own learning: GET /api/v1/me/dashboard and GET /api/v1/me/enrollments/:id. The user and tenant come
- * from the session only — there is no parameter that could name someone else. Phase 1 serves the demo fixture through
+ * The learner's own learning: GET /api/v1/me/dashboard and, for the player, GET /api/v1/me/enrollments/:id/outline
+ * and …/lessons/:lessonId (contracts `course-player.ts`). The user and tenant come from the session only — there is no parameter that could name someone else. Phase 1 serves the demo fixture through
  * the shared contract and the shared D-054 status rule; Phase 4 serves the same shapes from the API.
  */
 
@@ -102,17 +109,73 @@ export async function getLearnerDashboard({
   };
 }
 
-/** One of the caller's own enrollments. Anyone else's id — or an unknown one — is 404, so existence never leaks. */
-export async function getMyEnrollment(
-  enrollmentId: string,
-  { now = new Date() }: { now?: Date } = {},
-): Promise<ApiResult<{ courseTitle: string; courseVersion: number }>> {
+/**
+ * One of the caller's own enrollments. Anyone else's id, a cancelled one or an unknown one is 404, so existence never
+ * leaks. Completed enrollments stay open for review.
+ */
+async function myEnrollment(enrollmentId: string, now: Date) {
   const own = await ownEnrollments(now);
-  if (!own) return demoError(403);
+  if (!own) return { result: demoError(403) };
   const enrollment = own.mine.find((e) => e.id === enrollmentId && e.status !== 'cancelled');
-  if (!enrollment) return notFound();
+  return enrollment ? { enrollment } : { result: notFound() };
+}
+
+/** The player outline: the pinned version's modules and lessons with the learner's progress (UI spec #41). */
+export async function getCoursePlayer(
+  enrollmentId: string,
+  { demoState = 'ready', now = new Date() }: { demoState?: DemoState; now?: Date } = {},
+): Promise<ApiResult<CoursePlayerData>> {
+  // Ownership first: a demo state never turns someone else's (404) enrollment into another answer.
+  const { enrollment, result } = await myEnrollment(enrollmentId, now);
+  if (!enrollment) return result;
+  if (demoState === 'forbidden') return demoError(403);
+  if (demoState === 'error') return demoError(500);
+  const timeZone = DEMO_TENANT_ZONE;
+  const progress = courseProgress(enrollment.modules.flatMap((m) => m.lessons));
   return {
     ok: true,
-    data: { courseTitle: enrollment.courseTitle, courseVersion: enrollment.courseVersion },
+    data: CoursePlayer.parse({
+      generatedAt: now.toISOString(),
+      timeZone,
+      enrollment: {
+        id: enrollment.id,
+        courseTitle: enrollment.courseTitle,
+        courseVersion: enrollment.courseVersion,
+        status: enrollmentDisplayStatus(
+          enrollment.status,
+          enrollment.dueOn,
+          calendarDateIn(now, timeZone),
+        ),
+        dueOn: enrollment.dueOn,
+        progressPercent: progress.percent,
+        requiredLessons: progress.requiredLessons,
+        requiredCompleted: progress.requiredCompleted,
+      },
+      resumeLessonId: resumeLesson(enrollment.modules).id,
+      modules: enrollment.modules,
+    }),
+  };
+}
+
+/** One lesson of the caller's own enrollment. A lesson outside the enrolled version is 404, like the enrollment. */
+export async function getLessonView(
+  enrollmentId: string,
+  lessonId: string,
+  { now = new Date() }: { now?: Date } = {},
+): Promise<ApiResult<LessonViewData>> {
+  const { enrollment, result } = await myEnrollment(enrollmentId, now);
+  if (!enrollment) return result;
+  const lesson = enrollment.modules.flatMap((m) => m.lessons).find((l) => l.id === lessonId);
+  if (!lesson) return notFound();
+  const completedAt = lesson.progress === 'completed' ? enrollment.lastActivityAt : null;
+  const content = demoLessonContent(lesson, enrollment.seed);
+  return {
+    ok: true,
+    data: LessonView.parse({
+      lessonId: lesson.id,
+      summary: `Demo summary: what “${lesson.title}” covers and what you will be able to do after it.`,
+      completedAt,
+      content: content.type === 'document' ? { ...content, acknowledgedAt: completedAt } : content,
+    }),
   };
 }

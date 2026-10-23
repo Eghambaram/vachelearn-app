@@ -43,7 +43,8 @@ Compliance metrics (compliance rate, due soon, overdue requirements) are defined
 
 | Key | Definition | Value | Filters and exclusions | Window | Status |
 |---|---|---|---|---|---|
-| `learner.progress_percent` | Progress through one enrollment | Required lessons completed ÷ required lessons in the **enrolled version**, as an integer percent (rounded down) | Optional lessons do not count (D-016) | Now | Proposed (D-016) |
+| `learner.progress_percent` | Progress through one enrollment | Required lessons completed ÷ required lessons in the **enrolled version**, as an integer percent (rounded down; shared `courseProgress`, used by the dashboard and the player) | Optional lessons do not count (D-016) | Now | Proposed (D-016) |
+| `learner.resume_lesson` | Where "Continue" lands | First opened-but-unfinished lesson in course order, else first not completed, else first lesson (`resumeLesson`) | Shown on the dashboard as "Next: <lesson>" and used by the player | Now | Proposed (D-070) |
 | `learner.display_status` | Status shown for an enrollment | Stored lifecycle, except **overdue** when not completed/cancelled and the due date is before today in the tenant zone; the due date itself is not overdue (`enrollmentDisplayStatus`) | — | Now | Proposed (D-054) |
 | `learner.summary` | Own enrollments by display status | Counts of not started / in progress / overdue / completed | Cancelled excluded | Now | Proposed |
 | `learner.deadlines` | Upcoming and missed due dates | Not completed, due within 30 days or overdue; soonest first; top 5 | Cancelled excluded | Next 30 days + overdue | Proposed |

@@ -404,8 +404,8 @@ whose — the demo fixture includes another learner's enrollments and tests prov
 (pinned version, `progressbar` + "N% of required lessons done" per D-016, next lesson, due/overdue in words,
 "Continue <course>"); Upcoming deadlines (overdue + next 30 days); Recently completed, showing completion and
 certificate issuance separately ("No certificate for this course"). Phones: sticky "Continue <course>" via
-`StickyActions`. "Continue" goes to `/learn/courses/[enrollmentId]`, an ownership-checked stub until the player
-(1.5.5): another learner's enrollment id is a 404. **Omitted until decided/built:** recommendations (D-021/D-046),
+`StickyActions`. "Continue" goes to `/learn/courses/[enrollmentId]`, which opens the player (1.5.5); another
+learner's enrollment id is a 404. **Omitted until decided/built:** recommendations (D-021/D-046),
 achievements and announcements (D-043), learning plans (D-025), instructor-led sessions (classroom flag). Contract
 `LearnerDashboard`, metrics `learner.*` in `docs/METRICS.md`.
 
@@ -418,6 +418,21 @@ achievements and announcements (D-043), learning plans (D-025), instructor-led s
 - Right panel for notes/resources only if those features are supported.
 - Never mark complete merely on lesson open unless explicit content policy permits it.
 - Server owns progress and completion state.
+
+**Built in Slice 1.5.5 (demo data), `/learn/courses/[enrollmentId]` → `/lessons/[lessonId]`:** the course URL
+redirects to the server's resume lesson (D-070). Own enrollment only; someone else's, a cancelled one, or a lesson
+outside the enrolled (pinned) version is a 404. Header: course title, enrollment status badge, version, Demo badge;
+progress bar + "N% complete · x of y required lessons" (D-016) and due date / overdue in words (D-054). Left: lesson
+tree (`<nav aria-label="Course content">`) with module "x of y done", per-lesson state by icon shape **and**
+screen-reader text, duration, "Optional", `aria-current` on the open lesson; on phones it is a closed disclosure
+("Course content · x of y done") above the lesson so the lesson comes first. Lesson: module + "Lesson n of N", numbered
+title, summary, type / duration / requirement, the player area per type (text; mock video panel with saved position,
+% watched and captions flag — no media in Phase 1; document card without file; https-only external link opening in a
+new tab with `noopener noreferrer`; assessment summary pointing to 1.5.6), then how the lesson completes (D-041,
+labelled proposed) and the completion action only where the rule allows it — not connected (D-069). Previous / Next
+lesson cross module boundaries, are disabled at the ends, and sit in `StickyActions` on phones. **Omitted (D-043):**
+notes, discussion, resources, bookmarks, lesson search, quick quiz, the right-hand panel. Contracts `CoursePlayer`,
+`LessonView`; shared `courseProgress`, `resumeLesson`.
 
 ## Screen implementation order
 1. Design system and responsive shell.
