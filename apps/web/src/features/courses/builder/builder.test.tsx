@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { CourseDraft } from '@vachelearn/contracts';
 import { emptyDraft } from '@/mocks/course-draft';
@@ -100,7 +100,26 @@ describe('CourseBuilder publish step', () => {
     search = new URLSearchParams('step=publish');
     render(<CourseBuilder initialDraft={emptyDraft()} categories={[]} assessments={[]} />);
     const user = userEvent.setup({ delay: null });
-    await user.click(screen.getAllByRole('button', { name: 'Go to Content' })[0]!);
+    // Each fix is named after the problem, with its step for context (exit-gate review #7).
+    await user.click(screen.getByRole('button', { name: /^Add a lesson ?\(Content\)$/ }));
     expect(search.get('step')).toBe('content');
+  });
+
+  it('a fix lands on the field, which shows the problem as its error', async () => {
+    search = new URLSearchParams('step=publish');
+    const { rerender } = render(
+      <CourseBuilder initialDraft={emptyDraft()} categories={[]} assessments={[]} />,
+    );
+    const user = userEvent.setup({ delay: null });
+    await user.click(
+      screen.getByRole('button', { name: /^Fix the title ?\(Basic information\)$/ }),
+    );
+    expect(search.get('step')).toBe('basics');
+    // The stand-in router does not re-render; do it as the URL change would.
+    rerender(<CourseBuilder initialDraft={emptyDraft()} categories={[]} assessments={[]} />);
+    const title = screen.getByRole('textbox', { name: /^Course title/ });
+    await act(() => new Promise(requestAnimationFrame));
+    expect(title).toHaveAttribute('aria-invalid', 'true');
+    expect(title).toHaveAccessibleDescription(/at least 3 characters/);
   });
 });

@@ -31,9 +31,12 @@ export function AppShell({
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
       <SkipLink />
-      <div className="surface-dark sticky top-0 hidden h-dvh bg-sidebar text-sidebar-foreground lg:block">
+      <aside
+        aria-label={t.shell.sidebarLabel}
+        className="surface-dark sticky top-0 hidden h-dvh bg-sidebar text-sidebar-foreground lg:block"
+      >
         <SidebarBody session={session} workspace={workspace} items={items} />
-      </div>
+      </aside>
       <div className="flex min-w-0 flex-col">
         {session.demo ? <DemoBar role={session.role} /> : null}
         <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-card px-2 sm:px-4 lg:px-6">

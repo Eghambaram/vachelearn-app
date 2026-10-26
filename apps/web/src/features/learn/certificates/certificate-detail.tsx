@@ -18,7 +18,14 @@ const c = t.certificates;
  * (the PDF is the official copy, D-074), its details, and the public verification link. A certificate that is not valid
  * says so in words above the preview, which is also marked, so it cannot be mistaken for a valid one.
  */
-export function CertificateDetail({ data }: { data: CertificateDetailData }) {
+export function CertificateDetail({
+  data,
+  origin,
+}: {
+  data: CertificateDetailData;
+  /** This site's origin, so the printed verification address is complete. */
+  origin: string;
+}) {
   const { award, timeZone } = data;
   const date = (instant: string) => formatDate(instant, { timeZone });
   const notice =
@@ -93,7 +100,9 @@ export function CertificateDetail({ data }: { data: CertificateDetailData }) {
                 <dd className="font-medium">{date(award.issuedAt)}</dd>
               </div>
               <div>
-                <dt className="text-xs text-muted-foreground">{c.validUntilLabel}</dt>
+                <dt className="text-xs text-muted-foreground">
+                  {award.expiresAt ? c.validUntilLabel : c.validityLabel}
+                </dt>
                 <dd className="font-medium">
                   {award.expiresAt ? date(award.expiresAt) : c.noExpiry}
                 </dd>
@@ -103,7 +112,9 @@ export function CertificateDetail({ data }: { data: CertificateDetailData }) {
               {c.certificateIdLabel}:{' '}
               <span className="font-mono font-medium">{award.verificationId}</span>
             </p>
-            <p className="text-xs text-muted-foreground">{c.verifyAt}</p>
+            <p className="text-xs wrap-anywhere text-muted-foreground">
+              {c.verifyAt(`${origin}/verify`)}
+            </p>
           </section>
         </figure>
 

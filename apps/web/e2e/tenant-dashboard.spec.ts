@@ -31,7 +31,8 @@ test.describe('Tenant Admin dashboard on demo data (Slice 1.5.2)', () => {
     }
     await expect(learners(page)).toContainText('478');
     await expect(page.getByRole('heading', { level: 2, name: 'Learning progress' })).toBeVisible();
-    await expect(page.getByText(/Compliance tracking arrives in Phase 5/)).toBeVisible();
+    // Compliance totals come from the compliance report, for the same scope.
+    await expect(page.getByRole('link', { name: 'View compliance report' })).toBeVisible();
     await expect(
       page
         .getByRole('list', { name: 'Course due dates in the next 30 days' })

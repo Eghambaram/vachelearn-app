@@ -1,4 +1,6 @@
+import * as LookupModule from './page';
 import VerifyLookupPage from './page';
+import * as LayoutModule from './layout';
 import VerifyResultPage from './[verificationId]/page';
 
 // next/navigation's notFound and redirect throw; record which one was called.
@@ -54,5 +56,10 @@ describe('public verification pages are demo surfaces with their own switch (D-0
         VerifyResultPage({ params: Promise.resolve({ verificationId }) }),
       ).rejects.toThrow('NEXT_NOT_FOUND');
     }
+  });
+
+  it('are rendered per request, so the runtime flag decides (never baked as a static 404 at build time)', () => {
+    expect(LayoutModule.dynamic).toBe('force-dynamic');
+    expect(LookupModule.dynamic).toBe('force-dynamic');
   });
 });

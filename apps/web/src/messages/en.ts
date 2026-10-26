@@ -55,6 +55,7 @@ export const en = {
     selected: (count: number) => `${count} selected`,
     clearSelection: 'Clear selection',
     loadingRows: 'Loading rows…',
+    rowsShown: (n: number) => (n === 1 ? '1 row shown' : `${n} rows shown`),
   },
   pagination: {
     label: 'Pagination',
@@ -127,6 +128,7 @@ export const en = {
     myCertificates: 'My certificates',
   },
   shell: {
+    sidebarLabel: 'Workspace sidebar',
     skipToContent: 'Skip to main content',
     openMenu: 'Open navigation menu',
     menuTitle: 'Navigation',
@@ -303,7 +305,8 @@ export const en = {
     },
     compliance: {
       title: 'Compliance status',
-      body: 'Compliance tracking arrives in Phase 5, once the due-soon and renewal rules (D‑018) are decided.',
+      total: (n: number) => `${n} learner × required course records in your scope`,
+      viewReport: 'View compliance report',
     },
   },
   courses: {
@@ -374,7 +377,7 @@ export const en = {
       delivery: 'Delivery mode',
       language: 'Language',
       languageValue: 'English',
-      languageHelp: 'English only at launch (D-028).',
+      languageHelp: 'English only at launch.',
       objectives: 'Learning objectives',
       objectivesHelp: 'One per line. At least one is required to publish.',
       audience: 'Audience',
@@ -422,7 +425,7 @@ export const en = {
         acknowledged: 'Complete when opened and acknowledged',
         passed: 'Complete when passed',
       },
-      completionNote: 'Completion rules per lesson type follow D-041 (Proposed).',
+      completionNote: 'Completion rules per lesson type are proposed defaults until confirmed.',
       untitled: 'Untitled',
     },
     assessment: {
@@ -438,18 +441,29 @@ export const en = {
       assignedOnlyHelp: 'Learners see it only when it is assigned to them.',
       catalog: 'Organisation catalogue',
       catalogHelp:
-        'Signed-in learners in your organisation can find it. A public catalogue depends on D-021.',
+        'Signed-in learners in your organisation can find it. A public catalogue is not decided yet.',
       selfEnrollment: 'Learners can enrol themselves',
-      selfEnrollmentHelp: 'Off by default (D-046, Proposed).',
+      selfEnrollmentHelp: 'Off by default (proposed).',
       completion: 'Completion policy',
       completionLessons: 'All required lessons completed (always)',
       requirePassing: 'And the final assessment passed',
-      completionNote: 'Course completion policy follows D-016 (Proposed).',
+      completionNote: 'The course completion policy is a proposed default until confirmed.',
     },
     publish: {
       ready: 'Ready to publish',
       notReady: 'Fix these before publishing',
       goTo: (step: string) => `Go to ${step}`,
+      fix: {
+        title_required: 'Fix the title',
+        summary_required: 'Add the summary',
+        category_required: 'Choose the category',
+        objective_required: 'Add an objective',
+        lesson_required: 'Add a lesson',
+        empty_module: 'Fix the empty module',
+        untitled_item: 'Name the untitled items',
+        required_lesson_needed: 'Mark a required lesson',
+        assessment_required: 'Choose the assessment',
+      },
       issues: {
         title_required: 'Add a course title (at least 3 characters).',
         summary_required: 'Add a summary.',
@@ -464,7 +478,7 @@ export const en = {
       versionNote: (next: number, current: number | null) =>
         current === null
           ? `Publishing creates version ${next}, the first version learners can take.`
-          : `Publishing creates version ${next}. Learners already enrolled stay on version ${current} unless an admin moves them (D-011).`,
+          : `Publishing creates version ${next}. Learners already enrolled stay on version ${current} unless an admin moves them.`,
       publish: (next: number) => `Publish version ${next}`,
       summary: (modules: number, lessons: number, minutes: string) =>
         `${modules} modules · ${lessons} lessons · ${minutes}`,
@@ -539,7 +553,7 @@ export const en = {
       acknowledged: 'Completes when you confirm you have read the document.',
       passed: 'Completes when you pass the assessment.',
     },
-    ruleProposed: 'Completion rules are proposed defaults until confirmed (D-041).',
+    ruleProposed: 'Completion rules are proposed defaults until confirmed.',
     completedOn: (date: string) => `You completed this lesson on ${date}.`,
     markComplete: 'Mark as complete',
     acknowledge: 'I have read this document',
@@ -590,7 +604,7 @@ export const en = {
       minutes === 1 ? '1 minute remaining' : `${minutes} minutes remaining`,
     timeUp: 'Time is up. Your answers can no longer be changed.',
     timeUpRule:
-      'In the live product, the answers saved before the deadline are graded (D-055, proposed).',
+      'In the live product, the answers saved before the deadline are graded (proposed rule).',
     questionsLabel: 'Questions',
     answered: 'answered',
     notAnswered: 'not answered',
@@ -622,7 +636,7 @@ export const en = {
     passedNote: (course: string) =>
       `You passed. Passing this assessment is one requirement for completing ${course}; course completion and any certificate are shown separately.`,
     failedNote: 'You did not reach the pass mark this time.',
-    keyNote: 'Individual answers and correct options are not shown (D-023).',
+    keyNote: 'Individual answers and correct options are not shown.',
     startAttempt: (n: number, limit: number | null) =>
       limit === null ? `Start attempt ${n}` : `Start attempt ${n} of ${limit}`,
     startNotConnected:
@@ -658,8 +672,9 @@ export const en = {
     completedLabel: 'Completed',
     issuedLabel: 'Issued',
     validUntilLabel: 'Valid until',
+    validityLabel: 'Validity',
     certificateIdLabel: 'Certificate ID',
-    verifyAt: 'Verify this certificate at /verify with its certificate ID.',
+    verifyAt: (url: string) => `Verify this certificate at ${url} with its certificate ID.`,
     detailsTitle: 'Certificate details',
     courseLabel: 'Course',
     issuerLabel: 'Issued by',
@@ -717,7 +732,7 @@ export const en = {
     noneTitle: 'No reports for your role yet',
     noneBody: 'More reports arrive in Phases 4–5. Ask your administrator if you need a report.',
     complianceDescription:
-      'Each row is one learner and one required course. Statuses follow the compliance rules (D-018).',
+      'Each row is one learner and one required course. Statuses follow your organisation’s compliance rules.',
     scopeLabel: 'Report scope',
     scope: (where: string) => `Scope: ${where}`,
     wholeTenant: (tenant: string) => `${tenant} (all branches)`,

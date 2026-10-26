@@ -1,16 +1,14 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.5.8 done** (Compliance status report, commit 350ef00). All eight key
-screens are built. Next: the **Phase 1 exit gate** (in progress).
+**Phase 1 complete — approved by the product owner 2026-10-26** (review page
+https://claude.ai/artifact/C4Aw93XyVrmhgBQYL8qTaf). Next: Phase 2 · Foundation (API, auth, tenancy, isolation suite).
 
 ## Last verified
-2026-10-26, Node v24.21.0, pnpm 12.8.1, on the final 1.5.8 tree:
-- `pnpm verify` (run twice) → check:ignored-source OK · format OK · lint OK · typecheck OK · unit: contracts 53
-  passed, web 534 passed (34 files), 0 failed · build OK
-- `pnpm test:e2e` → 232 passed in 4.8 min (adds `reports.spec.ts`: index → report, scope banner, totals, server
-  filters and pages, branch admin sees A1 only, demo states, 360 px, axe)
-- CI: 1.5.7 push (7964618) not checked in this session; 1.5.6 runs success
+2026-10-26, Node v24.21.0, pnpm 12.8.1, on the final Phase 1 tree:
+- `pnpm verify` → exit 0 · unit: contracts 53, web 541 passed (34 files), 0 failed · build OK
+- `pnpm test:e2e` → exit 0 · 236 passed, 0 failed (9.3 min); QA verifier independently: 232 passed before its fixes
+- CI: 1.5.7 push success (run 40276107040); 1.5.8 push (d0b12f4) not checked
 
 ## Done in this phase
 Detail per slice: `docs/progress-log/2026-10.md`.
@@ -35,9 +33,8 @@ Detail per slice: `docs/progress-log/2026-10.md`.
 - Nothing.
 
 ## Next step
-The Phase 1 exit gate (`prompts/phase-1-design-system.md` §Exit gate): delegate
-`ux-accessibility-reviewer` over the gallery + 8 screens and resolve or log findings; capture Playwright screenshots of
-each screen for the owner review; run `qa-verifier` against the gate; then report and ask the owner to sign off.
+`/start-phase 2` (`prompts/phase-2-foundation.md`): read the prompt, then settle the Phase 2 decisions below with the
+owner before scaffolding `apps/api` (NestJS, Prisma, Postgres via Docker Compose, Zod contracts, isolation suite).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
@@ -70,6 +67,13 @@ each screen for the owner review; run `qa-verifier` against the gate; then repor
   tests use `keyboard.down`/`up`, not `press` (`e2e/attempts.spec.ts`).
 - No app-wide security headers yet (CSP, `frame-ancestors`, `Referrer-Policy`, HSTS in `next.config.ts`): security
   review 1.5.7 — add before any public deployment (Phase 2 / 7).
+- Exit-gate review, logged (Low): builder stepper says "(completed)" for any visited step even with open issues
+  (`components/stepper.tsx`); spelling drift "catalog"/"catalogue", "enrol"/"enroll" (`messages/en.ts`); platform
+  status donut uses chart colours, not status tones; some controls under the project's 24 px target (pass WCAG 2.5.8
+  by spacing); Radix Select values are blank until hydration (server HTML). Not tested: real screen readers, Safari,
+  Firefox, touch, 200–400 % zoom, Windows High Contrast (emulation only).
+- Certificate preview builds its printed verification address from request headers (`siteOrigin`); Phase 2 should
+  use a configured public base URL (QA note, exit gate).
 - Phase 5 rules from the 1.5.8 audit: signed keyset cursors without personal data (+ as-of date), export request
   without cursor/limit, scope snapshot + re-check, CSV formula escaping — in `lib/api/cursor.ts` and
   `contracts/src/compliance.ts` comments.

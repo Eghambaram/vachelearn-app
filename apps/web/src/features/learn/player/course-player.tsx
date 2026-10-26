@@ -108,7 +108,11 @@ export function CoursePlayer({ outline, lesson }: Props) {
             <p className="text-sm text-muted-foreground">
               {current.module.title} · {p.position(index + 1, flat.length)}
             </p>
-            <h2 id="lesson-heading" className="text-xl font-semibold sm:text-2xl">
+            <h2
+              id="lesson-heading"
+              tabIndex={-1}
+              className="text-xl font-semibold outline-none sm:text-2xl"
+            >
               {current.number} {current.lesson.title}
             </h2>
             <p className="text-sm text-muted-foreground sm:text-base">{lesson.summary}</p>

@@ -61,16 +61,16 @@ const COLUMNS: DataTableColumn<ComplianceReportRow>[] = [
     ),
   },
   {
-    id: 'course',
-    header: r.columns.course,
-    className: 'whitespace-normal min-w-44',
-    cell: (row) => row.courseTitle,
-  },
-  {
     id: 'status',
     header: r.columns.status,
     sortField: 'status',
     cell: (row) => <StatusBadge entity="compliance" status={row.status} />,
+  },
+  {
+    id: 'course',
+    header: r.columns.course,
+    className: 'whitespace-normal min-w-44',
+    cell: (row) => row.courseTitle,
   },
   { id: 'due', header: r.columns.due, sortField: 'dueOn', cell: (row) => date(row.dueOn) },
   { id: 'completed', header: r.columns.completed, cell: (row) => date(row.completedOn) },

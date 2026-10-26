@@ -1,3 +1,4 @@
+import { ReloadButton } from '@/components/reload-button';
 import type { Metadata } from 'next';
 import { DashboardPeriod } from '@vachelearn/contracts';
 import { DemoBadge } from '@/components/demo-badge';
@@ -11,6 +12,7 @@ import {
 } from '@/features/tenant/dashboard/tenant-dashboard';
 import { parseDemoState } from '@/lib/api/client';
 import { getSession } from '@/lib/api/session';
+import { getComplianceReport } from '@/lib/api/reports';
 import { getTenantDashboard } from '@/lib/api/tenant';
 import { formatDateTime } from '@/lib/format';
 import { getMessages } from '@/lib/i18n';
@@ -50,14 +52,18 @@ export default async function TenantDashboardPage({ searchParams }: Props) {
     );
   }
 
-  const result = await getTenantDashboard({ period }, { demoState });
+  const [result, compliance] = await Promise.all([
+    getTenantDashboard({ period }, { demoState }),
+    // Same session scope as the report itself; roles without compliance.read get no card.
+    session.permissions.includes('compliance.read') ? getComplianceReport({ limit: 1 }) : null,
+  ]);
   if (!result.ok) {
     return result.status === 403 ? (
       <PermissionDenied headingLevel="h1" />
     ) : (
       <>
         {header()}
-        <ErrorState requestId={result.error.requestId} />
+        <ErrorState requestId={result.error.requestId} action={<ReloadButton />} />
       </>
     );
   }
@@ -71,7 +77,12 @@ export default async function TenantDashboardPage({ searchParams }: Props) {
       {header(
         `${scope} · ${t.tenantDashboard.asOf(formatDateTime(data.generatedAt, { timeZone: data.timeZone }))}`,
       )}
-      <TenantDashboard data={data} demo={session.demo} permissions={session.permissions} />
+      <TenantDashboard
+        data={data}
+        demo={session.demo}
+        permissions={session.permissions}
+        compliance={compliance?.ok ? compliance.data.totals : null}
+      />
     </>
   );
 }

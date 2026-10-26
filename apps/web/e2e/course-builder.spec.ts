@@ -88,9 +88,31 @@ test.describe('Course builder on demo data (Slice 1.5.3b)', () => {
     await page.goto('/admin/courses/new/build?step=publish');
     await expect(page.getByText('Fix these before publishing')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Publish version 1' })).toBeDisabled();
-    await page.getByRole('button', { name: 'Go to Content' }).click();
+    // Each fix is named after its problem and lands on the field, which shows the problem as its error.
+    await page.getByRole('button', { name: 'Fix the title (Basic information)' }).click();
+    await expect(page).toHaveURL(/step=basics/);
+    const title = page.getByRole('textbox', { name: /Course title/ });
+    await expect(title).toBeFocused();
+    await expect(title).toHaveAttribute('aria-invalid', 'true');
+    await expect(title).toHaveAccessibleDescription(/at least 3 characters/);
+    await page.goto('/admin/courses/new/build?step=publish');
+    await page.getByRole('button', { name: 'Add a lesson (Content)' }).click();
     await expect(page).toHaveURL(/step=content/);
     await expectNoAxeViolations(page);
+  });
+
+  test('demo states: loading, error, forbidden — labelled Demo', async ({ page }) => {
+    await page.goto(COURSE);
+    await expect(page.locator('[data-slot="page-header"] [data-slot="demo-badge"]')).toBeVisible();
+    await page.goto(`${COURSE}?demoState=loading`);
+    await expect(page.getByRole('status', { name: 'Loading…' })).toBeVisible();
+    await page.goto(`${COURSE}?demoState=error`);
+    await expect(page.getByRole('alert').filter({ hasText: 'req_demo_0500' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await page.goto(`${COURSE}?demoState=forbidden`);
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'You do not have access to this' }),
+    ).toBeVisible();
   });
 
   test('"Create course" opens an empty builder; read-only roles see no editing entry points', async ({

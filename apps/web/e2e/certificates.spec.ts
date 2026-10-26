@@ -73,6 +73,7 @@ test.describe('Certificates and public verification on demo data (Slice 1.5.7)',
     // The public page needs no session.
     await context.clearCookies();
     await page.goto(`/verify/${revokedId}`);
+    await expect(page.locator('[data-slot="demo-badge"]')).toBeVisible();
     await expect(
       page.getByRole('heading', { level: 1, name: 'Certificate verification' }),
     ).toBeVisible();
@@ -108,11 +109,31 @@ test.describe('Certificates and public verification on demo data (Slice 1.5.7)',
     ).toBeVisible();
   });
 
+  test('certificate list demo states: loading, empty, error, forbidden — labelled Demo', async ({
+    page,
+  }) => {
+    await page.goto('/learn/certificates');
+    await expect(page.locator('[data-slot="page-header"] [data-slot="demo-badge"]')).toBeVisible();
+    await page.goto(CURRENT);
+    await expect(page.locator('[data-slot="page-header"] [data-slot="demo-badge"]')).toBeVisible();
+    await page.goto('/learn/certificates?demoState=loading');
+    await expect(page.getByRole('status', { name: 'Loading…' })).toBeVisible();
+    await page.goto('/learn/certificates?demoState=empty');
+    await expect(page.getByRole('heading', { name: 'No certificates yet' })).toBeVisible();
+    await page.goto('/learn/certificates?demoState=error');
+    await expect(page.getByRole('alert').filter({ hasText: 'req_demo_0500' })).toBeVisible();
+    await page.goto('/learn/certificates?demoState=forbidden');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'You do not have access to this' }),
+    ).toBeVisible();
+  });
+
   test('360 px: list, certificate and verification fit without sideways scroll', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 360, height: 780 });
-    for (const path of ['/learn/certificates', CURRENT]) {
+    const verifyPath = `/verify/${await verificationIdOn(page, CURRENT)}`;
+    for (const path of ['/learn/certificates', CURRENT, '/verify', verifyPath]) {
       await page.goto(path);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       const overflow = await page.evaluate(

@@ -50,7 +50,7 @@ export function LessonTree({
         aria-expanded={open}
         aria-controls={listId}
         onClick={() => setOpen((v) => !v)}
-        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl px-4 text-left text-sm font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none lg:hidden"
+        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl px-4 text-left text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-ring lg:hidden"
       >
         {p.contentToggle(done, all.length)}
         <ChevronDown
@@ -81,8 +81,8 @@ export function LessonTree({
                         href={lessonHref(enrollmentId, lesson.id)}
                         aria-current={current ? 'page' : undefined}
                         className={cn(
-                          'flex min-h-10 items-start gap-2 rounded-md px-2 py-2 text-sm hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-                          current && 'bg-muted font-semibold',
+                          'flex min-h-10 items-start gap-2 rounded-md px-2 py-2 border-l-4 border-transparent text-sm hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-ring',
+                          current && 'border-primary bg-muted font-semibold',
                         )}
                       >
                         <Icon

@@ -25,28 +25,41 @@ export function BasicsStep({
   basics,
   categories,
   dispatch,
+  issues = [],
 }: {
   basics: CourseDraft['basics'];
   categories: readonly Category[];
   dispatch: (action: DraftAction) => void;
+  /** Open publish issues to show on their fields (after the author follows a checklist fix). */
+  issues?: readonly string[];
 }) {
   const patch = (p: Partial<CourseDraft['basics']>) => dispatch({ type: 'basics', patch: p });
+  const error = (code: keyof typeof t.builder.publish.issues) =>
+    issues.includes(code) ? t.builder.publish.issues[code] : undefined;
   return (
     <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-      <FormField label={f.title} required className="md:col-span-2">
+      <FormField label={f.title} required error={error('title_required')} className="md:col-span-2">
         {(field) => (
           <Input
             {...field}
+            data-issue="title_required"
             value={basics.title}
             maxLength={120}
             onChange={(e) => patch({ title: e.target.value })}
           />
         )}
       </FormField>
-      <FormField label={f.summary} help={f.summaryHelp} required className="md:col-span-2">
+      <FormField
+        label={f.summary}
+        help={f.summaryHelp}
+        required
+        error={error('summary_required')}
+        className="md:col-span-2"
+      >
         {(field) => (
           <Textarea
             {...field}
+            data-issue="summary_required"
             value={basics.summary}
             maxLength={300}
             rows={2}
@@ -65,13 +78,13 @@ export function BasicsStep({
           />
         )}
       </FormField>
-      <FormField label={f.category} required>
+      <FormField label={f.category} required error={error('category_required')}>
         {(field) => (
           <Select
             value={basics.categoryId ?? ''}
             onValueChange={(categoryId) => patch({ categoryId })}
           >
-            <SelectTrigger {...field} className="w-full">
+            <SelectTrigger {...field} data-issue="category_required" className="w-full">
               <SelectValue placeholder={f.noCategory} />
             </SelectTrigger>
             <SelectContent>
@@ -125,10 +138,17 @@ export function BasicsStep({
       <FormField label={f.language} help={f.languageHelp}>
         {(field) => <Input {...field} value={f.languageValue} readOnly />}
       </FormField>
-      <FormField label={f.objectives} help={f.objectivesHelp} required className="md:col-span-2">
+      <FormField
+        label={f.objectives}
+        help={f.objectivesHelp}
+        required
+        error={error('objective_required')}
+        className="md:col-span-2"
+      >
         {(field) => (
           <Textarea
             {...field}
+            data-issue="objective_required"
             value={basics.objectives.join('\n')}
             rows={3}
             onChange={(e) => patch({ objectives: e.target.value.split('\n').slice(0, 20) })}

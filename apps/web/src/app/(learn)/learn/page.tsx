@@ -1,3 +1,4 @@
+import { ReloadButton } from '@/components/reload-button';
 import type { Metadata } from 'next';
 import { DemoBadge } from '@/components/demo-badge';
 import { ErrorState } from '@/components/error-state';
@@ -52,7 +53,7 @@ export default async function LearnerDashboardPage({ searchParams }: Props) {
     ) : (
       <>
         {header}
-        <ErrorState requestId={result.error.requestId} />
+        <ErrorState requestId={result.error.requestId} action={<ReloadButton />} />
       </>
     );
   }

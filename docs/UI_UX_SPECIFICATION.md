@@ -348,8 +348,8 @@ branches); the request carries no tenant or branch. KPI cards: Learners (in scop
 wide), Completion rate (D-065), Overdue enrollments (D-054, replaces the reference's compliance rate); Learning
 progress chart (+ table); Upcoming deadlines (next 30 days, top 5, "in N days" in tenant calendar days); Recent
 activity (in scope; organisation-wide events such as course publishing appear for every scope). "View audit log" /
-"View assignments" links show only with `audit.read` / `assignment.create`. **Compliance** is a "not built yet" card
-until Phase 5 (D-018). **Omitted:** the reference's "Create" menu (nothing to create yet). Same period filter and
+"View assignments" links show only with `audit.read` / `assignment.create`. **Compliance** shows the compliance report's
+totals by status for the same scope, with "View compliance report" (only with `compliance.read`; since the exit gate). **Omitted:** the reference's "Create" menu (nothing to create yet). Same period filter and
 `?demoState=` states as `/platform`. Contract `TenantDashboard` in `@vachelearn/contracts`; metrics `tenant.*` in
 `docs/METRICS.md`.
 
@@ -491,6 +491,22 @@ table of every attempt (a retake never overwrites a result). Contract `AttemptVi
   learner, due date; cursor pagination — all server-side; a branch outside scope is a 422 identical to an unknown one.
   "Export CSV" (only with `report.export`) is disabled with its reason written beside it ("arrives in Phase 5") —
   not a tooltip, which keyboard and touch users cannot reach on a disabled button. Contract `ComplianceReport`.
+
+## Phase 1 exit-gate review (2026-10-26)
+
+Independent `ux-accessibility-reviewer` pass over the gallery and the eight screens (axe: 0 WCAG violations at 360,
+768 and 1440 px and in every demo state). Fixed: `/verify` rendered per request (a flagless build had baked it as a
+static 404) with outcome-based titles and one `<main>`; charts no longer an unnamed keyboard stop
+(`accessibilityLayer={false}`; the Table tab is the alternative) and visible focus if focusable; focus and "current"
+cues in the question navigator and lesson tree use outlines/borders that survive forced colours; the tenant
+dashboard's compliance card shows the compliance report's totals (same scope) and links to it (only with
+`compliance.read`); page-level errors are `h1` with "Try again" and a way back; the builder's publish checklist names
+each fix ("Fix the title (Basic information)") and lands on the field, which shows the problem as a linked error;
+the player focuses the lesson heading on lesson change; tables announce "N rows shown" (or the empty title) after a
+change and their scroll container is a named region; decision ids removed from user-facing copy; certificate preview
+prints the full verification address and "Validity: Does not expire"; page titles follow the same result as the page;
+the desktop sidebar is an `<aside>` landmark; compliance Status column moved next to the learner (visible at 360 px);
+the player and attempts highlight "My learning" in the nav. Logged, not fixed: see `docs/PROGRESS.md` §Known issues.
 
 ## Screen implementation order
 1. Design system and responsive shell.

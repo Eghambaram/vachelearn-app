@@ -29,6 +29,7 @@ test.describe('Assessment taking and results on demo data (Slice 1.5.6)', () => 
     await expect(page.getByRole('heading', { level: 1, name: 'Final check (Demo)' })).toBeVisible();
     await expect(page.getByText('Attempt 2 of 3 · Version 1 · pass mark 70%')).toBeVisible();
     await expect(page.getByRole('note')).toContainText('Demo — answers are not saved');
+    await expect(page.locator('[data-slot="page-header"] [data-slot="demo-badge"]')).toBeVisible();
     await expect(page.getByRole('timer')).toHaveText(/^1[12]:\d\d$/);
     await expect(page.getByText('3 of 10 answered').first()).toBeVisible();
     await expectNoAxeViolations(page);

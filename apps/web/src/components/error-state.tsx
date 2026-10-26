@@ -14,6 +14,8 @@ type ErrorStateProps = {
   requestId?: string;
   /** Shown as "Try again" when the failed load can be retried. */
   onRetry?: () => void;
+  /** Extra actions, e.g. a server-page retry (`ReloadButton`) and a way back. */
+  action?: React.ReactNode;
   headingLevel?: 'h1' | 'h2' | 'h3';
   className?: string;
 };
@@ -27,6 +29,7 @@ export function ErrorState({
   description = t.states.errorDescription,
   requestId,
   onRetry,
+  action,
   headingLevel: Heading = 'h2',
   className,
 }: ErrorStateProps) {
@@ -53,6 +56,7 @@ export function ErrorState({
           {t.states.retry}
         </Button>
       ) : null}
+      {action ? <div className="mt-1 flex flex-wrap justify-center gap-2">{action}</div> : null}
     </div>
   );
 }

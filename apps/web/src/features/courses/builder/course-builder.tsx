@@ -52,18 +52,33 @@ export function CourseBuilder({
   const index = BUILDER_STEPS.indexOf(step);
   const [draft, dispatch] = React.useReducer(draftReducer, initialDraft);
   const [notConnected, setNotConnected] = React.useState(false);
+  // Once the author follows a checklist fix, every step shows its open issues on the fields themselves.
+  const [showIssues, setShowIssues] = React.useState(false);
   const headingRef = React.useRef<HTMLHeadingElement>(null);
   const issues = publishIssues(draft);
   const stepsWithIssues = new Set<PublishStep>(issues.map((issue) => issue.step));
 
-  function goTo(next: BuilderStep) {
+  function goTo(next: BuilderStep, focusIssue?: string) {
     const params = new URLSearchParams(searchParams);
     params.set('step', next);
     setNotConnected(false);
+    pendingFocus.current = { issue: focusIssue ?? null };
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    // Move focus to the new step's heading so keyboard and screen-reader users land in the right place.
-    requestAnimationFrame(() => headingRef.current?.focus());
   }
+
+  // Once the new step has rendered, move focus to the field with the issue, else to the step's heading, so keyboard
+  // and screen-reader users land in the right place. (Focusing straight after `router.replace` ran before the step
+  // existed in a real browser.)
+  const pendingFocus = React.useRef<{ issue: string | null } | null>(null);
+  React.useEffect(() => {
+    const pending = pendingFocus.current;
+    if (!pending) return;
+    pendingFocus.current = null;
+    const field = pending.issue
+      ? document.querySelector<HTMLElement>(`[data-issue~="${pending.issue}"]`)
+      : null;
+    (field ?? headingRef.current)?.focus();
+  }, [step]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -99,8 +114,16 @@ export function CourseBuilder({
         >
           {b.steps[step]}
         </h2>
+        {showIssues && step !== 'basics' && step !== 'publish' ? (
+          <StepIssues codes={issues.filter((issue) => issue.step === step).map((i) => i.code)} />
+        ) : null}
         {step === 'basics' ? (
-          <BasicsStep basics={draft.basics} categories={categories} dispatch={dispatch} />
+          <BasicsStep
+            basics={draft.basics}
+            categories={categories}
+            dispatch={dispatch}
+            issues={showIssues ? issues.map((issue) => issue.code) : []}
+          />
         ) : step === 'content' ? (
           <ContentStep modules={draft.modules} dispatch={dispatch} />
         ) : step === 'assessment' ? (
@@ -119,7 +142,10 @@ export function CourseBuilder({
           <PublishPanel
             draft={draft}
             issues={issues}
-            onGoTo={(target) => goTo(target)}
+            onGoTo={(issue) => {
+              setShowIssues(true);
+              goTo(issue.step, issue.code);
+            }}
             onPublish={() => setNotConnected(true)}
           />
         )}
@@ -146,5 +172,21 @@ export function CourseBuilder({
         {notConnected ? b.notConnected : ''}
       </p>
     </div>
+  );
+}
+
+/** Open publish issues of a step that are not tied to a single field (content, assessment), focusable as a target. */
+function StepIssues({ codes }: { codes: readonly string[] }) {
+  if (codes.length === 0) return null;
+  return (
+    <ul
+      tabIndex={-1}
+      data-issue={codes.join(' ')}
+      className="flex flex-col gap-1 rounded-lg border border-danger/30 bg-danger-subtle p-3 text-sm text-danger outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-ring"
+    >
+      {codes.map((code) => (
+        <li key={code}>{b.publish.issues[code as keyof typeof b.publish.issues] ?? code}</li>
+      ))}
+    </ul>
   );
 }

@@ -43,6 +43,8 @@ export type NavItem = {
   permission: string;
   /** The slice that builds this screen, e.g. "1.5" (demo) or "2.2". */
   slice: string;
+  /** Other path prefixes that belong to this item (e.g. the player belongs to "My learning"). */
+  matches?: readonly string[];
 };
 
 export const NAV: Record<Workspace, readonly NavItem[]> = {
@@ -273,6 +275,7 @@ export const NAV: Record<Workspace, readonly NavItem[]> = {
       id: 'my-learning',
       label: t.nav.myLearning,
       href: '/learn/my-learning',
+      matches: ['/learn/courses', '/learn/attempts'],
       icon: 'progress',
       permission: 'enrollment.read',
       slice: '4.2',
@@ -309,7 +312,8 @@ export function findNavItem(workspace: Workspace, pathname: string): NavItem | u
 
 /** The item to mark current: the longest href that equals the path or is a parent segment of it. */
 export function activeNavId(items: readonly NavItem[], pathname: string): string | undefined {
-  return items
-    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
-    .sort((a, b) => b.href.length - a.href.length)[0]?.id;
+  const under = (prefix: string) => pathname === prefix || pathname.startsWith(`${prefix}/`);
+  const score = (item: NavItem) =>
+    Math.max(...[item.href, ...(item.matches ?? [])].map((p) => (under(p) ? p.length : -1)));
+  return items.filter((item) => score(item) >= 0).sort((a, b) => score(b) - score(a))[0]?.id;
 }

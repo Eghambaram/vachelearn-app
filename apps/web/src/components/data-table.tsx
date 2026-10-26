@@ -139,7 +139,7 @@ export function DataTable<Row>({
     );
   } else {
     body = (
-      <Table aria-busy={loading || undefined}>
+      <Table aria-busy={loading || undefined} containerLabel={caption}>
         <TableCaption className="sr-only">{caption}</TableCaption>
         <TableHeader>
           <TableRow>
@@ -283,7 +283,13 @@ export function DataTable<Row>({
         </div>
       ) : null}
       <span role="status" className="sr-only">
-        {loading ? t.table.loadingRows : ''}
+        {loading
+          ? t.table.loadingRows
+          : status === 'ready'
+            ? rows.length > 0
+              ? t.table.rowsShown(rows.length)
+              : empty.title
+            : ''}
       </span>
       <div className="rounded-xl border bg-card">{body}</div>
       {footer}

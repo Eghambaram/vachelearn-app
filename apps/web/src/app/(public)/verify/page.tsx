@@ -12,7 +12,15 @@ import { getMessages } from '@/lib/i18n';
 const t = getMessages();
 const v = t.verify;
 
-export const metadata: Metadata = { title: v.title, robots: { index: false, follow: false } };
+// Rendered per request so the runtime flag and the query decide (exit-gate review).
+export const dynamic = 'force-dynamic';
+
+// Decided per request like the page: a disabled build shows the generic 404 title, nothing verification-specific.
+export async function generateMetadata(): Promise<Metadata> {
+  return isDemoVerificationEnabled()
+    ? { title: v.title, robots: { index: false, follow: false } }
+    : { title: t.system.notFoundTitle };
+}
 
 // A repeated parameter (`?id=a&id=b`) arrives as an array: treated as an invalid id, never a 500.
 type Props = { searchParams: Promise<{ id?: string | string[] }> };

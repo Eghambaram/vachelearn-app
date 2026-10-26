@@ -1,3 +1,6 @@
+import { ReloadButton } from '@/components/reload-button';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { DemoBadge } from '@/components/demo-badge';
@@ -23,9 +26,22 @@ type Props = {
   searchParams: Promise<{ demoState?: string }>;
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const result = await getAttempt((await params).attemptId);
-  return { title: result.ok ? result.data.assessment.title : t.system.notFoundTitle };
+function titleFor(result: { ok: boolean; status?: number }, title: string) {
+  if (result.ok) return title;
+  return result.status === 404
+    ? t.system.notFoundTitle
+    : result.status === 403
+      ? t.states.deniedTitle
+      : t.states.errorTitle;
+}
+
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const session = await getSession();
+  const demoState = session.demo ? parseDemoState((await searchParams).demoState) : 'ready';
+  const result = await getAttempt((await params).attemptId, {
+    demoState: demoState === 'loading' ? 'ready' : demoState,
+  });
+  return { title: titleFor(result, result.ok ? result.data.assessment.title : '') };
 }
 
 /**
@@ -41,7 +57,20 @@ export default async function AttemptPage({ params, searchParams }: Props) {
   if (!result.ok) {
     if (result.status === 404) notFound();
     if (result.status === 403) return <PermissionDenied headingLevel="h1" />;
-    return <ErrorState requestId={result.error.requestId} />;
+    return (
+      <ErrorState
+        headingLevel="h1"
+        requestId={result.error.requestId}
+        action={
+          <>
+            <ReloadButton />
+            <Button asChild variant="outline">
+              <Link href="/learn">{t.player.backToDashboard}</Link>
+            </Button>
+          </>
+        }
+      />
+    );
   }
   const data = result.data;
   const header = (

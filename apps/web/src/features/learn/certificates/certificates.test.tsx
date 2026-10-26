@@ -53,7 +53,7 @@ describe('CertificateList', () => {
 
 describe('CertificateDetail (D-074)', () => {
   it('a valid certificate: labelled demo preview with the holder’s full name, not-connected download', async () => {
-    render(<CertificateDetail data={await detail(CURRENT)} />);
+    render(<CertificateDetail origin="https://demo.example" data={await detail(CURRENT)} />);
     expect(screen.getByText('Demo preview — the PDF is the official copy.')).toBeVisible();
     const preview = screen.getByRole('region', { name: 'Certificate preview' });
     expect(within(preview).getByText('Demo User')).toBeVisible();
@@ -70,7 +70,7 @@ describe('CertificateDetail (D-074)', () => {
   });
 
   it('a superseded certificate says so in words and links to the current one', async () => {
-    render(<CertificateDetail data={await detail(SUPERSEDED)} />);
+    render(<CertificateDetail origin="https://demo.example" data={await detail(SUPERSEDED)} />);
     expect(screen.getByRole('note')).toHaveTextContent('was replaced on');
     expect(screen.getByRole('link', { name: 'View the current certificate' })).toHaveAttribute(
       'href',
@@ -80,7 +80,7 @@ describe('CertificateDetail (D-074)', () => {
 
   it('copy link copies the public verification URL and confirms it', async () => {
     const user = userEvent.setup();
-    render(<CertificateDetail data={await detail(CURRENT)} />);
+    render(<CertificateDetail origin="https://demo.example" data={await detail(CURRENT)} />);
     await user.click(screen.getByRole('button', { name: 'Copy verification link' }));
     expect(await navigator.clipboard.readText()).toMatch(/^http:\/\/localhost(:\d+)?\/verify\/VL-/);
     expect(screen.getByText('Verification link copied.')).toBeVisible();

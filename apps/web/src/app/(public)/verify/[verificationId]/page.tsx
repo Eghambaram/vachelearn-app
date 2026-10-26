@@ -1,3 +1,4 @@
+import { ReloadButton } from '@/components/reload-button';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
@@ -14,10 +15,19 @@ import { getMessages } from '@/lib/i18n';
 const t = getMessages();
 const v = t.verify;
 
-// Verification results are never indexed: an id is shared on purpose, not published.
-export const metadata: Metadata = { title: v.resultTitle, robots: { index: false, follow: false } };
-
 type Props = { params: Promise<{ verificationId: string }> };
+
+// Verification results are never indexed: an id is shared on purpose, not published. The title follows the outcome:
+// the generic 404 title when disabled, "No certificate matches" for an id that matches nothing (exit-gate review).
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  if (!isDemoVerificationEnabled()) return { title: t.system.notFoundTitle };
+  const canonical = normalizeVerificationId((await params).verificationId);
+  const found = canonical ? (await verifyCertificate(canonical)).ok : false;
+  return {
+    title: found ? v.resultTitle : v.notFoundTitle,
+    robots: { index: false, follow: false },
+  };
+}
 
 /**
  * Public certificate verification (UI spec #43, D-017): anyone with the id sees the status and the minimal D-017
@@ -44,7 +54,7 @@ export default async function VerifyResultPage({ params }: Props) {
       {result.ok ? (
         <VerificationResult data={result.data} />
       ) : (
-        <ErrorState requestId={result.error.requestId} />
+        <ErrorState requestId={result.error.requestId} action={<ReloadButton />} />
       )}
       <Link
         href="/verify"

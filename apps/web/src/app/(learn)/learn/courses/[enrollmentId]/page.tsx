@@ -1,3 +1,6 @@
+import { ReloadButton } from '@/components/reload-button';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { PermissionDenied } from '@/components/permission-denied';
 import { ErrorState } from '@/components/error-state';
@@ -5,6 +8,10 @@ import { lessonHref } from '@/features/learn/player/paths';
 import { parseDemoState } from '@/lib/api/client';
 import { getCoursePlayer } from '@/lib/api/learner';
 import { getSession } from '@/lib/api/session';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 type Props = {
   params: Promise<{ enrollmentId: string }>;
@@ -25,7 +32,20 @@ export default async function ResumeCourse({ params, searchParams }: Props) {
   if (!result.ok) {
     if (result.status === 404) notFound();
     if (result.status === 403) return <PermissionDenied headingLevel="h1" />;
-    return <ErrorState requestId={result.error.requestId} />;
+    return (
+      <ErrorState
+        headingLevel="h1"
+        requestId={result.error.requestId}
+        action={
+          <>
+            <ReloadButton />
+            <Button asChild variant="outline">
+              <Link href="/learn">{t.player.backToDashboard}</Link>
+            </Button>
+          </>
+        }
+      />
+    );
   }
   const query = demoState === 'ready' ? '' : `?demoState=${demoState}`;
   redirect(`${lessonHref(enrollmentId, result.data.resumeLessonId)}${query}`);

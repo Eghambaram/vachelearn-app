@@ -96,3 +96,5 @@ Slice → files changed → commands run with results → screenshots (paths) �
   with owner approval, to keep change sets reviewable (D-067).
 - 2026-10-26 — Slice 1.5.8: the CSV button is disabled with its reason as visible text beside it instead of a tooltip
   (a disabled button cannot receive focus, so a tooltip would be unreachable by keyboard and touch).
+- 2026-10-26 — Exit gate passed (verify + 236 E2E, UX/accessibility review, QA verification); Phase 1 approved by the
+  product owner. Screenshots: https://claude.ai/artifact/C4Aw93XyVrmhgBQYL8qTaf

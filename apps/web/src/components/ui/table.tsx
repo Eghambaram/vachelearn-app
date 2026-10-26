@@ -3,12 +3,21 @@ import { cn } from '@/lib/utils';
 
 // Not a client component: plain table markup, usable from server components too.
 
-function Table({ className, ...props }: React.ComponentProps<'table'>) {
+function Table({
+  className,
+  containerLabel,
+  ...props
+}: React.ComponentProps<'table'> & {
+  /** Names the scroll container, which is a keyboard stop; usually the table's caption. */
+  containerLabel?: string;
+}) {
   return (
     // Focusable so keyboard users can scroll a table wider than the screen (axe: scrollable-region-focusable).
     <div
       data-slot="table-container"
       tabIndex={0}
+      role={containerLabel ? 'region' : undefined}
+      aria-label={containerLabel}
       className="relative w-full overflow-x-auto rounded-lg"
     >
       <table

@@ -1,3 +1,4 @@
+import { ReloadButton } from '@/components/reload-button';
 import type { Metadata } from 'next';
 import { DashboardPeriod } from '@vachelearn/contracts';
 import { DemoBadge } from '@/components/demo-badge';
@@ -59,7 +60,7 @@ export default async function PlatformDashboardPage({ searchParams }: Props) {
     ) : (
       <>
         {header()}
-        <ErrorState requestId={result.error.requestId} />
+        <ErrorState requestId={result.error.requestId} action={<ReloadButton />} />
       </>
     );
   }

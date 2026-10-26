@@ -333,7 +333,7 @@ export function DataGallery() {
             table={barTable}
           >
             <ChartContainer config={BAR_CONFIG} className="max-h-72 w-full">
-              <BarChart accessibilityLayer data={[...EXAMPLE_COMPLETION_BY_BRANCH]}>
+              <BarChart accessibilityLayer={false} data={[...EXAMPLE_COMPLETION_BY_BRANCH]}>
                 <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="branch"
@@ -367,7 +367,7 @@ export function DataGallery() {
             table={lineTable}
           >
             <ChartContainer config={LINE_CONFIG} className="max-h-72 w-full">
-              <LineChart accessibilityLayer data={[...EXAMPLE_MONTHLY_TREND]}>
+              <LineChart accessibilityLayer={false} data={[...EXAMPLE_MONTHLY_TREND]}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} />
                 <YAxis unit="%" width={44} tickLine={false} axisLine={false} />

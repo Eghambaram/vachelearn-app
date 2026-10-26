@@ -1,3 +1,6 @@
+import { ReloadButton } from '@/components/reload-button';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { DemoBadge } from '@/components/demo-badge';
@@ -20,17 +23,31 @@ type Props = {
   searchParams: Promise<{ demoState?: string }>;
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+function titleFor(result: { ok: boolean; status?: number }, title: string) {
+  if (result.ok) return title;
+  return result.status === 404
+    ? t.system.notFoundTitle
+    : result.status === 403
+      ? t.states.deniedTitle
+      : t.states.errorTitle;
+}
+
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { enrollmentId, lessonId } = await params;
-  const result = await getCoursePlayer(enrollmentId);
+  const session = await getSession();
+  const demoState = session.demo ? parseDemoState((await searchParams).demoState) : 'ready';
+  const result = await getCoursePlayer(enrollmentId, {
+    demoState: demoState === 'loading' ? 'ready' : demoState,
+  });
   const lesson = result.ok
     ? result.data.modules.flatMap((m) => m.lessons).find((l) => l.id === lessonId)
     : undefined;
+  if (result.ok && !lesson) return { title: t.system.notFoundTitle };
   return {
-    title:
-      result.ok && lesson
-        ? `${lesson.title} · ${result.data.enrollment.courseTitle}`
-        : t.system.notFoundTitle,
+    title: titleFor(
+      result,
+      lesson && result.ok ? `${lesson.title} · ${result.data.enrollment.courseTitle}` : '',
+    ),
   };
 }
 
@@ -69,7 +86,20 @@ export default async function LessonPage({ params, searchParams }: Props) {
   if (!outline.ok) {
     if (outline.status === 404) notFound();
     if (outline.status === 403) return <PermissionDenied headingLevel="h1" />;
-    return <ErrorState requestId={outline.error.requestId} />;
+    return (
+      <ErrorState
+        headingLevel="h1"
+        requestId={outline.error.requestId}
+        action={
+          <>
+            <ReloadButton />
+            <Button asChild variant="outline">
+              <Link href="/learn">{t.player.backToDashboard}</Link>
+            </Button>
+          </>
+        }
+      />
+    );
   }
   if (!lesson.ok) notFound();
 

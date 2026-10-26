@@ -51,6 +51,8 @@ test.describe('Course player on demo data (Slice 1.5.5)', () => {
     await expect(heading).toHaveText(/^4\.1 /);
     await page.getByRole('link', { name: /^Next lesson \(4\.2/ }).click();
     await expect(heading).toHaveText(/^4\.2 /);
+    // Focus lands on the new lesson, not the top of the page (exit-gate review #9).
+    await expect(heading).toBeFocused();
     await page.getByRole('link', { name: /^Previous lesson \(4\.1/ }).click();
     await expect(heading).toHaveText(/^4\.1 /);
     const nav = await lessonList(page);

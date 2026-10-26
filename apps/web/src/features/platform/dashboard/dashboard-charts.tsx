@@ -80,7 +80,7 @@ export function TenantGrowthChart({ data, demo }: Props) {
       }}
     >
       <ChartContainer config={GROWTH_CONFIG} className="max-h-72 w-full">
-        <ComposedChart accessibilityLayer data={points}>
+        <ComposedChart accessibilityLayer={false} data={points}>
           <CartesianGrid vertical={false} />
           <XAxis dataKey="label" tickLine={false} axisLine={false} minTickGap={12} />
           <YAxis yAxisId="new" allowDecimals={false} width={32} tickLine={false} axisLine={false} />
@@ -144,7 +144,7 @@ export function EnrollmentTrendChart({ data, demo }: Props) {
       }}
     >
       <ChartContainer config={ENROLL_CONFIG} className="max-h-72 w-full">
-        <LineChart accessibilityLayer data={points}>
+        <LineChart accessibilityLayer={false} data={points}>
           <CartesianGrid vertical={false} />
           <XAxis dataKey="label" tickLine={false} axisLine={false} minTickGap={12} />
           <YAxis allowDecimals={false} width={44} tickLine={false} axisLine={false} />
@@ -195,7 +195,7 @@ export function TenantStatusChart({ data, demo }: Props) {
       }}
     >
       <ChartContainer config={STATUS_CONFIG} className="mx-auto aspect-square max-h-64">
-        <PieChart accessibilityLayer>
+        <PieChart accessibilityLayer={false}>
           <ChartTooltip content={<ChartTooltipContent nameKey="status" hideLabel />} />
           <Pie
             isAnimationActive={false}

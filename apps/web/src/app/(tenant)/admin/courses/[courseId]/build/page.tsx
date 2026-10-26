@@ -5,6 +5,7 @@ import { ErrorState } from '@/components/error-state';
 import { PageHeader } from '@/components/page-header';
 import { PermissionDenied } from '@/components/permission-denied';
 import { StatusBadge } from '@/components/status-badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CourseBuilder } from '@/features/courses/builder/course-builder';
 import { parseDemoState } from '@/lib/api/client';
 import { getCourseDraft } from '@/lib/api/course-draft';
@@ -34,7 +35,8 @@ export default async function CourseBuilderPage({ params, searchParams }: Props)
   const session = await getSession();
   const demoState = session.demo ? parseDemoState((await searchParams).demoState) : 'ready';
   const [result, categories] = await Promise.all([
-    getCourseDraft(courseId, { demoState }),
+    // Access is checked even for the loading preview, so a hidden course stays a 404.
+    getCourseDraft(courseId, { demoState: demoState === 'loading' ? 'ready' : demoState }),
     listCategories(),
   ]);
   if (!result.ok) {
@@ -60,7 +62,13 @@ export default async function CourseBuilderPage({ params, searchParams }: Props)
           draft.publishedVersion === null ? b.neverPublished : b.publishedAs(draft.publishedVersion)
         }
       />
-      {archived ? (
+      {demoState === 'loading' ? (
+        <div role="status" aria-label={t.common.loading} className="flex flex-col gap-4">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-80 w-full" />
+        </div>
+      ) : archived ? (
         <p className="rounded-lg border bg-muted px-4 py-3 text-sm">{b.archived}</p>
       ) : (
         <CourseBuilder

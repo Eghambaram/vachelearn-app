@@ -117,9 +117,9 @@ export function AttemptTaker({ data, demo }: Props) {
                   aria-current={current ? 'step' : undefined}
                   aria-label={a.navItem(i + 1, answered)}
                   className={cn(
-                    'flex h-9 min-w-9 items-center justify-center gap-1 rounded-md border px-2 text-sm font-medium tabular-nums focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none',
+                    'flex h-9 min-w-9 items-center justify-center gap-1 rounded-md border px-2 text-sm font-medium tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-ring',
                     answered ? 'border-primary bg-primary text-primary-foreground' : 'bg-card',
-                    current && 'ring-2 ring-ring ring-offset-2',
+                    current && 'border-2 border-foreground',
                   )}
                 >
                   {answered ? (

@@ -1,8 +1,14 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getMessages } from '@/lib/i18n';
 
 // English only for now (D-028); becomes per-request when a second language is added.
 const t = getMessages();
+
+export const metadata: Metadata = {
+  title: t.verify.notFoundTitle,
+  robots: { index: false, follow: false },
+};
 
 /** Same wording for a malformed, unknown or never-issued id, so the page never says whether an id existed. */
 export default function VerificationNotFound() {

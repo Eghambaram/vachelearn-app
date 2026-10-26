@@ -1,12 +1,7 @@
 'use client';
 
 import { CircleAlert, CircleCheck } from 'lucide-react';
-import {
-  nextVersionNumber,
-  type CourseDraft,
-  type PublishIssue,
-  type PublishStep,
-} from '@vachelearn/contracts';
+import { nextVersionNumber, type CourseDraft, type PublishIssue } from '@vachelearn/contracts';
 import { Button } from '@/components/ui/button';
 import { formatDuration } from '@/lib/format';
 import { getMessages } from '@/lib/i18n';
@@ -27,7 +22,7 @@ export function PublishPanel({
 }: {
   draft: CourseDraft;
   issues: readonly PublishIssue[];
-  onGoTo: (step: PublishStep) => void;
+  onGoTo: (issue: PublishIssue) => void;
   onPublish: () => void;
 }) {
   const next = nextVersionNumber(draft);
@@ -60,9 +55,10 @@ export function PublishPanel({
                   variant="link"
                   size="sm"
                   className="h-auto p-0"
-                  onClick={() => onGoTo(issue.step)}
+                  onClick={() => onGoTo(issue)}
                 >
-                  {p.goTo(t.builder.steps[issue.step])}
+                  {p.fix[issue.code as keyof typeof p.fix] ?? p.goTo(t.builder.steps[issue.step])}
+                  <span className="sr-only"> ({t.builder.steps[issue.step]})</span>
                 </Button>
               </li>
             ))}
