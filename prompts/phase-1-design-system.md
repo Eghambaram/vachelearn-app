@@ -94,3 +94,5 @@ Slice → files changed → commands run with results → screenshots (paths) �
 - v2.0 — from MASTER_PROMPT v1 Phase 1; added contract-first demo layer, out-of-scope region omission, contrast step.
 - 2026-10-21 — Slice 1.3 split into 1.3a/1.3b and Slice 1.5.3 split into 1.5.3a (course list) / 1.5.3b (builder), both
   with owner approval, to keep change sets reviewable (D-067).
+- 2026-10-26 — Slice 1.5.8: the CSV button is disabled with its reason as visible text beside it instead of a tooltip
+  (a disabled button cannot receive focus, so a tooltip would be unreachable by keyboard and touch).

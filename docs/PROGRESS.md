@@ -1,16 +1,16 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.5.7 done** (Certificates + public verification). Next: Slice
-1.5.8 (compliance/report screen with filters and scope banner, ref 07).
+Phase 1 · Design system & UI foundations — **Slice 1.5.8 done, not committed** (Compliance status report). All eight
+key screens are built. Next: commit, then the **Phase 1 exit gate**.
 
 ## Last verified
-2026-10-26, Node v24.21.0, pnpm 12.8.1, on the final 1.5.7 tree:
-- `pnpm verify` (run twice) → check:ignored-source OK · format OK · lint OK · typecheck OK · unit: contracts 47
-  passed, web 505 passed (31 files), 0 failed · build OK
-- `pnpm test:e2e` → 222 passed in 4.1 min (adds `certificates.spec.ts`: list statuses, demo preview, not-connected
-  download, 404 in every demo state, masked public result without reason, lookup normalisation, 360 px, axe)
-- CI: run 39963709180 (1.5.5) success; 1.5.6 push (e85ee34) not checked in this session
+2026-10-26, Node v24.21.0, pnpm 12.8.1, on the final 1.5.8 tree:
+- `pnpm verify` (run twice) → check:ignored-source OK · format OK · lint OK · typecheck OK · unit: contracts 53
+  passed, web 534 passed (34 files), 0 failed · build OK
+- `pnpm test:e2e` → 232 passed in 4.8 min (adds `reports.spec.ts`: index → report, scope banner, totals, server
+  filters and pages, branch admin sees A1 only, demo states, 360 px, axe)
+- CI: 1.5.7 push (7964618) not checked in this session; 1.5.6 runs success
 
 ## Done in this phase
 Detail per slice: `docs/progress-log/2026-10.md`.
@@ -22,33 +22,29 @@ Detail per slice: `docs/progress-log/2026-10.md`.
 - 1.5.2 `TenantDashboard` (scope in the response), branch-scoped fixture (D-026), `/admin` dashboard (1819242).
 - 1.5.3a/b course list (opaque query-bound cursors) and 5-step builder with local edits (D-067) (c6f1220, bfbeb43).
 - 1.5.4 `LearnerDashboard`, shared `enrollmentDisplayStatus` (D-054), `/learn` own records only (1a09fcd).
-- 1.5.5 contracts `CoursePlayer`, `LessonView`, shared `courseProgress` / `resumeLesson` (D-070) · demo outline drives
-  dashboard figures · `/learn/courses/[id]` → resume · lesson player (tree, per-type panels, prev/next, completion
-  actions not connected, D-069) (commit 108952f).
-- 1.5.6 contracts `AttemptView` (strict questions, no answer key; no questions after the deadline), shared
-  `scoreAttempt` (D-042, D-072) / `answerIssues` / `canStartAttempt` (D-073) · `mocks/attempts.ts` (key server-side)
-  · `getAttempt` (own, non-cancelled; 404 in every demo state; expired open attempt graded on read, D-055) ·
-  `/learn/attempts/[id]` taking (timer, navigator, review, submit not connected, D-071) and result (score only, D-023;
-  history; retake only after a fail) · player lists attempts · client-boundary guard test (commit cb5a4d8).
-- 1.5.7 contracts `MyCertificates`, `CertificateDetail`, strict public `CertificateVerification`,
-  `normalizeVerificationId` (D-075), `certificateDisplayStatus`, `maskHolderName` (D-017) · `mocks/certificates.ts`
-  (superseded, expired, revoked awards) · `/learn/certificates` + `[awardId]` (demo preview, download not connected,
-  copy link; D-074) · public `/verify` + `[id]` (own flag `ENABLE_DEMO_VERIFICATION`, canonical URL, same 404) ·
-  isolation audit + security review: no High; fixes applied (commit bea85cf).
+- 1.5.5 course player: `CoursePlayer`/`LessonView`, `courseProgress`/`resumeLesson` (D-070), D-069 (108952f).
+- 1.5.6 assessments: `AttemptView` (no answer key), `scoreAttempt` (D-042/D-072), D-071/D-073, timer (cb5a4d8).
+- 1.5.7 certificates + public `/verify` (D-017 masked name, D-074 flag, D-075 ids), reviews applied (bea85cf).
+- 1.5.8 contracts `complianceStatus` (D-018 Confirmed: 30-day window, renewal, in-progress = Not started),
+  `ComplianceReport` (scope + applied filters echoed, totals) · shared `lib/api/cursor.ts` (courses refactored) ·
+  `mocks/compliance.ts` (30 learners, multi-branch, 4 requirements) · `/admin/reports` + `/admin/reports/compliance`
+  (scope banner, totals, server-driven filters/sort/pages, CSV disabled with visible reason) · D-026 Confirmed ·
+  isolation audit: no High; fixes applied (COMMIT_HASH).
 
 ## In progress / uncommitted
-- Nothing.
+- Slice 1.5.8, complete and verified but uncommitted: contracts `compliance.ts`, `lib/api/{cursor,reports}.ts`,
+  `features/reports/`, `/admin/reports/**`, `mocks/compliance.ts`, tests, `e2e/reports.spec.ts`, docs.
 
 ## Next step
-Slice 1.5.8: compliance/report screen `/admin/reports` (ref 07) — filters (branch, course, status, due window), scope
-banner ("Scope: Branch A1 · Filters … · Generated … IST"), compliance statuses (D-018 placeholder rules), CSV export
-not connected, branch scope from the session (D-026). Read the phase prompt and D-018/D-026 first.
+Commit 1.5.8 (on owner request). Then the Phase 1 exit gate (`prompts/phase-1-design-system.md` §Exit gate): delegate
+`ux-accessibility-reviewer` over the gallery + 8 screens and resolve or log findings; capture Playwright screenshots of
+each screen for the owner review; run `qa-verifier` against the gate; then report and ask the owner to sign off.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
 - Review D-070 (resume = first unfinished lesson vs last opened); decide D-076 (verifying suspended tenants'
   certificates).
-- Before Phase 2: D-010 · D-049 · D-051 · D-053 (confirm) · D-026 · D-047 · D-048 (decide).
+- Before Phase 2: D-010 · D-049 · D-051 · D-053 (confirm) · D-047 · D-048 (decide).
 
 ## Known issues
 - Node 26 not yet LTS (nodejs.org, 2026-10-20); bump `.nvmrc`/`engines` once it is (reported 2026-10-28).
@@ -75,5 +71,8 @@ not connected, branch scope from the session (D-026). Read the phase prompt and 
   tests use `keyboard.down`/`up`, not `press` (`e2e/attempts.spec.ts`).
 - No app-wide security headers yet (CSP, `frame-ancestors`, `Referrer-Policy`, HSTS in `next.config.ts`): security
   review 1.5.7 — add before any public deployment (Phase 2 / 7).
-- `guard-secrets.mjs` blocks any shell command whose text names a real env file (even in commit messages or file
-  content written via heredoc) — use the Write tool or reword; don't weaken the hook.
+- Phase 5 rules from the 1.5.8 audit: signed keyset cursors without personal data (+ as-of date), export request
+  without cursor/limit, scope snapshot + re-check, CSV formula escaping — in `lib/api/cursor.ts` and
+  `contracts/src/compliance.ts` comments.
+- `guard-secrets.mjs` blocks any shell command whose text names a real env file (even in commit messages, file
+  content written via heredoc, or code such as `r.key`) — use the Write tool or reword; don't weaken the hook.

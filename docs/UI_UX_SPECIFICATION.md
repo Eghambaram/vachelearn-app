@@ -478,6 +478,20 @@ table of every attempt (a retake never overwrites a result). Contract `AttemptVi
   matches this ID"). Labelled demo data; both public pages are off in production builds unless `ENABLE_DEMO_VERIFICATION`
   (D-074; generic 404 when off), take no demo states, and typed id variants redirect to one canonical URL. Contracts `MyCertificates`, `CertificateDetail`, strict `CertificateVerification`.
 
+## Reports and Compliance Status
+
+**Built in Slice 1.5.8 (demo data):**
+- `/admin/reports` — lists only the reports the role may open (`report.read`; the compliance report also needs
+  `compliance.read`); with none, an empty state. No placeholders for unbuilt reports.
+- `/admin/reports/compliance` (ref 07) — one row per learner × required course: learner (+ their in-scope branches;
+  primary marked for tenant-wide viewers only), course, status badge (D-018), due, completed, valid until, progress. **Scope banner** (one line,
+  `role="note"`, from the server's echo): "Scope: <branch(es) or tenant (all branches)> · Filters: … · Generated
+  <date time zone> · N rows". **Totals by status** (all five, text + badge + count; the status filter does not narrow
+  them). Filters: branch (only branches in scope), course (requirements whose audience reaches the scope), status; sort by status severity (default),
+  learner, due date; cursor pagination — all server-side; a branch outside scope is a 422 identical to an unknown one.
+  "Export CSV" (only with `report.export`) is disabled with its reason written beside it ("arrives in Phase 5") —
+  not a tooltip, which keyboard and touch users cannot reach on a disabled button. Contract `ComplianceReport`.
+
 ## Screen implementation order
 1. Design system and responsive shell.
 2. Platform Admin dashboard.

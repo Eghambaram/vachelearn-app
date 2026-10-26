@@ -37,7 +37,15 @@ tenant's default timezone.
 | `tenant.learning_progress` | Enrollments and completions per bucket | As `platform.enrollment_trend`, in scope | — | Cancelled excluded | Weekly / monthly buckets | Proposed |
 | `tenant.upcoming_deadlines` | Next due dates | Per course + due date: learners in scope with that due date who have not completed | — | Due in the next 30 days, not yet overdue; soonest first; top 5 | Next 30 days | Proposed |
 
-Compliance metrics (compliance rate, due soon, overdue requirements) are defined in Phase 5 with D-018.
+Compliance status (D-018, Confirmed 2026-10-26) — per learner × requirement, computed at read time by
+`complianceStatus` (`packages/contracts`), dates in the tenant timezone, a date met through the end of that day:
+
+| Key | Definition | Value | Filters and exclusions | Window | Status |
+|---|---|---|---|---|---|
+| `compliance.status` | One learner × requirement | Not applicable · Compliant (completed, validity > 30 days or none) · Due soon (not compliant and due in 0–30 days, or validity ending in 0–30 days) · Overdue (due date passed, or validity expired) · Not started (every other not-yet-compliant case, incl. in progress) | Scope from the session; a learner is in scope if any of their branches is (D-026) | Today | Confirmed (D-018) |
+| `compliance.totals` | Counts per status in a report | Rows matching scope + branch + course filters, per status; `total` = rows matching every filter (all pages) | Not narrowed by the status filter | At generation | Confirmed |
+
+Compliance rate and branch comparison (grouped by primary branch, D-026) are defined with Phase 5.2.
 
 ## Learner metrics (own records only — `enrollment.read` scope O)
 

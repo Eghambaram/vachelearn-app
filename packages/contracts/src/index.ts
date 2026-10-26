@@ -8,3 +8,4 @@ export * from './learner-dashboard';
 export * from './course-player';
 export * from './assessment-attempt';
 export * from './certificates';
+export * from './compliance';

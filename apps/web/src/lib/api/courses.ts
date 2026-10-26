@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import {
   CategoryList,
   CourseListPage,
@@ -8,6 +7,7 @@ import {
 } from '@vachelearn/contracts';
 import { demoCategories, demoCourses } from '@/mocks/courses';
 import { demoError, validationError, type ApiResult, type DemoState } from './client';
+import { cursorOffset, encodeCursor, invalidCursor, queryKey } from './cursor';
 import { getSession } from './session';
 
 /*
@@ -15,63 +15,6 @@ import { getSession } from './session';
  * session. Phase 1 serves demo fixtures with the API's real list semantics — validated query, allowlisted sort,
  * bounded limit, opaque cursors bound to their query — and parses every response with the shared contract.
  */
-
-type CursorBody = { o: number; k: string };
-
-/** Fingerprint of everything that defines the result set; a cursor is only valid for the same query. */
-function queryKey(
-  query: Omit<ReturnType<typeof CourseListQuery.parse>, 'cursor'>,
-  tenantId: string,
-) {
-  return createHash('sha256')
-    .update(
-      JSON.stringify([
-        tenantId,
-        query.search ?? '',
-        query.status ?? '',
-        query.categoryId ?? '',
-        query.level ?? '',
-        query.deliveryMode ?? '',
-        query.sort,
-        query.direction,
-        query.limit,
-      ]),
-    )
-    .digest('base64url')
-    .slice(0, 16);
-}
-
-function encodeCursor(body: CursorBody) {
-  return Buffer.from(JSON.stringify(body)).toString('base64url');
-}
-
-function decodeCursor(cursor: string): CursorBody | null {
-  try {
-    const body = JSON.parse(
-      Buffer.from(cursor, 'base64url').toString('utf8'),
-    ) as Partial<CursorBody>;
-    return Number.isSafeInteger(body.o) && (body.o ?? -1) >= 0 && typeof body.k === 'string'
-      ? (body as CursorBody)
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function invalidCursor(): ApiResult<never> {
-  return {
-    ok: false,
-    status: 422,
-    error: {
-      code: 'INVALID_CURSOR',
-      message: 'Invalid cursor',
-      requestId: 'req_demo_0422',
-      fieldErrors: [
-        { field: 'cursor', code: 'invalid', message: 'Cursor does not match this query' },
-      ],
-    },
-  };
-}
 
 function compare(
   a: CourseListItem,
@@ -102,12 +45,22 @@ export async function listCourses(
   if (demoState === 'error') return demoError(500);
 
   const { cursor, ...query } = parsed.data;
-  const key = queryKey(query, session.activeTenantId);
+  const key = queryKey([
+    session.activeTenantId,
+    query.search ?? '',
+    query.status ?? '',
+    query.categoryId ?? '',
+    query.level ?? '',
+    query.deliveryMode ?? '',
+    query.sort,
+    query.direction,
+    query.limit,
+  ]);
   let offset = 0;
   if (cursor) {
-    const body = decodeCursor(cursor);
-    if (!body || body.k !== key) return invalidCursor();
-    offset = body.o;
+    const at = cursorOffset(cursor, key);
+    if (at === null) return invalidCursor();
+    offset = at;
   }
 
   const term = query.search?.toLowerCase() ?? '';
@@ -133,7 +86,7 @@ export async function listCourses(
     data: CourseListPage.parse({
       data,
       page: {
-        nextCursor: next < rows.length ? encodeCursor({ o: next, k: key }) : null,
+        nextCursor: next < rows.length ? encodeCursor(next, key) : null,
         limit: query.limit,
       },
     }),
