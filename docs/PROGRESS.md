@@ -1,8 +1,8 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.5.8 done, not committed** (Compliance status report). All eight
-key screens are built. Next: commit, then the **Phase 1 exit gate**.
+Phase 1 · Design system & UI foundations — **Slice 1.5.8 done** (Compliance status report, commit 350ef00). All eight key
+screens are built. Next: the **Phase 1 exit gate** (in progress).
 
 ## Last verified
 2026-10-26, Node v24.21.0, pnpm 12.8.1, on the final 1.5.8 tree:
@@ -29,14 +29,13 @@ Detail per slice: `docs/progress-log/2026-10.md`.
   `ComplianceReport` (scope + applied filters echoed, totals) · shared `lib/api/cursor.ts` (courses refactored) ·
   `mocks/compliance.ts` (30 learners, multi-branch, 4 requirements) · `/admin/reports` + `/admin/reports/compliance`
   (scope banner, totals, server-driven filters/sort/pages, CSV disabled with visible reason) · D-026 Confirmed ·
-  isolation audit: no High; fixes applied (COMMIT_HASH).
+  isolation audit: no High; fixes applied (350ef00).
 
 ## In progress / uncommitted
-- Slice 1.5.8, complete and verified but uncommitted: contracts `compliance.ts`, `lib/api/{cursor,reports}.ts`,
-  `features/reports/`, `/admin/reports/**`, `mocks/compliance.ts`, tests, `e2e/reports.spec.ts`, docs.
+- Nothing.
 
 ## Next step
-Commit 1.5.8 (on owner request). Then the Phase 1 exit gate (`prompts/phase-1-design-system.md` §Exit gate): delegate
+The Phase 1 exit gate (`prompts/phase-1-design-system.md` §Exit gate): delegate
 `ux-accessibility-reviewer` over the gallery + 8 screens and resolve or log findings; capture Playwright screenshots of
 each screen for the owner review; run `qa-verifier` against the gate; then report and ask the owner to sign off.
 
