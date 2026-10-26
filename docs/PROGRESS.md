@@ -1,16 +1,16 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-Phase 1 · Design system & UI foundations — **Slice 1.5.6 done** (Assessment taking + result, commit cb5a4d8). Next:
-Slice 1.5.7 (certificate view + public verification, ref 05 panel 7).
+Phase 1 · Design system & UI foundations — **Slice 1.5.7 done** (Certificates + public verification). Next: Slice
+1.5.8 (compliance/report screen with filters and scope banner, ref 07).
 
 ## Last verified
-2026-10-23, Node v24.21.0, pnpm 12.8.1, on the final 1.5.6 tree:
-- `pnpm verify` → check:ignored-source OK · format OK · lint OK · typecheck OK · unit: contracts 42 passed, web 470
-  passed (28 files), 0 failed · build OK
-- `pnpm test:e2e` → 210 passed in 7.9 min (adds `attempts.spec.ts`: lesson → open attempt, keyboard-only
-  answer/review/submit not connected, score-only results, 404 in every demo state, 360 px, axe)
-- CI: run 39963709180 (1.5.5, commit 108952f) success; run 39905603553 (1.5.4) success
+2026-10-26, Node v24.21.0, pnpm 12.8.1, on the final 1.5.7 tree:
+- `pnpm verify` (run twice) → check:ignored-source OK · format OK · lint OK · typecheck OK · unit: contracts 47
+  passed, web 505 passed (31 files), 0 failed · build OK
+- `pnpm test:e2e` → 222 passed in 4.1 min (adds `certificates.spec.ts`: list statuses, demo preview, not-connected
+  download, 404 in every demo state, masked public result without reason, lookup normalisation, 360 px, axe)
+- CI: run 39963709180 (1.5.5) success; 1.5.6 push (e85ee34) not checked in this session
 
 ## Done in this phase
 Detail per slice: `docs/progress-log/2026-10.md`.
@@ -30,18 +30,24 @@ Detail per slice: `docs/progress-log/2026-10.md`.
   · `getAttempt` (own, non-cancelled; 404 in every demo state; expired open attempt graded on read, D-055) ·
   `/learn/attempts/[id]` taking (timer, navigator, review, submit not connected, D-071) and result (score only, D-023;
   history; retake only after a fail) · player lists attempts · client-boundary guard test (commit cb5a4d8).
+- 1.5.7 contracts `MyCertificates`, `CertificateDetail`, strict public `CertificateVerification`,
+  `normalizeVerificationId` (D-075), `certificateDisplayStatus`, `maskHolderName` (D-017) · `mocks/certificates.ts`
+  (superseded, expired, revoked awards) · `/learn/certificates` + `[awardId]` (demo preview, download not connected,
+  copy link; D-074) · public `/verify` + `[id]` (own flag `ENABLE_DEMO_VERIFICATION`, canonical URL, same 404) ·
+  isolation audit + security review: no High; fixes applied (COMMIT_HASH).
 
 ## In progress / uncommitted
 - Nothing.
 
 ## Next step
-Slice 1.5.7: certificate view `/learn/certificates` (own awards, completion vs
-certificate, Download PDF not connected) and public `/verify/[verificationId]` (opaque id, minimal data per D-017,
-learner name only if the owner agrees; revoked/expired states). D-017 answered 2026-10-23 (masked name, revoked + date only, on-screen preview).
+Slice 1.5.8: compliance/report screen `/admin/reports` (ref 07) — filters (branch, course, status, due window), scope
+banner ("Scope: Branch A1 · Filters … · Generated … IST"), compliance statuses (D-018 placeholder rules), CSV export
+not connected, branch scope from the session (D-026). Read the phase prompt and D-018/D-026 first.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
-- Review D-070 (resume = first unfinished lesson vs last opened).
+- Review D-070 (resume = first unfinished lesson vs last opened); decide D-076 (verifying suspended tenants'
+  certificates).
 - Before Phase 2: D-010 · D-049 · D-051 · D-053 (confirm) · D-026 · D-047 · D-048 (decide).
 
 ## Known issues
@@ -67,5 +73,7 @@ learner name only if the owner agrees; revoked/expired states). D-017 answered 2
   `pnpm check:ignored-source` (first step of verify) fails if any source file under apps/ or packages/ is ignored.
 - Radix radio groups select on arrow-key focus only while the key is held (focus moves in a `setTimeout`): Playwright
   tests use `keyboard.down`/`up`, not `press` (`e2e/attempts.spec.ts`).
+- No app-wide security headers yet (CSP, `frame-ancestors`, `Referrer-Policy`, HSTS in `next.config.ts`): security
+  review 1.5.7 — add before any public deployment (Phase 2 / 7).
 - `guard-secrets.mjs` blocks any shell command whose text names a real env file (even in commit messages or file
   content written via heredoc) — use the Write tool or reword; don't weaken the hook.

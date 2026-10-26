@@ -30,7 +30,6 @@ export type DemoEnrollment = {
   modules: PlayerModule[];
   lastActivityAt: string | null;
   completedAt: string | null;
-  certificate: { awardId: string; issuedAt: string } | null;
 };
 
 type Row = [
@@ -39,32 +38,37 @@ type Row = [
   dueInDays: number | null,
   progress: number,
   activeDaysAgo: number | null,
-  certificate: boolean,
 ];
 
-/** [title, status, due in N days (negative = past), progress %, last activity N days ago, certificate] */
+/**
+ * [title, status, due in N days (negative = past), progress %, last activity N days ago]. Certificates live in
+ * `certificates.ts`.
+ */
 const MINE: Row[] = [
-  ['Fire Safety Refresher (Demo)', 'in_progress', 3, 60, 0.2, false],
-  ['Forklift Operation Basics (Demo)', 'in_progress', -2, 30, 4, false],
-  ['Hazard Identification (Demo)', 'in_progress', 12, 75, 1, false],
-  ['PPE and Equipment (Demo)', 'not_started', 9, 0, null, false],
-  ['Machine Guarding (Demo)', 'not_started', -6, 0, null, false],
-  ['Lockout / Tagout (Demo)', 'not_started', null, 0, null, false],
-  ['First Aid Essentials (Demo)', 'completed', null, 100, 6, true],
-  ['Working at Height (Demo)', 'completed', null, 100, 18, false],
-  ['Chemical Handling (Demo)', 'completed', null, 100, 33, true],
-  ['Confined Space Entry (Demo)', 'cancelled', 5, 10, 40, false],
+  ['Fire Safety Refresher (Demo)', 'in_progress', 3, 60, 0.2],
+  ['Forklift Operation Basics (Demo)', 'in_progress', -2, 30, 4],
+  ['Hazard Identification (Demo)', 'in_progress', 12, 75, 1],
+  ['PPE and Equipment (Demo)', 'not_started', 9, 0, null],
+  ['Machine Guarding (Demo)', 'not_started', -6, 0, null],
+  ['Lockout / Tagout (Demo)', 'not_started', null, 0, null],
+  ['First Aid Essentials (Demo)', 'completed', null, 100, 6],
+  ['Working at Height (Demo)', 'completed', null, 100, 18],
+  ['Chemical Handling (Demo)', 'completed', null, 100, 33],
+  ['Confined Space Entry (Demo)', 'cancelled', 5, 10, 40],
+  // Older completions, outside the dashboard's recent three: an expired and a revoked certificate (slice 1.5.7).
+  ['Electrical Isolation (Demo)', 'completed', null, 100, 400],
+  ['Hot Work Permits (Demo)', 'completed', null, 100, 90],
 ];
 
 /** Another learner in the same tenant: must never appear on Demo User's dashboard. */
 const SOMEONE_ELSE: Row[] = [
-  ['Electrical Safety (Demo)', 'in_progress', 1, 90, 0.1, false],
-  ['Crane Signalling (Demo)', 'completed', null, 100, 2, true],
+  ['Electrical Safety (Demo)', 'in_progress', 1, 90, 0.1],
+  ['Crane Signalling (Demo)', 'completed', null, 100, 2],
 ];
 
 function build(tenantId: string, userId: string, rows: Row[], now: number): DemoEnrollment[] {
   const today = zonedMidnight(zonedDate(now));
-  return rows.map(([courseTitle, status, dueIn, targetPercent, activeAgo, cert], i) => {
+  return rows.map(([courseTitle, status, dueIn, targetPercent, activeAgo], i) => {
     const lastActivityAt =
       activeAgo === null ? null : new Date(now - activeAgo * DAY).toISOString();
     const completedAt = status === 'completed' ? lastActivityAt : null;
@@ -93,13 +97,6 @@ function build(tenantId: string, userId: string, rows: Row[], now: number): Demo
       modules,
       lastActivityAt,
       completedAt,
-      certificate:
-        cert && completedAt
-          ? {
-              awardId: `${tenantId}-${userId}-cert-${i + 1}`,
-              issuedAt: new Date(Date.parse(completedAt) + 60_000).toISOString(),
-            }
-          : null,
     };
   });
 }

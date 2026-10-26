@@ -23,7 +23,7 @@ test.describe('Learner dashboard on demo data (Slice 1.5.4)', () => {
     await expect(page.locator('[data-slot="page-header"] [data-slot="demo-badge"]')).toBeVisible();
     const summary = page.getByRole('region', { name: 'Your learning at a glance' });
     await expect(summary.getByRole('group', { name: 'Overdue' })).toContainText('2');
-    await expect(summary.getByRole('group', { name: 'Completed' })).toContainText('3');
+    await expect(summary.getByRole('group', { name: 'Completed' })).toContainText('5');
     // Progress is announced with its value, and written out in text too.
     await expect(
       page.getByRole('progressbar', { name: 'Progress in Fire Safety Refresher (Demo)' }),

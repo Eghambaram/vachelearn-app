@@ -1,5 +1,8 @@
 import {
   AttemptView,
+  CertificateDetail,
+  certificateDisplayStatus,
+  MyCertificates,
   scoreAttempt,
   canStartAttempt,
   courseProgress,
@@ -10,12 +13,15 @@ import {
   resumeLesson,
   type AttemptSummary,
   type AttemptView as AttemptViewData,
+  type CertificateDetail as CertificateDetailData,
+  type MyCertificates as MyCertificatesData,
   type CoursePlayer as CoursePlayerData,
   type LearnerDashboard as LearnerDashboardData,
   type LessonView as LessonViewData,
 } from '@vachelearn/contracts';
 import { calendarDateIn, daysBetween } from '@/lib/format';
 import { DEMO_ASSESSMENT, DEMO_QUESTIONS, demoAttempts, type DemoAttempt } from '@/mocks/attempts';
+import { currentAward, demoAwards, issuerName, type DemoAward } from '@/mocks/certificates';
 import { demoLessonContent } from '@/mocks/course-player';
 import { demoEnrollments, type DemoEnrollment } from '@/mocks/enrollments';
 import { DEMO_TENANT_ZONE } from '@/mocks/tenant-dashboard';
@@ -111,7 +117,10 @@ export async function getLearnerDashboard({
           enrollmentId: e.id,
           courseTitle: e.courseTitle,
           completedAt: e.completedAt!,
-          certificate: e.certificate,
+          certificate: (() => {
+            const award = currentAward(e);
+            return award ? { awardId: award.id, issuedAt: award.issuedAt } : null;
+          })(),
         })),
     }),
   };
@@ -281,6 +290,79 @@ export async function getAttempt(
               kind: 'result',
               score: scoreAttempt(DEMO_QUESTIONS, attempt.answers, DEMO_ASSESSMENT.passMarkPercent),
             },
+    }),
+  };
+}
+
+function myCertificateItem(award: DemoAward, now: Date) {
+  return {
+    awardId: award.id,
+    enrollmentId: award.enrollmentId,
+    courseTitle: award.courseTitle,
+    courseVersion: award.courseVersion,
+    status: certificateDisplayStatus(award.status, award.expiresAt, now),
+    issuedAt: award.issuedAt,
+    expiresAt: award.expiresAt,
+    verificationId: award.verificationId,
+  };
+}
+
+/** Own awards in the active tenant, newest first; revoked and superseded ones stay listed (evidence is kept). */
+async function myAwards(now: Date) {
+  const own = await ownEnrollments(now);
+  if (!own || !own.session.permissions.includes('certificate.read')) return null;
+  return {
+    session: own.session,
+    awards: own.mine
+      .flatMap((e) => demoAwards(e))
+      .sort((a, b) => b.issuedAt.localeCompare(a.issuedAt)),
+  };
+}
+
+/** GET /api/v1/me/certificates (UI spec #43). One page: a learner holds few awards; the cursor stays for the API. */
+export async function getMyCertificates({
+  demoState = 'ready',
+  now = new Date(),
+}: { demoState?: DemoState; now?: Date } = {}): Promise<ApiResult<MyCertificatesData>> {
+  const mine = await myAwards(now);
+  if (demoState === 'forbidden' || !mine) return demoError(403);
+  if (demoState === 'error') return demoError(500);
+  const awards = demoState === 'empty' ? [] : mine.awards;
+  return {
+    ok: true,
+    data: MyCertificates.parse({
+      data: awards.map((a) => myCertificateItem(a, now)),
+      page: { nextCursor: null, limit: 25 },
+      timeZone: DEMO_TENANT_ZONE,
+    }),
+  };
+}
+
+/** GET /api/v1/me/certificates/:awardId — own award only; anyone else's or an unknown id is a 404 in every state. */
+export async function getMyCertificate(
+  awardId: string,
+  { demoState = 'ready', now = new Date() }: { demoState?: DemoState; now?: Date } = {},
+): Promise<ApiResult<CertificateDetailData>> {
+  const mine = await myAwards(now);
+  if (!mine) return demoError(403);
+  const award = mine.awards.find((a) => a.id === awardId);
+  if (!award) return notFound();
+  if (demoState === 'forbidden') return demoError(403);
+  if (demoState === 'error') return demoError(500);
+  return {
+    ok: true,
+    data: CertificateDetail.parse({
+      generatedAt: now.toISOString(),
+      timeZone: DEMO_TENANT_ZONE,
+      award: {
+        ...myCertificateItem(award, now),
+        completedAt: award.completedAt,
+        revokedAt: award.revokedAt,
+        supersededAt: award.supersededAt,
+        replacedByAwardId: award.replacedByAwardId,
+      },
+      holderName: mine.session.user.displayName,
+      issuerName: issuerName(award.tenantId),
     }),
   };
 }

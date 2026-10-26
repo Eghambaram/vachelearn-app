@@ -457,6 +457,27 @@ questions or per-question correctness are sent), "Start attempt n of N" only whe
 table of every attempt (a retake never overwrites a result). Contract `AttemptView`; shared `scoreAttempt`,
 `answerIssues`, `canStartAttempt`.
 
+## Certificates and Public Verification
+
+**Built in Slice 1.5.7 (demo data):**
+- `/learn/certificates` — the learner's own awards (newest first; `certificate.read` scope O). Each card: course,
+  version, status badge (Valid / Expired / Revoked / Superseded — expired derived from `expiresAt`), issued date,
+  "Valid until" / "Expired" / "Does not expire", certificate ID, "View certificate" (name includes course and status).
+  Revoked and superseded awards stay listed. Empty, loading, error and permission states.
+- `/learn/certificates/[awardId]` — own award only (anyone else's is a 404 in every demo state). A not-valid status is
+  stated in words above the preview (revoked/expired/replaced on <date>; superseded links to the current award) and
+  stamped on the preview. On-screen preview (issuer, "Certificate of completion", the holder's full name, course,
+  version, completed/issued/valid-until, certificate ID) captioned "Demo preview — the PDF is the official copy"
+  (D-074). Details card; "Download PDF" not connected; "Copy verification link" (clipboard, result announced); link to
+  the public page.
+- `/verify` — public GET form (works without JavaScript): typed ids are normalised (case, spaces, dashes, optional
+  prefix; D-075) and redirected to the canonical result; anything else gets an inline, linked error. `noindex`.
+- `/verify/[verificationId]` — public result (no session): status in words first, then only D-017 fields — masked
+  holder name ("D. U***", "shown as initials to protect privacy"), course, issuer, issued on, valid until, certificate
+  ID, checked at. Revoked: the date only, never the reason. Malformed and unknown ids: the same 404 ("No certificate
+  matches this ID"). Labelled demo data; both public pages are off in production builds unless `ENABLE_DEMO_VERIFICATION`
+  (D-074; generic 404 when off), take no demo states, and typed id variants redirect to one canonical URL. Contracts `MyCertificates`, `CertificateDetail`, strict `CertificateVerification`.
+
 ## Screen implementation order
 1. Design system and responsive shell.
 2. Platform Admin dashboard.

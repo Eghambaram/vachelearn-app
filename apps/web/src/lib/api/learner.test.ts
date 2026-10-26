@@ -48,7 +48,7 @@ describe('getLearnerDashboard: own records only', () => {
 describe('getLearnerDashboard: figures', () => {
   it('summarises by display status with overdue derived (D-054) and cancelled excluded', async () => {
     const data = await dashboard();
-    expect(data.summary).toEqual({ notStarted: 2, inProgress: 2, overdue: 2, completed: 3 });
+    expect(data.summary).toEqual({ notStarted: 2, inProgress: 2, overdue: 2, completed: 5 });
   });
 
   it('continue learning lists started courses, most recently active first, overdue ones flagged', async () => {

@@ -23,3 +23,12 @@ export function isDesignGalleryEnabled(env: Env = process.env): boolean {
 export function isDemoWorkspacesEnabled(env: Env = process.env): boolean {
   return devToolEnabled(env.ENABLE_DEMO_WORKSPACES, env.NODE_ENV);
 }
+
+/**
+ * The public certificate verification pages on demo data (D-074). Separate from the demo workspaces because they are
+ * public: a deployed preview that enables demo workspaces must still not "verify" fake certificates for anyone with a
+ * link. On in `next dev`; off in production builds unless exactly "true" (the E2E server sets it).
+ */
+export function isDemoVerificationEnabled(env: Env = process.env): boolean {
+  return devToolEnabled(env.ENABLE_DEMO_VERIFICATION, env.NODE_ENV);
+}

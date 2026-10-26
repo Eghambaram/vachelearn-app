@@ -1,4 +1,8 @@
-import { isDemoWorkspacesEnabled, isDesignGalleryEnabled } from './dev-tools';
+import {
+  isDemoVerificationEnabled,
+  isDemoWorkspacesEnabled,
+  isDesignGalleryEnabled,
+} from './dev-tools';
 
 describe('isDesignGalleryEnabled', () => {
   it('is off in production by default', () => {
@@ -41,5 +45,20 @@ describe('isDemoWorkspacesEnabled (D-063)', () => {
     expect(isDemoWorkspacesEnabled({ NODE_ENV: 'production', ENABLE_DESIGN_GALLERY: 'true' })).toBe(
       false,
     );
+  });
+});
+
+describe('isDemoVerificationEnabled (D-074)', () => {
+  it('is its own switch: demo workspaces alone do not expose public verification in production', () => {
+    expect(isDemoVerificationEnabled({ NODE_ENV: 'development' })).toBe(true);
+    expect(
+      isDemoVerificationEnabled({ NODE_ENV: 'production', ENABLE_DEMO_WORKSPACES: 'true' }),
+    ).toBe(false);
+    expect(
+      isDemoVerificationEnabled({ NODE_ENV: 'production', ENABLE_DEMO_VERIFICATION: 'true' }),
+    ).toBe(true);
+    expect(
+      isDemoVerificationEnabled({ NODE_ENV: 'development', ENABLE_DEMO_VERIFICATION: 'false' }),
+    ).toBe(false);
   });
 });

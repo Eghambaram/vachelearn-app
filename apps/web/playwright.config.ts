@@ -29,8 +29,13 @@ export default defineConfig({
     command: `pnpm build && pnpm exec next start --port ${port}`,
     url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
-    // The /design developer tool and the demo workspaces (D-063) are off in production builds unless enabled.
-    env: { ENABLE_DESIGN_GALLERY: 'true', ENABLE_DEMO_WORKSPACES: 'true' },
+    // The /design developer tool, the demo workspaces (D-063) and demo verification (D-074) are off in production
+    // builds unless enabled.
+    env: {
+      ENABLE_DESIGN_GALLERY: 'true',
+      ENABLE_DEMO_WORKSPACES: 'true',
+      ENABLE_DEMO_VERIFICATION: 'true',
+    },
     timeout: 180_000,
   },
 });
