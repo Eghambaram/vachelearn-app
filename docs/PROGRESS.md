@@ -34,7 +34,7 @@ Detail per slice: `docs/progress-log/2026-10.md`.
   `normalizeVerificationId` (D-075), `certificateDisplayStatus`, `maskHolderName` (D-017) · `mocks/certificates.ts`
   (superseded, expired, revoked awards) · `/learn/certificates` + `[awardId]` (demo preview, download not connected,
   copy link; D-074) · public `/verify` + `[id]` (own flag `ENABLE_DEMO_VERIFICATION`, canonical URL, same 404) ·
-  isolation audit + security review: no High; fixes applied (COMMIT_HASH).
+  isolation audit + security review: no High; fixes applied (commit bea85cf).
 
 ## In progress / uncommitted
 - Nothing.
