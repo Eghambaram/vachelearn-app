@@ -1,8 +1,8 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — Slice 2.1 done, not committed** (API scaffold + local infrastructure). Next:
-commit, then Slice 2.2 (tenancy schema + platform tenant management). Phase 1 approved 2026-10-26 (a51d042).
+**Phase 2 · Platform foundation (R1) — Slice 2.1 done** (API scaffold + local infrastructure, commit cd9d922). Next: Slice
+2.2 (tenancy schema + platform tenant management). Phase 1 approved 2026-10-26 (a51d042).
 
 ## Last verified
 2026-10-27, Node v24.21.0, pnpm 12.8.1, Docker 29.8, on the final 2.1 tree:
@@ -19,14 +19,13 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
   server-generated request IDs · error envelope filter · `ZodValidationPipe` + Zod→OpenAPI (D-077) · pino with header
   allowlist, deep redaction, scrubbed error serializer · CORS = web origin only · `/health` `/ready` · Postgres 18 +
   Mailpit compose on 55432/51025/58025 (no object storage, D-078) · contracts CommonJS build for the API · shared
-  local-database guard (reset opt-in) · CI Postgres service + `pnpm audit --prod` · multer override (GHSA).
+  local-database guard (reset opt-in) · CI Postgres service + `pnpm audit --prod` · multer override (GHSA) (cd9d922).
 
 ## In progress / uncommitted
-- Slice 2.1, complete and verified but uncommitted: `apps/api/`, `infra/`, contracts build, root/CI/workspace config,
-  docs (ARCHITECTURE §7, RUNBOOK, API_SPECIFICATION new, DECISIONS D-005/D-077/D-078, CLAUDE.md commands).
+- Nothing.
 
 ## Next step
-Commit 2.1 (on owner request). Then plan Slice 2.2: Tenant, Branch (code unique per tenant), minimal TenantSetting,
+Plan Slice 2.2: Tenant, Branch (code unique per tenant), minimal TenantSetting,
 AuditEvent; composite-key pattern; platform tenant CRUD + suspend/reactivate with reason; needs D-031 (feature flags)
 and D-048 (tenant profile fields) confirmed first. Use the tenant-isolation-auditor on 2.2.
 
