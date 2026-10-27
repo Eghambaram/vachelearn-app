@@ -9,6 +9,14 @@ engineStrict: true
 allowBuilds:
   # postinstall only downloads a fallback binary; the prebuilt @unrs/resolver-binding-* package is installed instead.
   unrs-resolver: false
+  # Usage analytics pulled in by swagger-ui-dist (@nestjs/swagger); its postinstall only reports installs. Denied.
+  '@scarf/scarf': false
+  # Prisma (D-005), reviewed 2026-10-26: `prisma` preinstall only checks the Node version; `@prisma/engines`
+  # postinstall downloads the schema-engine binary that `prisma migrate` needs, from Prisma's binary host.
+  prisma: true
+  # postinstall only installs @swc/wasm when the native binary is missing; the prebuilt @swc/core-<platform> package is used.
+  '@swc/core': false
+  '@prisma/engines': true
 
 # eslint-config-next 16 accepts ESLint >=9, but three plugins it bundles still declare peers up to ESLint 9.
 # Verified 2026-10-20 that their rules run correctly on ESLint 10 (react/jsx-key, react-hooks, jsx-a11y, @next/next
@@ -18,3 +26,9 @@ peerDependencyRules:
     eslint-plugin-import>eslint: '10'
     eslint-plugin-jsx-a11y>eslint: '10'
     eslint-plugin-react>eslint: '10'
+
+# Security overrides (reviewed). Remove each once the parent package ships the fixed version itself.
+overrides:
+  # GHSA-q7qp-rjg7-q26m (high, DoS via a pending async fileFilter), fixed in multer 2.5.0. Pulled in by
+  # @nestjs/platform-express 12.2.0, which pins 2.4.0. Same major; no API change. (Security review, Slice 2.1.)
+  multer: '>=2.5.0 <3'

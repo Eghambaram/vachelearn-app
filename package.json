@@ -8,7 +8,7 @@
     "pnpm": ">=12.8.1"
   },
   "scripts": {
-    "dev": "pnpm --filter web dev",
+    "dev": "pnpm --filter @vachelearn/contracts build && pnpm -r --parallel dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "format": "prettier --write .",
@@ -17,7 +17,9 @@
     "test": "pnpm -r test",
     "test:e2e": "pnpm --filter web test:e2e",
     "verify": "pnpm check:ignored-source && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "check:ignored-source": "node scripts/check-ignored-source.mjs"
+    "check:ignored-source": "node scripts/check-ignored-source.mjs",
+    "services:up": "docker compose -f infra/docker-compose.yml up -d --wait",
+    "services:down": "docker compose -f infra/docker-compose.yml down"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

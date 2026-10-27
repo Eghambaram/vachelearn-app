@@ -22,6 +22,7 @@ tests pass.
 | Detailed functional spec + acceptance criteria | `docs/VacheLearn_MVP_Implementation_Specification.docx` (Markdown copy: `docs/MVP_SPEC.md`) |
 | Decisions (Confirmed / Proposed / Needs decision) | `docs/DECISIONS.md` |
 | Roles, permissions, scopes | `docs/ROLE_PERMISSION_MATRIX.md` |
+| API conventions (errors, request IDs, probes; endpoints are in OpenAPI at `/api/docs`) | `docs/API_SPECIFICATION.md` |
 | Entities and integrity rules | `docs/DOMAIN_MODEL.md` |
 | Screens, layout, design tokens | `docs/UI_UX_SPECIFICATION.md` + `assets/ui-ux/*.png` |
 | Release-gate tests | `docs/ACCEPTANCE_TESTS.md` |
@@ -67,7 +68,8 @@ tests pass.
   `packages/contracts` for API validation too (D-035 Confirmed) — use it everywhere.
 - REST under `/api/v1`, OpenAPI generated from code. Auth owned by the API (see D-010 in DECISIONS.md).
 - Adapters for everything external: `StorageService`, `VideoProvider`, `EmailProvider`, `PaymentProvider`,
-  `PdfRenderer`. Local implementations first (MinIO, mock video, console/Mailpit email, disabled payments).
+  `PdfRenderer`. Local implementations first (an S3-compatible server chosen in Phase 3 — MinIO no longer publishes
+  images, D-078 —, mock video, console/Mailpit email, disabled payments).
 - Modular monolith. No microservices, no Redis/queue until a job genuinely needs it (start with a Postgres-backed
   job/outbox table).
 - Before adding any dependency: check it is maintained, check the installed major version's docs, and state why.
@@ -75,22 +77,22 @@ tests pass.
 
 ## Commands
 
-> Verified in Phase 1 Slice 1.1 (2026-10-20). Rows marked *Phase 2* do not exist yet — do not run them.
-> Keep this table true; a wrong command here wastes every future session.
+> Verified in Phase 1 Slice 1.1 (2026-10-20) and Phase 2 Slice 2.1 (2026-10-27). Rows marked *Phase 2.x* do not
+> exist yet — do not run them. Keep this table true; a wrong command here wastes every future session.
 
 | Purpose | Command |
 |---|---|
 | Install | `pnpm install` (Node 24 LTS per `.nvmrc`, pnpm 12.8.1 per `packageManager`) |
-| Local services (Postgres, MinIO, Mailpit) | *Phase 2:* `docker compose -f infra/docker-compose.yml up -d` |
-| Dev servers | `pnpm dev` (web :3000; api :4000 from Phase 2) |
+| Local services (Postgres 18 :55432, Mailpit :51025/:58025) | `pnpm services:up` · `pnpm services:down` (`infra/docker-compose.yml`; no object storage until Phase 3, D-078) |
+| Dev servers | `pnpm dev` (web :3000, api :4000; needs a root `.env` copied from `.env.example`) |
 | Lint / format check / format | `pnpm lint` · `pnpm format:check` · `pnpm format` (run Prettier from the root only: from `apps/web` it reformats the vendored CSS) |
-| Type-check | `pnpm typecheck` (runs `next typegen` first) |
-| Unit + integration tests | `pnpm test` (web + `packages/contracts`; single: `pnpm --filter web test -- <pattern>` or `pnpm --filter @vachelearn/contracts test`; api from Phase 2) |
-| Tenant/branch isolation suite | *Phase 2:* `pnpm --filter api test:isolation` |
+| Type-check | `pnpm typecheck` (web runs `next typegen`; api builds contracts + `prisma generate` first) |
+| Unit + integration tests | `pnpm test` (contracts, web, api; api needs `pnpm services:up` — real Postgres test DB `vachelearn_test`). Single: `pnpm --filter web test -- <pattern>`, `pnpm --filter api test -- <pattern>` |
+| Tenant/branch isolation suite | *Phase 2.6:* `pnpm --filter api test:isolation` |
 | E2E (Playwright + axe) | `pnpm test:e2e` (first time: `pnpm --filter web exec playwright install chromium`) |
 | Build | `pnpm build` |
-| DB migrate (dev) / seed / reset | *Phase 2:* `pnpm --filter api db:migrate` · `db:seed` · `db:reset` |
-| All gates (run before reporting a slice done) | `pnpm verify` = format:check + lint + typecheck + test + build |
+| DB migrate (dev) / deploy / reset | `pnpm --filter api db:migrate` · `db:deploy` · `db:reset` (localhost only); *Phase 2.6:* `db:seed` |
+| All gates (run before reporting a slice done) | `pnpm verify` = ignored-source check + format:check + lint + typecheck + test + build (needs local services for api tests) |
 
 ## How to work (every slice)
 

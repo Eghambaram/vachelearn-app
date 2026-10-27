@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // NestJS runs as CommonJS and its dependency injection reads constructor parameter types from decorator metadata.
+    "module": "commonjs",
+    "moduleResolution": "bundler",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    // Decorated constructor parameters need value imports; per-file isolation is SWC's job in tests, not tsc's.
+    "isolatedModules": false,
+    "noEmit": true,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "generated/**/*.ts", "*.ts"]
+}

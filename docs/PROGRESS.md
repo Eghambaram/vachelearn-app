@@ -1,46 +1,40 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 1 complete — approved by the product owner 2026-10-26** (review page
-https://claude.ai/artifact/C4Aw93XyVrmhgBQYL8qTaf). Next: Phase 2 · Foundation (API, auth, tenancy, isolation suite).
+**Phase 2 · Platform foundation (R1) — Slice 2.1 done, not committed** (API scaffold + local infrastructure). Next:
+commit, then Slice 2.2 (tenancy schema + platform tenant management). Phase 1 approved 2026-10-26 (a51d042).
 
 ## Last verified
-2026-10-26, Node v24.21.0, pnpm 12.8.1, on the final Phase 1 tree:
-- `pnpm verify` → exit 0 · unit: contracts 53, web 541 passed (34 files), 0 failed · build OK
-- `pnpm test:e2e` → exit 0 · 236 passed, 0 failed (9.3 min); QA verifier independently: 232 passed before its fixes
-- CI: 1.5.7 push success (run 40276107040); 1.5.8 push (d0b12f4) not checked
+2026-10-27, Node v24.21.0, pnpm 12.8.1, Docker 29.8, on the final 2.1 tree:
+- `pnpm verify` → exit 0 · unit/integration: contracts 53, web 541, api 29 (6 files, real Postgres 18) · build OK
+- Clean-clone run (copy of tracked files, `install --frozen-lockfile` → `services:up` → `db:migrate` → `verify`):
+  install, services, migrate exit 0; verify exit 0 (first run: one contracts timezone test timed out at 6.4 s under
+  parallel load → 15 s allowance, then green)
+- `pnpm test:e2e` → exit 0 · 236 passed (web unchanged since); `pnpm audit --prod` → no known vulnerabilities
+- Running server: `/ready` 503 `NOT_READY` with Postgres stopped, 200 after restart; missing `DATABASE_URL` exits 1
 
 ## Done in this phase
-Detail per slice: `docs/progress-log/2026-10.md`.
-- 1.1 workspace, Next 16 / React 19 / TS 6 strict, ESLint, Prettier, Vitest, Playwright + axe, CI (cb23f12).
-- 1.2 tokens as the single style source, Tailwind 4 theme, shadcn/ui, Inter (D-059), contrast tests (ca61cf9).
-- 1.3a/b primitives + composites (FormField, StatusBadge, DataTable, ChartCard, Stepper, states…) (939e9a4, 101740e).
-- 1.4 logo (D-064), i18n helper, `SessionView`, permission-driven nav, AppShell, system pages, D-061/D-063 (83bd1ef).
-- 1.5.1 `packages/contracts` (Zod 4, D-035), `docs/METRICS.md`, contract-parsed demo client, `/platform` (88e9422).
-- 1.5.2 `TenantDashboard` (scope in the response), branch-scoped fixture (D-026), `/admin` dashboard (1819242).
-- 1.5.3a/b course list (opaque query-bound cursors) and 5-step builder with local edits (D-067) (c6f1220, bfbeb43).
-- 1.5.4 `LearnerDashboard`, shared `enrollmentDisplayStatus` (D-054), `/learn` own records only (1a09fcd).
-- 1.5.5 course player: `CoursePlayer`/`LessonView`, `courseProgress`/`resumeLesson` (D-070), D-069 (108952f).
-- 1.5.6 assessments: `AttemptView` (no answer key), `scoreAttempt` (D-042/D-072), D-071/D-073, timer (cb5a4d8).
-- 1.5.7 certificates + public `/verify` (D-017 masked name, D-074 flag, D-075 ids), reviews applied (bea85cf).
-- 1.5.8 contracts `complianceStatus` (D-018 Confirmed: 30-day window, renewal, in-progress = Not started),
-  `ComplianceReport` (scope + applied filters echoed, totals) · shared `lib/api/cursor.ts` (courses refactored) ·
-  `mocks/compliance.ts` (30 learners, multi-branch, 4 requirements) · `/admin/reports` + `/admin/reports/compliance`
-  (scope banner, totals, server-driven filters/sort/pages, CSV disabled with visible reason) · D-026 Confirmed ·
-  isolation audit: no High; fixes applied (350ef00).
+Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
+- 2.1 `apps/api` NestJS 12 (D-003) + Prisma 7 stable (D-005 Confirmed) · Zod config (fail fast, nothing fails open) ·
+  server-generated request IDs · error envelope filter · `ZodValidationPipe` + Zod→OpenAPI (D-077) · pino with header
+  allowlist, deep redaction, scrubbed error serializer · CORS = web origin only · `/health` `/ready` · Postgres 18 +
+  Mailpit compose on 55432/51025/58025 (no object storage, D-078) · contracts CommonJS build for the API · shared
+  local-database guard (reset opt-in) · CI Postgres service + `pnpm audit --prod` · multer override (GHSA).
 
 ## In progress / uncommitted
-- Nothing.
+- Slice 2.1, complete and verified but uncommitted: `apps/api/`, `infra/`, contracts build, root/CI/workspace config,
+  docs (ARCHITECTURE §7, RUNBOOK, API_SPECIFICATION new, DECISIONS D-005/D-077/D-078, CLAUDE.md commands).
 
 ## Next step
-`/start-phase 2` (`prompts/phase-2-foundation.md`): read the prompt, then settle the Phase 2 decisions below with the
-owner before scaffolding `apps/api` (NestJS, Prisma, Postgres via Docker Compose, Zod contracts, isolation suite).
+Commit 2.1 (on owner request). Then plan Slice 2.2: Tenant, Branch (code unique per tenant), minimal TenantSetting,
+AuditEvent; composite-key pattern; platform tenant CRUD + suspend/reactivate with reason; needs D-031 (feature flags)
+and D-048 (tenant profile fields) confirmed first. Use the tenant-isolation-auditor on 2.2.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
 - Review D-070 (resume = first unfinished lesson vs last opened); decide D-076 (verifying suspended tenants'
   certificates).
-- Before Phase 2: D-010 · D-049 · D-051 · D-053 (confirm) · D-047 · D-048 (decide).
+- Phase 2: D-031, D-048 (before 2.2) · D-010, D-049, D-051 (before 2.3) · D-053, D-037 (before 2.4) · D-047 (2.5).
 
 ## Known issues
 - Node 26 not yet LTS (nodejs.org, 2026-10-20); bump `.nvmrc`/`engines` once it is (reported 2026-10-28).
@@ -74,6 +68,13 @@ owner before scaffolding `apps/api` (NestJS, Prisma, Postgres via Docker Compose
   Firefox, touch, 200–400 % zoom, Windows High Contrast (emulation only).
 - Certificate preview builds its printed verification address from request headers (`siteOrigin`); Phase 2 should
   use a configured public base URL (QA note, exit gate).
+- Slice 2.3 must add (security review of 2.1): helmet/security headers on the API (+ web `next.config.ts`), CSRF
+  (Origin/`Sec-Fetch-Site` check + token on every mutation; no-Origin mutations refused), `__Host-` session cookie,
+  exact `trust proxy` hops (never `true`) before IP rate limits, Postgres-backed rate limits (login, reset, invite,
+  `/ready`, `/verify`), small body limits on auth routes, `AUTH_SECRET`/`SESSION_SECRET` in `EnvSchema` refusing
+  placeholders in production, uniform auth errors with Argon2id dummy hashing, a test that a login password never
+  reaches the logs.
+- Container images and GitHub actions are tag-pinned, not digest-pinned (security review 2.1, F8, Low).
 - Phase 5 rules from the 1.5.8 audit: signed keyset cursors without personal data (+ as-of date), export request
   without cursor/limit, scope snapshot + re-check, CSV formula escaping — in `lib/api/cursor.ts` and
   `contracts/src/compliance.ts` comments.

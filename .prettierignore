@@ -9,6 +9,7 @@ coverage/
 playwright-report/
 test-results/
 next-env.d.ts
+generated/
 
 # Hand-wrapped documentation and evidence: never reformatted (keeps diffs reviewable)
 docs/

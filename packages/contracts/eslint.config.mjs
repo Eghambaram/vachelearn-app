@@ -1,4 +1,5 @@
-import { defineConfig } from 'eslint/config';
+import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
-export default defineConfig([...tseslint.configs.recommended]);
+// dist/ is the generated CommonJS build for apps/api (`pnpm build`), never edited by hand.
+export default defineConfig([...tseslint.configs.recommended, globalIgnores(['dist/**'])]);

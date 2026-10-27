@@ -15,7 +15,7 @@ MASTER_PROMPT §4 is the source of the defaults.
 | Data | PostgreSQL + Prisma; composite tenant FKs; CHECK + partial unique indexes in raw migration SQL; RLS optional in P7 | D-005 |
 | Auth | API-owned email + password (Argon2id), opaque server-side sessions in Postgres, httpOnly cookie, CSRF protection, rate limits | D-010 |
 | Jobs | Postgres job/outbox table + in-process worker; Redis/BullMQ only on measured need | D-040 |
-| Files | `StorageService`: MinIO locally, S3-compatible in production | D-009 |
+| Files | `StorageService`: S3-compatible; local server chosen in Phase 3 (MinIO no longer publishes images) | D-009, D-078 |
 | Video | `VideoProvider`: `mock` locally; Cloudflare Stream candidate | D-006 |
 | Email | `EmailProvider`: console / Mailpit locally | — |
 | PDF | `PdfRenderer` (headless Chromium or a PDF library — chosen in P4.6 with a dependency note) | — |
@@ -152,12 +152,13 @@ sequenceDiagram
 
 | Service | Purpose | Port (Proposed) |
 |---|---|---|
-| postgres | Dev database + separate test database | 5432 |
-| minio | S3-compatible storage + console | 9000 / 9001 |
-| mailpit | Captures outgoing email; web UI | 1025 / 8025 |
+| postgres | Dev database `vachelearn` + test database `vachelearn_test` | 55432 |
+| mailpit | Captures outgoing email; web UI | 51025 / 58025 |
 
-`apps/web` on :3000 and `apps/api` on :4000 run on the host (`pnpm dev`). Phase 1 runs only `apps/web` and needs no
-containers.
+Built in Slice 2.1 (2026-10-27). Host ports avoid the standard 5432/1025/8025 so another local project is never
+touched; object storage is added with `StorageService` in Phase 3 (D-078).
+
+`apps/web` on :3000 and `apps/api` on :4000 run on the host (`pnpm dev`).
 
 ## 8. Environments
 

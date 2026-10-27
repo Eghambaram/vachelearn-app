@@ -2,11 +2,19 @@
   "name": "@vachelearn/contracts",
   "private": true,
   "type": "module",
-  "description": "Shared Zod schemas and API types (D-035): request/response contracts used by apps/web now and apps/api from Phase 2.",
+  "description": "Shared Zod schemas and API types (D-035): request/response contracts used by apps/web and apps/api.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "default": "./src/index.ts"
+    }
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/mark-dist-commonjs.mjs",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

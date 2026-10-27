@@ -1,0 +1,40 @@
+# Local development services (Phase 2, slice 2.1). Not for production.
+#   docker compose -f infra/docker-compose.yml up -d
+# Host ports default to 55432 / 51025 / 58025 so they never collide with another project's Postgres or Mailpit on the
+# standard ports; override with VL_POSTGRES_PORT, VL_SMTP_PORT, VL_MAILPIT_UI_PORT. Bound to 127.0.0.1 only.
+# Object storage is not here yet: chosen with StorageService in Phase 3 (D-078 — MinIO no longer publishes images).
+name: vachelearn
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: vachelearn
+      # Local placeholder, the same as .env.example. Never a real credential.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: vachelearn
+    ports:
+      - '127.0.0.1:${VL_POSTGRES_PORT:-55432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      # Creates the separate test database (vachelearn_test) on first start.
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U vachelearn -d vachelearn']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    ports:
+      - '127.0.0.1:${VL_SMTP_PORT:-51025}:1025'
+      - '127.0.0.1:${VL_MAILPIT_UI_PORT:-58025}:8025'
+    healthcheck:
+      test: ['CMD', '/mailpit', 'readyz']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres-data:

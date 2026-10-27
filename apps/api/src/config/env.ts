@@ -1,0 +1,84 @@
+import { z } from 'zod';
+
+/*
+ * Runtime configuration, validated once at boot (fail fast: a missing or malformed variable stops the process with its
+ * name — never its value). Every variable is listed with a placeholder in the repo's `.env.example`. Nothing fails
+ * open: NODE_ENV has no default, development-only features need an explicit development environment, and production
+ * requires an https web origin.
+ */
+
+const Origin = z
+  .url()
+  .refine(
+    (v) => new URL(v).origin === v,
+    'must be a bare origin like https://app.example.com (no path or slash)',
+  );
+
+const EnvSchema = z
+  .object({
+    NODE_ENV: z.enum(['development', 'test', 'production'], {
+      error: 'must be development, test or production',
+    }),
+    API_PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
+    /** PostgreSQL connection string (D-005). */
+    DATABASE_URL: z
+      .string({ error: 'is required' })
+      .min(1, 'is required')
+      .refine((v) => /^postgres(ql)?:\/\//.test(v), 'must be a postgresql:// URL'),
+    LOG_LEVEL: z
+      .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
+      .default('info'),
+    /** The web app's origin: the only origin allowed to call the API from a browser (CORS). */
+    WEB_ORIGIN: Origin.optional(),
+    /** OpenAPI at /api/docs: on by default in development only; never in production. */
+    ENABLE_API_DOCS: z.enum(['true', 'false']).optional(),
+  })
+  .superRefine((env, ctx) => {
+    if (env.NODE_ENV === 'production') {
+      if (!env.WEB_ORIGIN)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['WEB_ORIGIN'],
+          message: 'is required in production',
+        });
+      else if (!env.WEB_ORIGIN.startsWith('https://')) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['WEB_ORIGIN'],
+          message: 'must be https in production',
+        });
+      }
+      if (env.ENABLE_API_DOCS === 'true') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['ENABLE_API_DOCS'],
+          message: 'cannot be enabled in production',
+        });
+      }
+    }
+  })
+  .transform((env) => ({
+    NODE_ENV: env.NODE_ENV,
+    API_PORT: env.API_PORT,
+    DATABASE_URL: env.DATABASE_URL,
+    LOG_LEVEL: env.LOG_LEVEL,
+    WEB_ORIGIN: env.WEB_ORIGIN ?? 'http://localhost:3000',
+    apiDocs: env.ENABLE_API_DOCS ? env.ENABLE_API_DOCS === 'true' : env.NODE_ENV === 'development',
+  }));
+
+export type AppConfig = Readonly<z.output<typeof EnvSchema>>;
+
+export class ConfigError extends Error {
+  override name = 'ConfigError';
+}
+
+/** Parses the environment; throws `ConfigError` naming every invalid variable (values are never echoed). */
+export function loadConfig(env: Record<string, string | undefined> = process.env): AppConfig {
+  const parsed = EnvSchema.safeParse(env);
+  if (parsed.success) return Object.freeze(parsed.data);
+  const problems = parsed.error.issues.map((issue) => `${issue.path.join('.')} ${issue.message}`);
+  throw new ConfigError(`Invalid configuration: ${problems.join('; ')}`);
+}
+
+/** Injection token for the validated configuration. */
+export const APP_CONFIG = Symbol('APP_CONFIG');

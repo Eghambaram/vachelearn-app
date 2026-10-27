@@ -9,3 +9,4 @@ export * from './course-player';
 export * from './assessment-attempt';
 export * from './certificates';
 export * from './compliance';
+export * from './health';

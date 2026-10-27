@@ -1,0 +1,15 @@
+// VacheLearn database schema (D-005: PostgreSQL + Prisma 7). Conventions: .claude/rules/database.md — UUID keys,
+// snake_case via @map/@@map, tenant-owned models carry tenant_id with composite foreign keys. Models arrive with their
+// slices; Slice 2.2 adds the tenancy models.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  // The API compiles to CommonJS (NestJS); the generated client must match, with extensionless relative imports.
+  moduleFormat        = "cjs"
+  importFileExtension = ""
+}
+
+datasource db {
+  provider = "postgresql"
+}

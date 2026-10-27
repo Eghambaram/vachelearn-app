@@ -78,4 +78,7 @@ seed is idempotent and refuses production.
 ## Change log
 
 - v2.0 — from MASTER_PROMPT v1 Phase 2 / spec sprint 1; split into six slices; auth made explicit.
+- 2026-10-27 — Slice 2.1: no MinIO in the compose file — MinIO no longer publishes images; object storage is chosen in
+  Phase 3 (D-078). Validation/OpenAPI via an in-house Zod pipe (D-077: `nestjs-zod` does not support NestJS 12). Host
+  ports 55432/51025/58025 so another local project on the standard ports is unaffected.
 - Phase 0 (2026-10-20) — added slice 2.3a: 2.3 needs email delivery, and the outbox runner (D-040) was not scheduled anywhere before Phase 3.

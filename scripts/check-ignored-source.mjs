@@ -9,7 +9,11 @@ const ignored = execFileSync(
 )
   .split('\n')
   .filter((file) => /\.(tsx?|mjs|css|json|md)$/.test(file))
-  .filter((file) => !/(^|\/)(node_modules|\.next|test-results|playwright-report)\//.test(file))
+  // Build output and generated clients are rebuilt from source, never committed.
+  .filter(
+    (file) =>
+      !/(^|\/)(node_modules|\.next|test-results|playwright-report|dist|generated)\//.test(file),
+  )
   .filter((file) => !/(^|\/)next-env\.d\.ts$|\.tsbuildinfo$/.test(file));
 
 if (ignored.length > 0) {
