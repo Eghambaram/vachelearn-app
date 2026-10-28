@@ -10,3 +10,4 @@ export * from './assessment-attempt';
 export * from './certificates';
 export * from './compliance';
 export * from './health';
+export * from './tenancy';

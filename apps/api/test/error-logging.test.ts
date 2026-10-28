@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { Public } from '../src/access/access.guard';
 import request from 'supertest';
 import { createTestApp, LogCapture } from './app';
 
@@ -6,6 +7,7 @@ import { createTestApp, LogCapture } from './app';
 // exception filter's log line can land in an earlier app's capture. One app per file keeps the assertion honest.
 
 /** A route that fails the way a database driver does: the secret material is in properties, not the message. */
+@Public()
 @Controller('test-log')
 class FailingController {
   @Get('db-error')

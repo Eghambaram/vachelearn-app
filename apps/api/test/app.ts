@@ -1,6 +1,7 @@
 import { Writable } from 'node:stream';
 import type { INestApplication, Type } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { CONTEXT_RESOLVER, type ContextResolver } from '../src/access/request-context';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/bootstrap';
 import { loadConfig, type AppConfig } from '../src/config/env';
@@ -25,16 +26,21 @@ export async function createTestApp({
   env = {},
   controllers = [],
   logs,
+  contextResolver,
 }: {
   env?: Record<string, string>;
   controllers?: Type[];
   logs?: LogCapture;
+  contextResolver?: ContextResolver;
 } = {}): Promise<{ app: INestApplication; config: AppConfig }> {
   const config = loadConfig({ ...process.env, LOG_LEVEL: logs ? 'info' : 'silent', ...env });
-  const moduleRef = await Test.createTestingModule({
+  // The production module has no test hook: the test resolver replaces the provider here only.
+  const builder = Test.createTestingModule({
     imports: [AppModule.forRoot(config, { logStream: logs })],
     controllers,
-  }).compile();
+  });
+  if (contextResolver) builder.overrideProvider(CONTEXT_RESOLVER).useValue(contextResolver);
+  const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication({ bufferLogs: true });
   configureApp(app, config);
   await app.init();

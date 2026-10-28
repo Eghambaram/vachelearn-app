@@ -1,17 +1,14 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — Slice 2.1 done** (API scaffold + local infrastructure, commit cd9d922). Next: Slice
-2.2 (tenancy schema + platform tenant management). Phase 1 approved 2026-10-26 (a51d042).
+**Phase 2 · Platform foundation (R1) — Slice 2.2 done, awaiting commit approval** (tenancy schema + platform tenant
+management + branches). 2.1 committed cd9d922 (CI run 40462313968 success). Phase 1 approved 2026-10-26 (a51d042).
 
 ## Last verified
-2026-10-27, Node v24.21.0, pnpm 12.8.1, Docker 29.8, on the final 2.1 tree:
-- `pnpm verify` → exit 0 · unit/integration: contracts 53, web 541, api 29 (6 files, real Postgres 18) · build OK
-- Clean-clone run (copy of tracked files, `install --frozen-lockfile` → `services:up` → `db:migrate` → `verify`):
-  install, services, migrate exit 0; verify exit 0 (first run: one contracts timezone test timed out at 6.4 s under
-  parallel load → 15 s allowance, then green)
-- `pnpm test:e2e` → exit 0 · 236 passed (web unchanged since); `pnpm audit --prod` → no known vulnerabilities
-- Running server: `/ready` 503 `NOT_READY` with Postgres stopped, 200 after restart; missing `DATABASE_URL` exits 1
+2026-10-27, Node v24.21.0, pnpm 12.8.1, Postgres 18 (Docker), on the final 2.2 tree:
+- `pnpm verify` → exit 0 · contracts 53, web 541, api 99 (10 files, real Postgres) · build OK
+- `pnpm --filter api test:isolation` → 69 passed (4 files: platform tenants, branches, routes, schema)
+- `pnpm test:e2e` → exit 0 · 236 passed (7.5 min; web unchanged)
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
@@ -20,32 +17,37 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
   allowlist, deep redaction, scrubbed error serializer · CORS = web origin only · `/health` `/ready` · Postgres 18 +
   Mailpit compose on 55432/51025/58025 (no object storage, D-078) · contracts CommonJS build for the API · shared
   local-database guard (reset opt-in) · CI Postgres service + `pnpm audit --prod` · multer override (GHSA) (cd9d922).
+- 2.2 tenants (global) + settings (D-031 five flags off) + branches (composite FK, code per tenant) + insert-only
+  `audit_events` · deny-by-default `AccessGuard` (permission wins over `@Public()`) · platform tenant CRUD + suspend /
+  reactivate / archive with reason (D-066, D-079 slug fixed, D-080 Proposed) · branch CRUD + deactivate in scope ·
+  HMAC-signed cursors (`CURSOR_SECRET`) · personal audit fields as `[changed]` · isolation audit: no Critical/High,
+  Mediums + Lows fixed (uncommitted).
 
 ## In progress / uncommitted
-- Nothing.
+- Slice 2.2 (all files above) — awaiting the owner's go-ahead to commit and push.
 
 ## Next step
-Plan Slice 2.2: Tenant, Branch (code unique per tenant), minimal TenantSetting,
-AuditEvent; composite-key pattern; platform tenant CRUD + suspend/reactivate with reason; needs D-031 (feature flags)
-and D-048 (tenant profile fields) confirmed first. Use the tenant-isolation-auditor on 2.2.
+Commit 2.2 on approval, then plan Slice 2.3 (auth: users, sessions, invitations) — needs D-010, D-049, D-051 decided
+first; apply the 2.1 security-review list below. 2.4 resolver must: load the membership from the session only, refuse
+suspended/archived tenants (403 `TENANT_SUSPENDED`), derive branch scope from role assignments, never trust a header.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
 - Review D-070 (resume = first unfinished lesson vs last opened); decide D-076 (verifying suspended tenants'
   certificates).
-- Phase 2: D-031, D-048 (before 2.2) · D-010, D-049, D-051 (before 2.3) · D-053, D-037 (before 2.4) · D-047 (2.5).
+- Phase 2: D-010, D-049, D-051 (before 2.3) · D-053, D-037 (before 2.4) · D-047 (2.5) · review D-080.
 
 ## Known issues
 - Node 26 not yet LTS (nodejs.org, 2026-10-20); bump `.nvmrc`/`engines` once it is (reported 2026-10-28).
 - `engineStrict` is enforced on fresh installs only; an existing `node_modules` skips the check ("Already up to date").
 - D-058: TypeScript pinned ~6.0 and ESLint plugin peer exception — revisit when typescript-eslint supports TS 7.
-- `src/styles/vendor/shadcn-variants.css` is a vendored copy (shadcn@4.22.1, MIT); `shadcn add` and `prettier --write`
-  run from `apps/web` (root ignore file not applied) reformat it —
-  restore with `git checkout` after adding components.
+- `src/styles/vendor/shadcn-variants.css` is vendored (shadcn@4.22.1, MIT); `shadcn add` / `prettier --write` run from
+  `apps/web` reformat it — restore with `git checkout` after adding components.
 - Proposed status tones (UI spec §Status tones) await owner review in the gallery.
 - E2E is load-sensitive on WSL (8 cores, 7 GB RAM): local workers capped at 2 (CI default); full suite ~6 min locally,
   < 1 min on CI. Per-test timeout 60 s; `components.spec.ts` and `course-builder.spec.ts` 90 s (axe on very large
-  pages). Builder: drag-and-drop and moving lessons between modules not built (buttons only).
+  pages). Builder: drag-and-drop and moving lessons between modules not built (buttons only). Unit tests too: with api
+  + web in parallel, two web component tests once hit the 15 s timeout (2026-10-27); green on rerun — watch for repeats.
 - recharts animation is JS and ignores `prefers-reduced-motion`: set `isAnimationActive={false}` on every series.
 - Course list filters stack above the table on phones; a collapsible filter drawer is a candidate follow-up.
 - Radix modal DropdownMenu aria-hides the page (axe `aria-hidden-focus`): every DropdownMenu uses `modal={false}`.
@@ -74,6 +76,8 @@ and D-048 (tenant profile fields) confirmed first. Use the tenant-isolation-audi
   placeholders in production, uniform auth errors with Argon2id dummy hashing, a test that a login password never
   reaches the logs.
 - Container images and GitHub actions are tag-pinned, not digest-pinned (security review 2.1, F8, Low).
+- Phase 7 (isolation audit 2.2): the app connects as the table owner, so the `audit_events` trigger is the only guard
+  (an owner can TRUNCATE or disable it) — add a separate runtime role with `REVOKE UPDATE, DELETE, TRUNCATE`.
 - Phase 5 rules from the 1.5.8 audit: signed keyset cursors without personal data (+ as-of date), export request
   without cursor/limit, scope snapshot + re-check, CSV formula escaping — in `lib/api/cursor.ts` and
   `contracts/src/compliance.ts` comments.

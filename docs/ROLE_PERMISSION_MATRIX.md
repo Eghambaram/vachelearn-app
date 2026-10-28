@@ -94,6 +94,15 @@ notifications. These are not listed per role.
 7. Platform staff have **no** implicit tenant access. Tenant data is reachable only inside a support session (D-037):
    reason required, time-boxed, banner shown to the staff user, every action audited with the session id.
 
+## Enforcement so far
+
+- Slice 2.2: `tenant.create`, `tenant.read`, `tenant.update`, `tenant.suspend` (suspend and reactivate),
+  `tenant.archive` on `/api/v1/platform/tenants/**` (platform scope); `branch.read`, `branch.create`, `branch.update`,
+  `branch.deactivate` (deactivate and reactivate) on `/api/v1/branches/**` (tenant scope; Branch Admin reads only
+  their own branches). Registry: `apps/api/src/access/permissions.ts` (a test fails if a key is missing here). A
+  global guard denies every route that is neither `@Public()` nor tied to a permission. Callers come from sessions
+  from Slice 2.3; until then protected routes answer 401.
+
 ## Notes and open points
 
 - D-026 decides how "B" applies to learners in several branches (Proposed: any of the learner's branches).

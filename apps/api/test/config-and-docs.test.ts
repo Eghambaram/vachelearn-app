@@ -3,6 +3,7 @@ import { ConfigError, loadConfig } from '../src/config/env';
 import { createTestApp } from './app';
 
 const BASE = { NODE_ENV: 'test', DATABASE_URL: 'postgresql://localhost/x' } as const;
+const PROD = { ...BASE, NODE_ENV: 'production', CURSOR_SECRET: 'k'.repeat(32) } as const;
 
 describe('configuration (fail fast, nothing fails open)', () => {
   it('names every missing or malformed variable, never its value', () => {
@@ -48,10 +49,24 @@ describe('configuration (fail fast, nothing fails open)', () => {
     expect(() =>
       loadConfig({ ...BASE, NODE_ENV: 'production', WEB_ORIGIN: 'http://app.example.com' }),
     ).toThrow(/must be https in production/);
-    expect(
-      loadConfig({ ...BASE, NODE_ENV: 'production', WEB_ORIGIN: 'https://app.example.com' })
-        .WEB_ORIGIN,
-    ).toBe('https://app.example.com');
+    expect(loadConfig({ ...PROD, WEB_ORIGIN: 'https://app.example.com' }).WEB_ORIGIN).toBe(
+      'https://app.example.com',
+    );
+  });
+
+  it('CURSOR_SECRET: required and real in production, random per process elsewhere', () => {
+    const prod = { ...BASE, NODE_ENV: 'production', WEB_ORIGIN: 'https://a.example' };
+    expect(() => loadConfig(prod)).toThrow(/CURSOR_SECRET is required in production/);
+    expect(() => loadConfig({ ...prod, CURSOR_SECRET: 'short' })).toThrow(/at least 32/);
+    expect(() =>
+      loadConfig({ ...prod, CURSOR_SECRET: 'replace-with-a-long-random-value-0123456789' }),
+    ).toThrow(/placeholder/);
+    expect(loadConfig({ ...prod, CURSOR_SECRET: 'k'.repeat(32) }).cursorSecret).toBe(
+      'k'.repeat(32),
+    );
+    const a = loadConfig(BASE).cursorSecret;
+    expect(a.length).toBeGreaterThanOrEqual(32);
+    expect(loadConfig(BASE).cursorSecret).not.toBe(a);
   });
 
   it('API docs: on in development, off elsewhere unless opted in, never in production', () => {
@@ -63,7 +78,7 @@ describe('configuration (fail fast, nothing fails open)', () => {
     expect(() =>
       loadConfig({
         ...BASE,
-        NODE_ENV: 'production',
+        ...PROD,
         WEB_ORIGIN: 'https://a.example',
         ENABLE_API_DOCS: 'true',
       }),
@@ -90,7 +105,11 @@ describe('OpenAPI documents', () => {
 
   it('are not served in production, nor by default in any other environment', async () => {
     const envs: Record<string, string>[] = [
-      { NODE_ENV: 'production', WEB_ORIGIN: 'https://app.example.com' },
+      {
+        NODE_ENV: 'production',
+        WEB_ORIGIN: 'https://app.example.com',
+        CURSOR_SECRET: 'k'.repeat(32),
+      },
       { NODE_ENV: 'test' },
     ];
     for (const env of envs) {

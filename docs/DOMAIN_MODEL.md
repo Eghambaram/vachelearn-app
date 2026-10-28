@@ -20,6 +20,20 @@ Spec §3 names that differ: `ProgressRecord` → `LessonProgress`; `SessionEnrol
 `Attempt` (score, passed, grading status) until manual grading exists. `ContentProviderRef` (spec) becomes
 `Asset.provider` + `Asset.providerRef`.
 
+## Physical schema (built so far)
+
+`apps/api/prisma/schema.prisma` + `apps/api/prisma/migrations/` are the source of truth; this section records what is
+built and the guarantees the database itself enforces.
+
+| Table | Slice | Class | Database guarantees |
+|---|---|---|---|
+| `tenants` | 2.2 | Global | `slug` unique and CHECK-formatted (D-079); suspended/archived rows must record when and why (CHECK); `version` for optimistic concurrency; UUID v7 ids (`uuidv7()`, Postgres 18) |
+| `tenant_settings` | 2.2 | Tenant-owned (1:1) | Five feature flags, all false by default (D-031) |
+| `branches` | 2.2 | Tenant-owned | `(tenant_id, id)` unique (target of composite FKs); `(tenant_id, code)` unique; code CHECK-formatted, uppercase; inactive rows must record when and why |
+| `audit_events` | 2.2 | Evidence | Insert-only (trigger rejects UPDATE/DELETE); `(tenant_id, branch_id) → branches(tenant_id, id)` composite FK plus CHECK `branch_id IS NULL OR tenant_id IS NOT NULL` (a NULL would skip the FK); `actor_user_id` gets its FK to users in 2.3 |
+
+Not built yet: everything else in §2 (Department waits for D-047 in 2.5).
+
 ## 2. Entity inventory
 
 Release: R1 = Phase 2 · R2 = Phases 3–4 · R3 = Phase 5 · R4 = Phase 6.

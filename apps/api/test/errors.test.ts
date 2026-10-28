@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Public } from '../src/access/access.guard';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { z } from 'zod';
@@ -12,6 +13,7 @@ const Probe = z.strictObject({
 });
 
 /** Test-only routes: a validated body, a validated query, and an unexpected failure. */
+@Public()
 @Controller('test-probe')
 class ProbeController {
   @Post()

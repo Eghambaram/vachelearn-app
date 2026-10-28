@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 
 /*
@@ -32,6 +33,8 @@ const EnvSchema = z
     WEB_ORIGIN: Origin.optional(),
     /** OpenAPI at /api/docs: on by default in development only; never in production. */
     ENABLE_API_DOCS: z.enum(['true', 'false']).optional(),
+    /** Signs list cursors (HMAC). Required in production; elsewhere a random key per process is used. */
+    CURSOR_SECRET: z.string().min(32, 'must be at least 32 characters').optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production') {
@@ -46,6 +49,19 @@ const EnvSchema = z
           code: 'custom',
           path: ['WEB_ORIGIN'],
           message: 'must be https in production',
+        });
+      }
+      if (!env.CURSOR_SECRET) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['CURSOR_SECRET'],
+          message: 'is required in production',
+        });
+      } else if (/^replace-with|change-me/.test(env.CURSOR_SECRET)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['CURSOR_SECRET'],
+          message: 'is still the .env.example placeholder',
         });
       }
       if (env.ENABLE_API_DOCS === 'true') {
@@ -64,6 +80,8 @@ const EnvSchema = z
     LOG_LEVEL: env.LOG_LEVEL,
     WEB_ORIGIN: env.WEB_ORIGIN ?? 'http://localhost:3000',
     apiDocs: env.ENABLE_API_DOCS ? env.ENABLE_API_DOCS === 'true' : env.NODE_ENV === 'development',
+    // Outside production a per-process key is fine: cursors simply stop working across a restart.
+    cursorSecret: env.CURSOR_SECRET ?? randomBytes(32).toString('base64url'),
   }));
 
 export type AppConfig = Readonly<z.output<typeof EnvSchema>>;

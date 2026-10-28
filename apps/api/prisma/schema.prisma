@@ -1,10 +1,10 @@
-// VacheLearn database schema (D-005: PostgreSQL + Prisma 7). Conventions: .claude/rules/database.md — UUID keys,
-// snake_case via @map/@@map, tenant-owned models carry tenant_id with composite foreign keys. Models arrive with their
-// slices; Slice 2.2 adds the tenancy models.
+// VacheLearn database schema (D-005: PostgreSQL + Prisma 7). Conventions: .claude/rules/database.md — UUID v7 keys
+// (Postgres 18 `uuidv7()`), snake_case via @map/@@map, tenant-owned models carry tenant_id with composite foreign keys
+// so the database itself rejects cross-tenant links. CHECK constraints and the audit trigger live in the migration SQL.
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../generated/prisma"
+  provider            = "prisma-client"
+  output              = "../generated/prisma"
   // The API compiles to CommonJS (NestJS); the generated client must match, with extensionless relative imports.
   moduleFormat        = "cjs"
   importFileExtension = ""
@@ -12,4 +12,138 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ── Tenancy (Slice 2.2) ────────────────────────────────────────────────────────────────────────────────────────────
+
+enum TenantStatus {
+  active
+  suspended
+  archived
+
+  @@map("tenant_status")
+}
+
+/// D-048 fixed list.
+enum Industry {
+  manufacturing
+  construction
+  oil_and_gas
+  logistics
+  utilities
+  other
+
+  @@map("industry")
+}
+
+/// Global (not tenant-owned): the tenant itself. Slug fixed once created (D-079).
+model Tenant {
+  id                  String       @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  slug                String       @unique @db.VarChar(40)
+  displayName         String       @map("display_name") @db.VarChar(120)
+  status              TenantStatus @default(active)
+  defaultTimezone     String       @map("default_timezone") @db.VarChar(64)
+  defaultLocale       String       @default("en-IN") @map("default_locale") @db.VarChar(35)
+  primaryContactEmail String?      @map("primary_contact_email") @db.VarChar(254)
+  industry            Industry?
+  suspendedAt         DateTime?    @map("suspended_at") @db.Timestamptz(3)
+  suspendedReason     String?      @map("suspended_reason") @db.VarChar(500)
+  suspendedById       String?      @map("suspended_by_id") @db.Uuid
+  archivedAt          DateTime?    @map("archived_at") @db.Timestamptz(3)
+  archivedReason      String?      @map("archived_reason") @db.VarChar(500)
+  archivedById        String?      @map("archived_by_id") @db.Uuid
+  /// Optimistic-concurrency token: every update must name the version it read.
+  version             Int          @default(1)
+  createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById         String?      @map("created_by_id") @db.Uuid
+  updatedAt           DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  settings    TenantSetting?
+  branches    Branch[]
+  auditEvents AuditEvent[]
+
+  @@index([status, createdAt])
+  @@map("tenants")
+}
+
+/// Tenant-owned, one row per tenant. Feature flags (D-031), all off by default.
+model TenantSetting {
+  tenantId             String   @id @map("tenant_id") @db.Uuid
+  classroomEnabled     Boolean  @default(false) @map("classroom_enabled")
+  surveysEnabled       Boolean  @default(false) @map("surveys_enabled")
+  commerceEnabled      Boolean  @default(false) @map("commerce_enabled")
+  publicCatalogEnabled Boolean  @default(false) @map("public_catalog_enabled")
+  analyticsEnabled     Boolean  @default(false) @map("analytics_enabled")
+  version              Int      @default(1)
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@map("tenant_settings")
+}
+
+enum BranchStatus {
+  active
+  inactive
+
+  @@map("branch_status")
+}
+
+/// Tenant-owned. Code unique within the tenant only (spec §4 AC). Deactivation keeps history (never deleted).
+model Branch {
+  id                String       @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId          String       @map("tenant_id") @db.Uuid
+  code              String       @db.VarChar(20)
+  name              String       @db.VarChar(120)
+  timezone          String       @db.VarChar(64)
+  addressLine       String?      @map("address_line") @db.VarChar(200)
+  city              String?      @db.VarChar(100)
+  region            String?      @db.VarChar(100)
+  countryCode       String?      @map("country_code") @db.Char(2)
+  status            BranchStatus @default(active)
+  deactivatedAt     DateTime?    @map("deactivated_at") @db.Timestamptz(3)
+  deactivatedReason String?      @map("deactivated_reason") @db.VarChar(500)
+  deactivatedById   String?      @map("deactivated_by_id") @db.Uuid
+  version           Int          @default(1)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       String?      @map("created_by_id") @db.Uuid
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  auditEvents AuditEvent[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, code])
+  @@index([tenantId, status, name])
+  @@map("branches")
+}
+
+/// Evidence: insert-only (a trigger rejects UPDATE and DELETE). Tenant-owned when tenantId is set, else platform.
+/// The branch link is composite, so an event can never point at another tenant's branch.
+model AuditEvent {
+  id               String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  occurredAt       DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  /// The user who acted (null for system jobs). Foreign key to users arrives with identity (Slice 2.3).
+  actorUserId      String?  @map("actor_user_id") @db.Uuid
+  tenantId         String?  @map("tenant_id") @db.Uuid
+  branchId         String?  @map("branch_id") @db.Uuid
+  /// `resource.verb_past`, e.g. `tenant.suspended`.
+  action           String   @db.VarChar(80)
+  entityType       String   @map("entity_type") @db.VarChar(60)
+  entityId         String   @map("entity_id") @db.Uuid
+  requestId        String?  @map("request_id") @db.VarChar(64)
+  /// Set when platform staff act inside a support session (D-037, Slice 2.4).
+  supportSessionId String?  @map("support_session_id") @db.Uuid
+  reason           String?  @db.VarChar(500)
+  /// Safe subset of changed fields only — never secrets or personal free text.
+  before           Json?
+  after            Json?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branch Branch? @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+
+  @@index([tenantId, occurredAt])
+  @@index([entityType, entityId])
+  @@map("audit_events")
 }

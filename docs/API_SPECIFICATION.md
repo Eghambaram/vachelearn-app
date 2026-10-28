@@ -39,6 +39,37 @@ Every non-2xx response is the envelope (contract `ApiErrorBody`):
 
 Framework errors use fixed messages (never the framework's wording or echoed input).
 
+## Authorization (deny by default)
+
+Every route is either `@Public()` (`/health`, `/ready`) or names the permission it needs. No signed-in caller → 401;
+signed in without the permission → 403; a record outside the caller's tenant or branch scope → 404. Platform routes
+(`/api/v1/platform/**`) take platform permissions only — tenant roles never pass, and platform roles never imply
+tenant access (D-037). Until sessions exist (Slice 2.3) the API has no callers, so every protected route answers 401.
+A declared permission always wins over `@Public()`, and a route test (`test/routes.isolation.test.ts`) fails when a
+handler declares both or neither, or when a `platform/**` route names a tenant permission (or the reverse).
+
+## Tenancy (Slice 2.2)
+
+- Platform: `POST /platform/tenants` (duplicate slug → 422 `fieldErrors: [{ field: "slug", code: "taken" }]`),
+  `GET /platform/tenants` (cursor list: `status`, `search`, `sort=createdAt|displayName`, `direction`), `GET` /
+  `PATCH /platform/tenants/:id`, `POST /platform/tenants/:id/suspend|reactivate|archive` with `{ "reason" }`.
+- Tenant: `GET /branches` (cursor list: `status`, `search`, `sort=name|code|createdAt`), `POST /branches`,
+  `GET` / `PATCH /branches/:id`, `POST /branches/:id/deactivate|reactivate` with `{ "reason" }`. No tenant id
+  anywhere: the tenant is the caller's.
+- Edits carry the `version` they read: a stale version is 409 `CONFLICT` and nothing changes. Invalid lifecycle
+  transitions are 409 `INVALID_STATE`; archived tenants are final and cannot be edited either (D-080, Proposed).
+  The tenant slug cannot be changed (D-079).
+- `POST /branches` needs `branch.create` **and** tenant-wide scope: a branch-scoped caller gets 403 even with the
+  permission (they could never see the new branch). Updates and lifecycle actions re-apply the caller's branch scope
+  in the write itself.
+- Cursors are opaque, HMAC-signed with `CURSOR_SECRET` (required in production; random per process elsewhere) and
+  bound to the query and the caller's scope: a forged, altered or malformed cursor, or one reused with other filters,
+  another tenant or another scope, is 422 (`field: "cursor"`), never a 500. They hold a sort value and an id, never
+  personal data. Malformed ids are 404, like missing ones.
+- Every change writes an `audit_events` row in the same transaction (actor, tenant, branch, action, reason,
+  request id, changed fields before/after). Personal fields (the tenant contact email) are recorded as
+  `"[changed]"`, never by value, because audit rows can never be erased. A stale `version` fails before the diff.
+
 ## Request IDs
 
 Every response carries `x-request-id` (`req_<uuid>`), and every error envelope and log line carries the same value.

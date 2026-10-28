@@ -1,12 +1,14 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { HealthResponse, ReadyResponse } from '@vachelearn/contracts';
+import { Public } from '../access/access.guard';
 import { ApiException } from '../common/errors/api-exception';
 import { ApiZodResponse } from '../common/openapi/zod-openapi';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Liveness and readiness probes, outside the /api/v1 prefix (deployment platforms call them directly). */
 @ApiTags('health')
+@Public()
 @Controller()
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
