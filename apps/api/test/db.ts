@@ -19,7 +19,7 @@ export async function resetDatabase(prisma: PrismaClient) {
   if (!name.endsWith('_test'))
     throw new Error(`Refusing to empty "${name}": not a _test database.`);
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE password_links, email_deliveries, jobs, audit_events, auth_sessions, user_credentials, users, rate_limit_buckets, branches, tenant_settings, tenants RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE role_assignments, membership_branches, platform_role_assignments, memberships, password_links, email_deliveries, jobs, audit_events, auth_sessions, user_credentials, users, rate_limit_buckets, branches, tenant_settings, tenants RESTART IDENTITY CASCADE',
   );
   // The fixed test callers are real users: audit rows reference their actor (audit_events.actor_user_id → users).
   await prisma.user.createMany({

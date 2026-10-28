@@ -62,6 +62,7 @@ model Tenant {
   branches    Branch[]
   auditEvents AuditEvent[]
   jobs        Job[]
+  memberships Membership[]
 
   @@index([status, createdAt])
   @@map("tenants")
@@ -111,8 +112,11 @@ model Branch {
   createdById       String?      @map("created_by_id") @db.Uuid
   updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  auditEvents AuditEvent[]
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  auditEvents        AuditEvent[]
+  membershipBranches MembershipBranch[]
+  primaryFor         Membership[]       @relation("PrimaryBranch")
+  roleAssignments    RoleAssignment[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, code])
@@ -244,6 +248,8 @@ model User {
   sessions      AuthSession[]
   auditEvents   AuditEvent[]
   passwordLinks PasswordLink[]
+  memberships   Membership[]
+  platformRoles PlatformRoleAssignment[]
 
   @@map("users")
 }
@@ -271,16 +277,19 @@ enum SessionEndReason {
 /// Opaque server-side session (D-010). The cookie holds a random token; only its SHA-256 is stored. Checked on every
 /// request: 8 hours idle or 7 days after creation, whichever comes first (D-084).
 model AuthSession {
-  id         String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
-  userId     String            @map("user_id") @db.Uuid
-  tokenHash  String            @unique @map("token_hash") @db.Char(64)
-  createdAt  DateTime          @map("created_at") @db.Timestamptz(3)
-  lastSeenAt DateTime          @map("last_seen_at") @db.Timestamptz(3)
-  expiresAt  DateTime          @map("expires_at") @db.Timestamptz(3)
-  endedAt    DateTime?         @map("ended_at") @db.Timestamptz(3)
-  endReason  SessionEndReason? @map("end_reason")
+  id                 String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId             String            @map("user_id") @db.Uuid
+  tokenHash          String            @unique @map("token_hash") @db.Char(64)
+  createdAt          DateTime          @map("created_at") @db.Timestamptz(3)
+  lastSeenAt         DateTime          @map("last_seen_at") @db.Timestamptz(3)
+  expiresAt          DateTime          @map("expires_at") @db.Timestamptz(3)
+  endedAt            DateTime?         @map("ended_at") @db.Timestamptz(3)
+  endReason          SessionEndReason? @map("end_reason")
+  /// The active tenant membership (D-089). Composite key: a session can only point at its own user's membership.
+  activeMembershipId String?           @map("active_membership_id") @db.Uuid
 
-  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user             User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  activeMembership Membership? @relation(fields: [userId, activeMembershipId], references: [userId, id], onDelete: Restrict)
 
   @@index([userId, endedAt])
   @@map("auth_sessions")
@@ -320,4 +329,112 @@ model PasswordLink {
 
   @@index([userId, purpose])
   @@map("password_links")
+}
+
+// ── Memberships and roles (Slice 2.4a, D-026 / D-053 / D-089) ────────────────────────────────────────────────────
+
+enum MembershipStatus {
+  active
+  deactivated
+}
+
+/// A user's membership of one tenant (domain model §2): the global identity stays separate from tenant membership.
+model Membership {
+  id                String           @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId          String           @map("tenant_id") @db.Uuid
+  userId            String           @map("user_id") @db.Uuid
+  status            MembershipStatus @default(active)
+  /// Used for branch comparisons in reports (D-026); must be one of the member's branches (checked in the service).
+  primaryBranchId   String?          @map("primary_branch_id") @db.Uuid
+  deactivatedAt     DateTime?        @map("deactivated_at") @db.Timestamptz(3)
+  deactivatedReason String?          @map("deactivated_reason") @db.VarChar(500)
+  deactivatedById   String?          @map("deactivated_by_id") @db.Uuid
+  version           Int              @default(1)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       String?          @map("created_by_id") @db.Uuid
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  user            User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  primaryBranch   Branch?            @relation("PrimaryBranch", fields: [tenantId, primaryBranchId], references: [tenantId, id], onDelete: Restrict)
+  branches        MembershipBranch[]
+  roleAssignments RoleAssignment[]
+  activeSessions  AuthSession[]
+
+  @@unique([tenantId, userId])
+  @@unique([tenantId, id])
+  @@unique([userId, id])
+  @@index([userId, status])
+  @@map("memberships")
+}
+
+/// The branches a member belongs to (D-026: any number; one is primary).
+model MembershipBranch {
+  tenantId     String   @map("tenant_id") @db.Uuid
+  membershipId String   @map("membership_id") @db.Uuid
+  branchId     String   @map("branch_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  String?  @map("created_by_id") @db.Uuid
+
+  membership      Membership       @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
+  branch          Branch           @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  roleAssignments RoleAssignment[]
+
+  @@id([membershipId, branchId])
+  @@index([tenantId, branchId])
+  @@map("membership_branches")
+}
+
+enum TenantRole {
+  tenant_admin
+  branch_admin
+  learning_manager
+  instructor
+  learner
+  compliance_viewer
+}
+
+/// A fixed role (D-053) held tenant-wide (`branch_id` null) or on one branch. Revoked, never deleted (audit history).
+model RoleAssignment {
+  id            String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId      String     @map("tenant_id") @db.Uuid
+  membershipId  String     @map("membership_id") @db.Uuid
+  role          TenantRole
+  branchId      String?    @map("branch_id") @db.Uuid
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   String?    @map("created_by_id") @db.Uuid
+  revokedAt     DateTime?  @map("revoked_at") @db.Timestamptz(3)
+  revokedById   String?    @map("revoked_by_id") @db.Uuid
+  revokedReason String?    @map("revoked_reason") @db.VarChar(500)
+
+  membership       Membership        @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
+  branch           Branch?           @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  /// A branch role sits on one of the member's own branches: removing that branch is refused while the role is live
+  /// or revoked (history keeps it) — revoke and keep, or move members only through the membership service.
+  membershipBranch MembershipBranch? @relation(fields: [membershipId, branchId], references: [membershipId, branchId], onDelete: Restrict)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, membershipId])
+  @@map("role_assignments")
+}
+
+enum PlatformRole {
+  platform_super_admin
+}
+
+/// Platform staff role. Grants platform routes only — never tenant data (D-037 support sessions are separate).
+model PlatformRoleAssignment {
+  id            String       @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId        String       @map("user_id") @db.Uuid
+  role          PlatformRole
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   String?      @map("created_by_id") @db.Uuid
+  revokedAt     DateTime?    @map("revoked_at") @db.Timestamptz(3)
+  revokedById   String?      @map("revoked_by_id") @db.Uuid
+  revokedReason String?      @map("revoked_reason") @db.VarChar(500)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@map("platform_role_assignments")
 }

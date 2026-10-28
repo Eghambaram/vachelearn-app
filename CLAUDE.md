@@ -93,6 +93,7 @@ tests pass.
 | Build | `pnpm build` |
 | DB migrate (dev) / deploy / reset | `pnpm --filter api db:migrate` · `db:deploy` · `db:reset` (localhost only); *Phase 2.6:* `db:seed` |
 | Create an account (operator) | `pnpm --filter api user:create --email <address> --name "<name>" --reason "<why>"` (sends a set-password email; D-083) |
+| Grant a role (operator) | `pnpm --filter api user:grant --email <address> --role <role> [--tenant <slug> [--branch <code>]] --reason "<why>"` (D-053) |
 | All gates (run before reporting a slice done) | `pnpm verify` = ignored-source check + format:check + lint + typecheck + test + build (needs local services for api tests) |
 
 ## How to work (every slice)

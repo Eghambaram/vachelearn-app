@@ -38,6 +38,11 @@ built and the guarantees the database itself enforces.
 | `auth_sessions` | 2.3b | Global | `token_hash` = SHA-256 hex, unique (CHECK); `expires_at > created_at`; ended ⇔ `end_reason` (CHECK); rows are kept after ending |
 | `rate_limit_buckets` | 2.3b | Global (operational) | Fixed-window counters keyed by a hash of the subject (no address or IP in clear); `count ≥ 1` |
 | `password_links` | 2.3c | Global (per user) | `token_hash` SHA-256 hex unique; `expires_at > created_at`; never both used and revoked (CHECK); **at most one live link per user and purpose** (partial unique index); purpose `set_password` / `reset_password` |
+| `memberships` | 2.4a | Tenant-owned | `(tenant_id, user_id)` unique; `(tenant_id, id)` and `(user_id, id)` unique (composite FK targets); deactivated ⇔ `deactivated_at`; primary branch must be one of the member's branches (deferred constraint trigger, D-026) |
+| `membership_branches` | 2.4a | Tenant-owned | Composite FKs to the membership and the branch in the same tenant; PK `(membership_id, branch_id)` |
+| `role_assignments` | 2.4a | Tenant-owned | Fixed role enum (D-053); `branch_id` null = whole tenant; composite FKs; Branch Admin needs a branch (CHECK); revoked with reason, never deleted; one live assignment per member + role + scope (partial unique, NULLS NOT DISTINCT) |
+| `platform_role_assignments` | 2.4a | Global | One live per user + role; revoked with reason; grants platform routes only (D-037) |
+| `auth_sessions.active_membership_id` | 2.4a | — | Composite FK `(user_id, active_membership_id) → memberships(user_id, id)`: a session can only point at its own user's membership (D-089) |
 
 Not built yet: everything else in §2 (Department waits for D-047 in 2.5).
 

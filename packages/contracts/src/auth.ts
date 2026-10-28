@@ -27,9 +27,18 @@ export const SessionUser = z.object({
   displayName: z.string(),
 });
 
-/** Response of `POST /auth/login` and `GET /auth/me`. */
+/** The tenant a session is working in (D-089), or null before one is chosen. */
+export const ActiveTenant = z.object({
+  membershipId: z.uuid(),
+  tenantId: z.uuid(),
+  slug: z.string(),
+  displayName: z.string(),
+});
+
+/** Response of `POST /auth/login`, `GET /auth/me` and `POST /auth/session/tenant`. */
 export const AuthSessionView = z.object({
   user: SessionUser,
+  activeTenant: ActiveTenant.nullable(),
   csrfToken: z.string().min(20),
   /** When the session ends at the latest (D-084: 7 days); idle time also ends it (8 hours). */
   expiresAt: IsoInstant,
@@ -54,3 +63,37 @@ export const SetPasswordBody = z
     password: z.string().min(1).max(256),
   })
   .strict();
+
+/** The fixed tenant roles (D-053). */
+export const TenantRoleKey = z.enum([
+  'tenant_admin',
+  'branch_admin',
+  'learning_manager',
+  'instructor',
+  'learner',
+  'compliance_viewer',
+]);
+
+/** `GET /me/memberships`: the caller's active memberships in active or suspended tenants (D-089). */
+export const MembershipSummary = z.object({
+  membershipId: z.uuid(),
+  tenant: z.object({
+    id: z.uuid(),
+    slug: z.string(),
+    displayName: z.string(),
+    status: z.enum(['active', 'suspended']),
+  }),
+  roles: z.array(
+    z.object({
+      role: TenantRoleKey,
+      branch: z.object({ id: z.uuid(), code: z.string(), name: z.string() }).nullable(),
+    }),
+  ),
+  active: z.boolean(),
+});
+export type MembershipSummary = z.infer<typeof MembershipSummary>;
+export const MembershipList = z.object({ data: z.array(MembershipSummary) });
+export type MembershipList = z.infer<typeof MembershipList>;
+
+/** `POST /auth/session/tenant`: choose the active tenant by one of the caller's own memberships (never a tenant id). */
+export const SwitchTenantBody = z.object({ membershipId: z.uuid() }).strict();

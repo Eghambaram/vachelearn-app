@@ -51,17 +51,19 @@ notifications. These are not listed per role.
 | `course.create` · `course.update` | Create course, edit drafts | — | T | — | — | — | — | — | 3.3 |
 | `course.publish` · `course.archive` | Publish version / archive course | — | T | — | — | — | — | — | 3.6 |
 | `course.review` | Approve review step (only if D-022) | — | T | — | — | — | — | — | 3.6 |
-| `asset.upload` · `asset.read` | Upload assets / get signed URL | — | T | — | — | — | entitled lessons (O) | — | 3.4 |
+| `asset.upload` | Upload assets | — | T | — | — | — | — | — | 3.4 |
+| `asset.read` | Get a signed URL for an asset | — | T | — | — | — | entitled lessons (O) | — | 3.4 |
 | `catalog.browse` | Tenant catalog | — | T | B | S | A | O (entitled) | — | 3.7 |
 | `enrollment.self_enroll` | Self-enroll where course allows (D-046) | — | — | — | — | — | O | — | 4.1 |
 | `assignment.create` · `assignment.update` · `assignment.cancel` | Assign learning (targets within scope; tenant target needs T — D-045) | — | T | B | S | — | — | — | 4.1 |
 | `enrollment.read` | Enrollments + "why it exists" | SS | T | B | S | A | O | S | 4.1 |
-| `enrollment.cancel` · `enrollment.migrate_version` | Cancel / migrate (D-011) | — | T | B (cancel only) | S (cancel only) | — | — | — | 4.1 |
+| `enrollment.cancel` | Cancel an enrollment | — | T | B | S | — | — | — | 4.1 |
+| `enrollment.migrate_version` | Migrate to another course version (D-011) | — | T | — | — | — | — | — | 4.1 |
 | `progress.record` | Record own learning progress | — | — | — | — | — | O | — | 4.3 |
 | `assessment.manage` | Question bank, assessment builder | — | T | — | — | — | — | — | 4.4 |
 | `attempt.take` | Start/submit own attempts | — | — | — | — | — | O | — | 4.4 |
 | `attempt.review` | View attempt results | SS | T | B | S | A | O | S | 4.4 |
-| `attempt.answer_key.read` | See correct answers (D-023) | — | T | — | S | A | per D-023 | — | 4.4 |
+| `attempt.answer_key.read` | See correct answers (D-023) | — | T | — | S | A | — | — | 4.4 |
 | `attempt.grade_override` | Override a grade (audited) | — | T | — | — | — | — | — | later |
 | `certificate_template.manage` | Templates | — | T | — | — | — | — | — | 4.6 |
 | `certificate.read` | Search issued certificates | SS | T | B | S | A | O | S | 4.6 |
@@ -70,7 +72,8 @@ notifications. These are not listed per role.
 | `report.export` | CSV exports | — | T | B | S | — | — | S | 5.3 |
 | `compliance.manage` | Training requirements | — | T | — | — | — | — | — | 5.1 |
 | `compliance.read` | Compliance status + evidence | SS | T | B | S | — | O | S | 5.1 |
-| `survey.manage` · `survey.results.read` | Builder, aggregated results | — | T | — | S (results) | A (own session surveys, results) | — | S (results) | 5.4 |
+| `survey.manage` | Survey builder | — | T | — | — | A (own session surveys) | — | — | 5.4 |
+| `survey.results.read` | Aggregated survey results | — | T | — | S | A (own session surveys) | — | S | 5.4 |
 | `survey.free_text.read` | Free-text answers (D-020) | — | T | — | — | — | — | — | 5.4 |
 | `survey.respond` | Respond to eligible surveys | — | — | — | — | — | O | — | 5.4 |
 | `class_session.manage` | Create/edit/cancel sessions, venues | — | T | B | S | A (own sessions: edit, not create) | — | — | 5.5 |
@@ -78,8 +81,10 @@ notifications. These are not listed per role.
 | `attendance.record` | Record/edit attendance (audited) | — | T | B | — | A | — | — | 5.5 |
 | `notification_template.manage` | Tenant notification templates | — | T | — | — | — | — | — | 5.6 |
 | `offer.manage` | Offers, prices | — | T | — | — | — | — | — | 6.1 |
-| `order.read` · `order.refund` | Orders, reconciliation, refunds | P (read, billing scope) | T | — | — | — | O (read own) | — | 6.1–6.3 |
-| `analytics.read` · `saved_report.manage` | Dashboards, governed builder | P (platform metrics) | T | B | S | — | — | S (read) | 6.4–6.5 |
+| `order.read` | Orders, reconciliation | P (billing scope) | T | — | — | — | O | — | 6.1–6.3 |
+| `order.refund` | Refunds | — | T | — | — | — | — | — | 6.3 |
+| `analytics.read` | Dashboards | P (platform metrics) | T | B | S | — | — | S | 6.4 |
+| `saved_report.manage` | Governed report builder | — | T | B | S | — | — | — | 6.5 |
 | `audit.read` | Tenant audit log | SS | T | B | — | — | — | S | 2.6 |
 
 ## Granting rules (enforced in the access service, tested in 2.4)
@@ -105,8 +110,22 @@ notifications. These are not listed per role.
 - Slice 2.3b: callers are identified by their session; `@Authenticated()` routes (`/auth/me`, `/auth/logout`) need no
   permission. Nobody holds a platform or tenant permission until roles and memberships (2.4), so every permission
   route answers 403 to signed-in users.
+- Slice 2.4a: **this table is the registry** — `apps/api/src/access/role-grants.ts` holds every cell and
+  `test/permissions.isolation.test.ts` fails on any difference. A request's grants come from the session's active
+  membership (D-089) and its live role assignments; each permission keeps its widest scope (all branches > assigned
+  branches > assigned resources > own records) and the guard narrows the branch scope to the route's permission.
+  Platform roles grant only `P` cells; `SS` cells need a support session (2.4c). Roles are granted by the operator
+  command `user:grant` until the role-assignment API with the granting rules (2.4b). Tenant Admin is whole-tenant
+  only (database CHECK); a branch role must sit on one of the member's branches (foreign key); a role on a
+  deactivated branch grants nothing (D-090, Proposed); a branch assignment never yields a whole-tenant (`T`) grant.
 
 ## Notes and open points
+
+- 2026-10-28 (2.4a): rows that grouped keys with a qualifier meant for only one of them (`S (results)`, `B (cancel
+  only)`, `O (read own)`, `S (read)`, `entitled lessons (O)`) are split, one key per row, so every cell applies to exactly
+  one key — the registry is generated from and tested against this table. One grant narrowed: `saved_report.manage`
+  is no longer given to the Platform Super Admin (the old shared cell `P (platform metrics)` meant dashboards only);
+  owner, please confirm.
 
 - D-026 decides how "B" applies to learners in several branches (Proposed: any of the learner's branches).
 - D-053: custom tenant roles are a Candidate; this table is the whole MVP permission model.

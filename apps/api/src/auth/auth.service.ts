@@ -4,6 +4,7 @@ import { PinoLogger } from 'nestjs-pino';
 import type { AuthSessionView, LoginBody } from '@vachelearn/contracts';
 import type { z } from 'zod';
 import type { RequestContext } from '../access/request-context';
+import { MembershipsService } from '../access/memberships.service';
 import { AuditService } from '../audit/audit.service';
 import { ApiException } from '../common/errors/api-exception';
 import { APP_CONFIG, type AppConfig } from '../config/env';
@@ -38,6 +39,7 @@ export class AuthService implements OnModuleInit {
     private readonly audit: AuditService,
     private readonly sessions: SessionsService,
     private readonly rateLimits: RateLimitService,
+    private readonly memberships: MembershipsService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly logger: PinoLogger,
   ) {
@@ -91,6 +93,8 @@ export class AuthService implements OnModuleInit {
     }
 
     const now = new Date();
+    // One usable membership: the session starts in it (D-089); several: the user chooses.
+    const membershipId = await this.memberships.defaultMembership(user.id);
     const created = await this.prisma.$transaction(async (tx) => {
       if (currentToken) {
         await tx.authSession.updateMany({
@@ -98,7 +102,10 @@ export class AuthService implements OnModuleInit {
           data: { endedAt: now, endReason: 'signed_out' },
         });
       }
-      const result = await this.sessions.create(user.id, now, tx);
+      const result = await this.sessions.create(user.id, now, tx, membershipId);
+      if (membershipId) {
+        await this.memberships.recordAutoSelection(tx, user.id, membershipId, requestId);
+      }
       await this.audit.record(tx, {
         actorUserId: user.id,
         action: 'auth.signed_in',
@@ -108,8 +115,10 @@ export class AuthService implements OnModuleInit {
       });
       return result;
     });
+    const { activeTenant } = await this.memberships.accessFor(user.id, membershipId);
     const view: AuthSessionView = {
       user: { id: user.id, email: user.email, displayName: user.displayName },
+      activeTenant,
       csrfToken: created.csrfToken,
       expiresAt: created.session.expiresAt.toISOString(),
     };
@@ -129,7 +138,16 @@ export class AuthService implements OnModuleInit {
       where: { id: ctx.userId },
       select: { id: true, email: true, displayName: true },
     });
-    return { user, csrfToken: session.csrfToken, expiresAt: session.expiresAt.toISOString() };
+    const { activeTenant } = await this.memberships.accessFor(
+      ctx.userId,
+      session.activeMembershipId,
+    );
+    return {
+      user,
+      activeTenant,
+      csrfToken: session.csrfToken,
+      expiresAt: session.expiresAt.toISOString(),
+    };
   }
 
   async logout(ctx: RequestContext) {

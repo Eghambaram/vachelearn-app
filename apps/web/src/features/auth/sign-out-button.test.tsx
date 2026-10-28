@@ -7,6 +7,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, refresh: vi.fn(
 
 const SESSION = {
   user: { id: '01900000-0000-7000-8000-000000000001', email: 'a@b.test', displayName: 'A (Demo)' },
+  activeTenant: null,
   csrfToken: 'c'.repeat(43),
   expiresAt: '2026-11-04T09:00:00.000Z',
 };

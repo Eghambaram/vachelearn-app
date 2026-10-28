@@ -3,6 +3,8 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { PinoLogger } from 'nestjs-pino';
 import type { DestinationStream } from 'pino';
 import { AccessGuard } from './access/access.guard';
+import { MeController } from './access/me.controller';
+import { MembershipsService } from './access/memberships.service';
 import { CONTEXT_RESOLVER } from './access/request-context';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
@@ -47,6 +49,7 @@ export class AppModule {
       controllers: [
         HealthController,
         AuthController,
+        MeController,
         PlatformTenantsController,
         BranchesController,
       ],
@@ -54,6 +57,7 @@ export class AppModule {
         { provide: APP_CONFIG, useValue: config },
         // Who is calling: the session cookie (D-010). Tests replace this with `overrideProvider`.
         SessionsService,
+        MembershipsService,
         { provide: CONTEXT_RESOLVER, useClass: SessionResolver },
         RateLimitService,
         AuthService,
@@ -78,7 +82,15 @@ export class AppModule {
         { provide: APP_GUARD, useClass: AccessGuard },
         { provide: APP_FILTER, useClass: AllExceptionsFilter },
       ],
-      exports: [APP_CONFIG, PrismaService, AuditService, JobsService, EmailJobs, UsersService],
+      exports: [
+        APP_CONFIG,
+        PrismaService,
+        AuditService,
+        JobsService,
+        EmailJobs,
+        UsersService,
+        MembershipsService,
+      ],
     };
   }
 }

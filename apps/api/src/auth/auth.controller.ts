@@ -5,6 +5,7 @@ import {
   ForgotPasswordBody,
   LoginBody,
   SetPasswordBody,
+  SwitchTenantBody,
 } from '@vachelearn/contracts';
 import type { Request, Response } from 'express';
 import type { z } from 'zod';
@@ -13,6 +14,7 @@ import { Ctx, type RequestContext } from '../access/request-context';
 import { ApiZodBody, ApiZodResponse } from '../common/openapi/zod-openapi';
 import { requestIdOf } from '../common/request-id';
 import { ZodValidationPipe } from '../common/validation/zod-validation.pipe';
+import { MembershipsService } from '../access/memberships.service';
 import { AuthService } from './auth.service';
 import { PasswordLinksService } from './password-links.service';
 import { SESSION_COOKIE, sessionCookieOptions, sessionTokenFrom } from './session-tokens';
@@ -24,6 +26,7 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly passwordLinks: PasswordLinksService,
+    private readonly memberships: MembershipsService,
   ) {}
 
   @Post('login')
@@ -84,5 +87,22 @@ export class AuthController {
     @Body(new ZodValidationPipe(SetPasswordBody)) body: z.output<typeof SetPasswordBody>,
   ) {
     await this.passwordLinks.setPassword(body, req.ip ?? 'unknown', requestIdOf(req));
+  }
+
+  /** Chooses the session's active tenant by one of the caller's own memberships (D-089). */
+  @Post('session/tenant')
+  @Authenticated()
+  @HttpCode(200)
+  @ApiZodBody(SwitchTenantBody)
+  @ApiZodResponse(200, AuthSessionView)
+  async switchTenant(
+    @Ctx() ctx: RequestContext,
+    @Body(new ZodValidationPipe(SwitchTenantBody)) body: z.output<typeof SwitchTenantBody>,
+  ): Promise<AuthSessionView> {
+    await this.memberships.switchTenant(ctx, body.membershipId);
+    return this.auth.me({
+      ...ctx,
+      session: ctx.session && { ...ctx.session, activeMembershipId: body.membershipId },
+    });
   }
 }

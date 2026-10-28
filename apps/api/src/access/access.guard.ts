@@ -91,6 +91,11 @@ export class AccessGuard implements CanActivate {
       throw new ApiException(403, 'CSRF', 'Missing or invalid CSRF token');
     }
 
+    if (requirement.scope === 'tenant' && ctx.tenantBlocked) {
+      throw ctx.tenantBlocked === 'suspended'
+        ? new ApiException(403, 'TENANT_SUSPENDED', 'This organisation is suspended')
+        : new ApiException(403, 'TENANT_ARCHIVED', 'This organisation is archived');
+    }
     const allowed =
       requirement.scope === 'authenticated'
         ? true
@@ -98,6 +103,13 @@ export class AccessGuard implements CanActivate {
           ? (ctx.platform?.permissions.has(requirement.permission) ?? false)
           : (ctx.tenant?.permissions.has(requirement.permission) ?? false);
     if (!allowed) throw new ApiException(403, 'FORBIDDEN', 'Forbidden');
+    // Real callers: the branch scope is the reach of the permission this route requires — a Learner of the whole tenant
+    // who is Branch Admin of A1 manages branches in A1 only.
+    if (requirement.scope === 'tenant' && ctx.tenant?.grants) {
+      const grant = ctx.tenant.grants.get(requirement.permission);
+      ctx.tenant.branchScope =
+        grant?.kind === 'all' ? 'ALL' : grant?.kind === 'branches' ? [...grant.branchIds] : [];
+    }
     req.vlContext = ctx;
     return true;
   }

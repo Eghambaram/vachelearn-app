@@ -59,6 +59,10 @@ scope helpers for branch filtering, "no elevation beyond own grants" rule, audit
 **AC:** a user with roles in two tenants sees only the active tenant's data; branch admin of A1 cannot assign roles in
 A2; nobody can grant themselves a higher role; permission registry matches `docs/ROLE_PERMISSION_MATRIX.md` (test
 compares them).
+Split (owner, 2026-10-28): **2.4a** memberships + branches, fixed roles (D-053) with the full registry checked against
+the matrix, platform role, real request context (active membership on the session, D-089; branch scope; 403
+`TENANT_SUSPENDED`), tenant switch, operator commands to grant roles; **2.4b** role-assignment API with the granting
+rules, audited; **2.4c** platform support sessions (D-037) + web session/tenant switcher.
 
 ### 2.5 Tenant admin people basics
 Tenant users list (scoped), user detail, deactivate/reactivate, branch membership management, tenant settings
@@ -87,3 +91,4 @@ seed is idempotent and refuses production.
   ports 55432/51025/58025 so another local project on the standard ports is unaffected.
 - Phase 0 (2026-10-20) — added slice 2.3a: 2.3 needs email delivery, and the outbox runner (D-040) was not scheduled anywhere before Phase 3.
 - 2026-10-28 — Slice 2.3 split into 2.3b (API sign-in), 2.3c (verification + reset), 2.3d (web), approved by the owner: one reviewable change set each.
+- 2026-10-28 — Slice 2.4 split into 2.4a (context + registry), 2.4b (role assignment), 2.4c (support sessions + web), approved by the owner.

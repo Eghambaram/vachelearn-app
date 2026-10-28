@@ -11,7 +11,7 @@ import { TEST_ACTOR_HEADER } from './actors';
 /*
  * Every route of the real application declares exactly one access rule (deny by default, CLAUDE.md): `@Public()`,
  * `@Authenticated()` or a permission — never both, never neither. Platform routes (`platform/**`) require a platform
- * permission; `@Authenticated()` (any signed-in caller) is allowed only under `auth/**`; every other protected route
+ * permission; `@Authenticated()` (any signed-in caller) is allowed only under `auth/**` and `me/**`; every other protected route
  * requires a tenant permission. A new controller that forgets this fails here.
  */
 
@@ -66,9 +66,9 @@ describe('route access declarations', () => {
 
 describe('signed-in-only routes (security review 2.3b)', () => {
   it.each(routes.filter((r) => r.requirement?.scope === 'authenticated'))(
-    '$handler: @Authenticated() only on the caller’s own session and account (auth/**)',
+    '$handler: @Authenticated() only on the caller’s own session and account (auth/**, me/**)',
     (route) => {
-      expect(route.path.startsWith('auth/')).toBe(true);
+      expect(route.path.startsWith('auth/') || route.path.startsWith('me/')).toBe(true);
     },
   );
 

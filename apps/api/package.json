@@ -12,6 +12,7 @@
     "dev:node": "node --watch --enable-source-maps --env-file-if-exists=../../.env dist/src/main.js",
     "start": "node --enable-source-maps dist/src/main.js",
     "user:create": "pnpm build && node --enable-source-maps --env-file-if-exists=../../.env dist/src/cli/create-user.js",
+    "user:grant": "pnpm build && node --enable-source-maps --env-file-if-exists=../../.env dist/src/cli/grant-role.js",
     "lint": "eslint .",
     "typecheck": "pnpm contracts && pnpm generate && tsc --noEmit",
     "test": "pnpm generate && vitest run",

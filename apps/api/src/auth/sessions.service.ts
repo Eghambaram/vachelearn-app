@@ -30,7 +30,12 @@ export class SessionsService {
   ) {}
 
   /** Starts a session (in the caller's transaction); returns the cookie token (never stored) and the row. */
-  async create(userId: string, now = new Date(), tx: Tx = this.prisma) {
+  async create(
+    userId: string,
+    now = new Date(),
+    tx: Tx = this.prisma,
+    activeMembershipId: string | null = null,
+  ) {
     const token = newSessionToken();
     const session = await tx.authSession.create({
       data: {
@@ -39,6 +44,7 @@ export class SessionsService {
         createdAt: now,
         lastSeenAt: now,
         expiresAt: new Date(now.getTime() + MAX_LIFETIME_MS),
+        activeMembershipId,
       },
     });
     return { token, session, csrfToken: this.csrfToken(session.id) };

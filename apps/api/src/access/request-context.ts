@@ -1,14 +1,19 @@
 import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
 import type { IncomingMessage } from 'node:http';
-import type { PlatformPermission, TenantPermission } from './permissions';
+import type {
+  GrantScope,
+  PermissionKey,
+  PlatformPermission,
+  TenantPermission,
+} from './permissions';
 
 /*
  * Who is calling, resolved from the authenticated session only — never from a client-sent tenant id, header, slug,
  * query or body (CLAUDE.md non-negotiable). Services receive it explicitly.
  *
- * Slice 2.3b: the session resolver (auth/session.resolver.ts) identifies the signed-in user; platform and tenant
- * grants stay null until roles and memberships arrive (2.4), so permission routes answer 403 to real users for now.
- * Integration tests replace the resolver through the same token.
+ * The session resolver (auth/session.resolver.ts) builds it: platform grants from live platform roles, the tenant
+ * part from the session's active membership (D-089) and its live role assignments (D-053). The access guard narrows
+ * `branchScope` to the permission the route requires. Integration tests replace the resolver through the same token.
  */
 
 export type BranchScope = 'ALL' | readonly string[];
@@ -22,11 +27,17 @@ export type RequestContext = {
   tenant: {
     tenantId: string;
     permissions: ReadonlySet<TenantPermission>;
-    /** Branches the caller may see: 'ALL' for tenant-wide roles, otherwise their branch ids. */
+    /** Branches the caller may see for the route's permission: 'ALL' for tenant-wide grants, else their branch ids. */
     branchScope: BranchScope;
+    /** The membership behind this context (absent for test callers). */
+    membershipId?: string;
+    /** Each permission's reach, from the role assignments; the guard derives `branchScope` from it. */
+    grants?: ReadonlyMap<PermissionKey, GrantScope>;
   } | null;
+  /** The active tenant is suspended or archived: tenant routes answer 403 (spec §4) and nothing tenant-owned is read. */
+  tenantBlocked?: 'suspended' | 'archived';
   /** Set when the caller is authenticated by a browser session: its mutations must carry this CSRF token. */
-  session?: { id: string; csrfToken: string; expiresAt: Date };
+  session?: { id: string; csrfToken: string; expiresAt: Date; activeMembershipId: string | null };
 };
 
 export interface ContextResolver {

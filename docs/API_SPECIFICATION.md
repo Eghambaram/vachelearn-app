@@ -79,6 +79,21 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   `Referrer-Policy: no-referrer`, `Cache-Control: no-store` (helmet); HSTS in production only. `/api/docs` (never in
   production) has its own CSP so Swagger UI loads.
 
+## Memberships and the active tenant (Slice 2.4a)
+
+- A session works in one tenant: its **active membership** (D-089), never a header, URL, slug or body. One usable
+  membership → selected at sign-in (and on the next request if it appears later); several → `activeTenant` is null
+  until the user chooses. `AuthSessionView.activeTenant` = `{ membershipId, tenantId, slug, displayName }` or null.
+- `GET /me/memberships` → `{ data: MembershipSummary[] }`: the caller's active memberships in active or suspended
+  tenants, with live roles (and their branch) and which one is active.
+- `POST /auth/session/tenant` `{ membershipId }` → `AuthSessionView`: switch to one of the caller's own memberships
+  (audited `auth.tenant_switched`). Someone else's, inactive or unknown membership → 404; suspended or archived tenant →
+  403 `TENANT_SUSPENDED` / `TENANT_ARCHIVED`.
+- Tenant routes: no active tenant or no grant → 403; active tenant suspended/archived → 403 `TENANT_SUSPENDED` /
+  `TENANT_ARCHIVED` (the account itself still works). Revoked roles, deactivated memberships, deactivated branches
+  (D-090, Proposed) and tenant status apply on the next request (D-049). Platform roles reach platform routes only
+  (D-037). Automatic selection is audited `auth.tenant_selected`; a switch records the previous membership.
+
 ## Password links (Slice 2.3c)
 
 - Accounts start without a password (D-083): `pnpm --filter api user:create --email … --name … --reason …` creates one and sends
