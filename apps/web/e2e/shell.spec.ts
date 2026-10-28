@@ -265,14 +265,12 @@ test.describe('public, auth and system pages (Slice 1.4)', () => {
     });
   }
 
-  test('home page offers sign-in, and sign-in honestly says it is not available yet', async ({
-    page,
-  }) => {
+  test('home page offers sign-in, which opens the sign-in form', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('main').getByRole('link', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByText(/Sign-in is not available yet/)).toBeVisible();
-    await expect(page.getByRole('textbox')).toHaveCount(0);
+    await expect(page.getByLabel(/^Email address/)).toBeVisible();
+    await expect(page.getByLabel(/^Password/)).toBeVisible();
   });
 
   test('workspace picker lists demo memberships and opens a role’s workspace', async ({ page }) => {

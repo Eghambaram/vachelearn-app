@@ -167,7 +167,8 @@ update `status.ts` and this table together).
 ### App shells (Slice 1.4)
 
 - **Route groups:** `(public)` (`/`, `/help`: marketing header + footer, placeholder copy per D-038), `(auth)` (`/login`,
-  `/select-workspace`, `/forbidden`, `/suspended`: centred card), `(platform)/platform`, `(tenant)/admin`,
+  `/forgot-password`, `/set-password`, `/reset-password`, `/welcome` (2.3d), `/select-workspace`, `/forbidden`,
+  `/suspended`: centred card), `(platform)/platform`, `(tenant)/admin`,
   `(instruct)/instructor`, `(learn)/learn` (AppShell), `(account)/account` (AppShell of the user's own workspace); global
   `not-found` and `error`. Every page has a skip link as its first focus stop, one `h1`, and a `· VacheLearn` title.
 - **AppShell:** dark sidebar (`surface-dark`, inverse focus ring) with brand lockup (D-064), workspace summary (tenant +
@@ -220,8 +221,9 @@ enables it. Reference images are direction only.
 
 Route notes: tenant users never put a tenant id in the URL (tenant comes from the session). Public tenant pages use
 `/t/{tenantSlug}` only to look up **public** data (D-021); subdomains/custom domains may replace this later. Secret
-tokens (invitation, password reset, email verification) travel in the URL fragment `#t=…` so they never reach server
-or proxy logs.
+tokens (invitation, set-password, password reset) travel in the URL fragment `#token=…` so they never reach server
+or proxy logs; the page reads the token once and removes it from the address bar (2.3d). There is no separate
+email-verification page: following a set-password link verifies the address (D-083).
 
 ### Public and tenant website
 
@@ -231,7 +233,7 @@ or proxy logs.
 | 2 | Tenant public catalog home | `/t/[tenantSlug]` | Public | Browse, search | Public courses (marketing fields) | 3.7 · R2 | 05 | D-021 |
 | 3 | Catalog search + filters | `/t/[tenantSlug]/courses` · `/learn/catalog` | Public · LRN | Search, filter, paginate | Entitled courses | 3.7 · R2 | 05 | Public variant: D-021 |
 | 4 | Course detail + enrol | `/t/[tenantSlug]/courses/[slug]` · `/learn/catalog/[courseId]` | Public · LRN | Enrol (D-046) / buy (P6) / sign in | Course version marketing fields, eligibility, price | 3.7 · R2 (+4.1, 6.2) | 05 | D-046, commerce |
-| 5 | Login · invitation accept · registration · password reset · email verification | `/login` · `/invite/accept#t=` · `/register` · `/reset-password#t=` · `/verify-email#t=` | Public | Sign in, accept, reset | Session, invitation preview | 2.3, 3.1 · R1–R2 | — | `/register` only if D-033 |
+| 5 | Login · forgot password · set / reset password · signed-in landing · invitation accept · registration | `/login` · `/forgot-password` · `/set-password#token=` · `/reset-password#token=` · `/welcome` · `/invite/accept#token=` · `/register` | Public | Sign in, ask for a link, set a password, sign out, accept | Session, invitation preview | 2.3d, 3.1 · R1–R2 | — | D-083, D-087; `/register` only if D-033 |
 | 6 | Checkout result | `/checkout/[orderId]/result` | LRN | View order status (never grants access itself) | Order status from API | 6.2 · R4 | 05 | commerce, D-007 |
 
 ### Platform Admin

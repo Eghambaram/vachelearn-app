@@ -1,36 +1,32 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — Slice 2.3c done, awaiting commit approval** (account creation, set-password /
-reset links). 2.3b 360f8f6 (CI success). 2.3 is
-split into 2.3b / 2.3c / 2.3d (owner, 2026-10-28). 2.3a 353a2e2 (CI success); 2.2 a2ae10b. Phase 1 approved (a51d042).
+**Phase 2 · Platform foundation (R1) — Slice 2.3d done, awaiting commit approval** (web sign-in, proxy, headers).
+Slice 2.3 = 2.3a–d (owner, 2026-10-28): 353a2e2, 360f8f6, 68f5930 (CI success each). Phase 1 approved (a51d042).
 
 ## Last verified
-2026-10-28, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.3c tree:
-- `pnpm verify` → exit 0 · contracts 53, web 541, api 193 (17 files) · build OK
-- `pnpm --filter api test:isolation` → 79 passed · `user:create` run against the dev DB + Mailpit (sent, audited)
-- `pnpm test:e2e` not rerun (web unchanged since 236 passed on the 2.2 tree)
+2026-10-28, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.3d tree:
+- `pnpm verify` → exit 0 · contracts 53, web 574 (38 files), api 194 (17 files) · build OK
+- `pnpm --filter api test:isolation` → 79 passed
+- `pnpm test:e2e` → exit 0 · 244 passed (5.8 min; API on :4100 + web on :3100, auth through Mailpit)
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
-- 2.1 API scaffold: NestJS 12, Prisma 7, Zod config, request IDs, error envelope, pino redaction, probes, compose (cd9d922).
-- 2.2 tenants, settings, branches, insert-only audit, deny-by-default guard, signed cursors, isolation suite (a2ae10b).
-- 2.3a Postgres job runner (D-040), email adapter (D-081 tokens at send), TLS in production, `scrubSecrets` (353a2e2).
-- 2.3b sign-in + sessions: Argon2id, `__Host-` cookie, CSRF + same-origin, helmet, rate limits (360f8f6).
-- 2.3c `password_links` (one live per user + purpose) · links minted at send, token in the URL fragment (D-081) ·
-  reset 30 min / set 7 d, forgot neutral (D-087) · `/auth/password/forgot|set` · setting ends all sessions ·
-  `user:create --reason` (D-083) · security review: no Critical/High; Mediums + Lows fixed; D-088 Proposed (uncommitted).
+- 2.1 API scaffold (cd9d922) · 2.2 tenancy + isolation suite (a2ae10b) · 2.3a jobs + email (353a2e2) · 2.3b sign-in +
+  sessions (360f8f6) · 2.3c password links + `user:create` (68f5930).
+- 2.3d web: `/api/v1` proxy (D-085; Next forwards client XFF unchanged → hops = appending proxies in front of the web,
+  ≥ 1 in production), headers (frame/base/form/object CSP, XFO DENY, COOP, nosniff, no-referrer + no-store on link
+  pages), `/login` `/forgot-password` `/set-password` `/reset-password` `/welcome` + sign-out · e2e drives the real
+  API + Mailpit · security + UX reviews: no Critical/High open; fixes applied (uncommitted).
 
 ## In progress / uncommitted
-- Slice 2.3c — awaiting the owner's go-ahead to commit and push.
+- Slice 2.3d — awaiting the owner's go-ahead to commit and push.
 
 ## Next step
-Commit 2.3c on approval, then 2.3d: Next.js `/api/v1/*` proxy (D-085; set `TRUST_PROXY_HOPS`, check how it forwards
-X-Forwarded-For, keep the API reachable only through it), web security headers, sign-in / sign-out / forgot /
-`/set-password` + `/reset-password` pages (read the fragment, then clear it with `history.replaceState`; no third-party
-scripts; `Referrer-Policy: no-referrer`). 2.4 resolver must: load the membership from the session only, refuse
-suspended/archived tenants (403 `TENANT_SUSPENDED`), derive branch scope from role assignments, never trust a header;
-user deactivation (2.4/Phase 3) must also revoke live password links.
+Commit 2.3d on approval, then plan Slice 2.4 (memberships, fixed roles D-053, platform roles, support access D-037;
+decide D-053 and D-037 first). 2.4 resolver must: load the membership from the session only, refuse suspended or
+archived tenants (403 `TENANT_SUSPENDED`), derive branch scope from role assignments, never trust a header; user
+deactivation must end sessions and revoke live password links; `user:create` gains a platform role option.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
@@ -61,14 +57,18 @@ user deactivation (2.4/Phase 3) must also revoke live password links.
   `pnpm check:ignored-source` (first step of verify) fails if any source file under apps/ or packages/ is ignored.
 - Radix radio groups select on arrow-key focus only while the key is held (focus moves in a `setTimeout`): Playwright
   tests use `keyboard.down`/`up`, not `press` (`e2e/attempts.spec.ts`).
-- No app-wide security headers yet (CSP, `frame-ancestors`, `Referrer-Policy`, HSTS in `next.config.ts`): security
-  review 1.5.7 — add before any public deployment (Phase 2 / 7).
+- Before any public deployment (security reviews 1.5.7, 2.3d): nonce-based `script-src` CSP for the web, HSTS at
+  the edge (checked), `API_INTERNAL_URL` set (the build only warns), the web→API hop private or https.
 - Exit-gate review Lows (stepper "(completed)", catalog/enrol spelling drift, donut colours, < 24 px targets, Select
   blank before hydration) and untested surfaces (screen readers, Safari, Firefox, touch, zoom, High Contrast): log.
 - Certificate preview builds its printed verification address from request headers (`siteOrigin`); Phase 2 should
   use a configured public base URL (QA note, exit gate).
-- From the 2.1 review list, still open: web security headers in `next.config.ts` (2.3d), rate limits on invites
-  (Phase 3) and on `/ready` and `/verify` (before any public deployment).
+- Still open from the 2.1 review list: rate limits on invites (Phase 3) and on `/ready` and `/verify` (before any
+  public deployment).
+- 2.3d reviews, logged: a set-password link opened on a shared PC stays in that browser's global history (single use
+  + expiry are the controls); password managers get no username on the set-password form (API could return the
+  address for a valid token); e2e shares `vachelearn_test` with the API tests (never run both at once) and reuses a
+  running API on :4100 locally.
 - 2.3b review, logged: no load test of sign-in floods (the `HashGate` caps work; `UV_THREADPOOL_SIZE` untuned);
   trust-proxy hops untested end to end until the 2.3d proxy; raising the Argon2 cost later needs rehash-on-sign-in.
 - Container images and GitHub actions are tag-pinned, not digest-pinned (security review 2.1, F8, Low).

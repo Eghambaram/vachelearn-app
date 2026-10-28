@@ -70,8 +70,11 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   A mutation with a body must send `application/json` → else 415 `UNSUPPORTED_MEDIA_TYPE` (HTML forms cannot).
   Deviation from the 2.1 review's "no-Origin mutations refused": `Sec-Fetch-Site: same-origin` is accepted in place
   of `Origin` (browsers cannot forge it). Future signature-verified webhooks will need an explicit exemption.
-- Client IP (rate limits) honours exactly `TRUST_PROXY_HOPS` proxies (required in production; 1 locally behind the
-  web proxy; the API must be reachable only through its proxies, or clients choose their own IP). Responses carry
+- Client IP (rate limits) honours exactly `TRUST_PROXY_HOPS` proxies (required in production). The web app's
+  `/api/v1` proxy forwards the client's `X-Forwarded-For` unchanged and appends nothing (checked 2026-10-28), so the
+  count is the number of proxies **in front of the web app** that append the client address: 0 locally, at least 1
+  in production (refused otherwise — with 0 every user would share the web server's address). Both the API and the
+  web app must be reachable only through that appending proxy, or clients choose their own IP. Responses carry
   `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`,
   `Referrer-Policy: no-referrer`, `Cache-Control: no-store` (helmet); HSTS in production only. `/api/docs` (never in
   production) has its own CSP so Swagger UI loads.

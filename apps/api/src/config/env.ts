@@ -116,6 +116,15 @@ const EnvSchema = z
           path: ['TRUST_PROXY_HOPS'],
           message: 'is required in production',
         });
+      } else if (env.TRUST_PROXY_HOPS === 0) {
+        // Behind the web app's /api proxy (D-085) the API's peer is always the web server: 0 would put every user in
+        // one rate-limit bucket. Count the proxies in front of the web app that append X-Forwarded-For.
+        ctx.addIssue({
+          code: 'custom',
+          path: ['TRUST_PROXY_HOPS'],
+          message:
+            'must be at least 1 in production (the proxies in front of the web app; see D-085)',
+        });
       }
       if (env.EMAIL_PROVIDER === 'console') {
         ctx.addIssue({

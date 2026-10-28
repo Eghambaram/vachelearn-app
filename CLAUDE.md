@@ -89,7 +89,7 @@ tests pass.
 | Type-check | `pnpm typecheck` (web runs `next typegen`; api builds contracts + `prisma generate` first) |
 | Unit + integration tests | `pnpm test` (contracts, web, api; api needs `pnpm services:up` — real Postgres test DB `vachelearn_test` and Mailpit for the email tests). Single: `pnpm --filter web test -- <pattern>`, `pnpm --filter api test -- <pattern>` |
 | Tenant/branch isolation suite | `pnpm --filter api test:isolation` (also part of `pnpm test`; full two-tenant fixture in 2.6) |
-| E2E (Playwright + axe) | `pnpm test:e2e` (first time: `pnpm --filter web exec playwright install chromium`) |
+| E2E (Playwright + axe) | `pnpm test:e2e` (needs `pnpm services:up`; starts the API on :4100 and the web on :3100; first time: `pnpm --filter web exec playwright install chromium`) |
 | Build | `pnpm build` |
 | DB migrate (dev) / deploy / reset | `pnpm --filter api db:migrate` · `db:deploy` · `db:reset` (localhost only); *Phase 2.6:* `db:seed` |
 | Create an account (operator) | `pnpm --filter api user:create --email <address> --name "<name>" --reason "<why>"` (sends a set-password email; D-083) |

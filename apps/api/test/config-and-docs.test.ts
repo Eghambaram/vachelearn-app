@@ -117,6 +117,18 @@ describe('configuration (fail fast, nothing fails open)', () => {
     }
   });
 
+  it('TRUST_PROXY_HOPS: required and at least 1 in production (D-085: the peer is the web server)', () => {
+    const prod = { ...PROD, WEB_ORIGIN: 'https://a.example' };
+    expect(() => loadConfig({ ...prod, TRUST_PROXY_HOPS: undefined })).toThrow(
+      /TRUST_PROXY_HOPS is required/,
+    );
+    expect(() => loadConfig({ ...prod, TRUST_PROXY_HOPS: '0' })).toThrow(
+      /at least 1 in production/,
+    );
+    expect(loadConfig({ ...prod, TRUST_PROXY_HOPS: '2' }).trustProxyHops).toBe(2);
+    expect(loadConfig(BASE).trustProxyHops).toBe(0);
+  });
+
   it('job worker: on by default, off in tests, explicit setting wins', () => {
     expect(loadConfig({ ...BASE, NODE_ENV: 'development' }).jobsWorker).toBe(true);
     expect(loadConfig(BASE).jobsWorker).toBe(false);
