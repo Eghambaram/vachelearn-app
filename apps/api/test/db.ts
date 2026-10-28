@@ -1,6 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client';
 import { refuseUnlessLocalDatabase } from '../scripts/database-guard.mjs';
+import { USER } from './actors';
 
 /** A Prisma client on the test database, for arranging data and asserting rows (audit events, constraints). */
 export function testPrisma() {
@@ -18,6 +19,14 @@ export async function resetDatabase(prisma: PrismaClient) {
   if (!name.endsWith('_test'))
     throw new Error(`Refusing to empty "${name}": not a _test database.`);
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE email_deliveries, jobs, audit_events, branches, tenant_settings, tenants RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE email_deliveries, jobs, audit_events, auth_sessions, user_credentials, users, rate_limit_buckets, branches, tenant_settings, tenants RESTART IDENTITY CASCADE',
   );
+  // The fixed test callers are real users: audit rows reference their actor (audit_events.actor_user_id → users).
+  await prisma.user.createMany({
+    data: Object.entries(USER).map(([key, id]) => ({
+      id,
+      email: `${key.toLowerCase()}@actors.test`,
+      displayName: `Test ${key} (Demo)`,
+    })),
+  });
 }

@@ -14,6 +14,8 @@ export class ApiException extends HttpException {
     readonly code: string,
     message: string,
     readonly fieldErrors?: readonly FieldError[],
+    /** Response headers that belong with the error, e.g. `Retry-After` on a 429. */
+    readonly headers?: Readonly<Record<string, string>>,
   ) {
     super(message, status);
   }

@@ -35,6 +35,14 @@ const EnvSchema = z
     ENABLE_API_DOCS: z.enum(['true', 'false']).optional(),
     /** Signs list cursors (HMAC). Required in production; elsewhere a random key per process is used. */
     CURSOR_SECRET: z.string().min(32, 'must be at least 32 characters').optional(),
+    /** Signs CSRF tokens (HMAC of the session id). Required in production; random per process elsewhere. */
+    SESSION_SECRET: z.string().min(32, 'must be at least 32 characters').optional(),
+    /**
+     * Proxies in front of the API whose `X-Forwarded-For` is trusted (Express `trust proxy`, a hop count — never
+     * `true`). Locally the web app's /api proxy is one hop (D-085). Required in production: a wrong value makes every
+     * client share one IP for rate limits, or lets clients choose their own.
+     */
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).optional(),
     /** Runs queued jobs in this process (D-040). Default: on, except in tests (they run jobs explicitly). */
     JOBS_WORKER: z.enum(['true', 'false']).optional(),
     /** `console` logs recipient and subject only (never the body); `smtp` sends (Mailpit locally). D-082. */
@@ -89,6 +97,26 @@ const EnvSchema = z
           message: 'is still the .env.example placeholder',
         });
       }
+      if (!env.SESSION_SECRET) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['SESSION_SECRET'],
+          message: 'is required in production',
+        });
+      } else if (/^replace-with|change-me/.test(env.SESSION_SECRET)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['SESSION_SECRET'],
+          message: 'is still the .env.example placeholder',
+        });
+      }
+      if (env.TRUST_PROXY_HOPS === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['TRUST_PROXY_HOPS'],
+          message: 'is required in production',
+        });
+      }
       if (env.EMAIL_PROVIDER === 'console') {
         ctx.addIssue({
           code: 'custom',
@@ -127,6 +155,8 @@ const EnvSchema = z
     apiDocs: env.ENABLE_API_DOCS ? env.ENABLE_API_DOCS === 'true' : env.NODE_ENV === 'development',
     // Outside production a per-process key is fine: cursors simply stop working across a restart.
     cursorSecret: env.CURSOR_SECRET ?? randomBytes(32).toString('base64url'),
+    sessionSecret: env.SESSION_SECRET ?? randomBytes(32).toString('base64url'),
+    trustProxyHops: env.TRUST_PROXY_HOPS ?? 0,
     jobsWorker: env.JOBS_WORKER ? env.JOBS_WORKER === 'true' : env.NODE_ENV !== 'test',
     email: {
       provider: env.EMAIL_PROVIDER,

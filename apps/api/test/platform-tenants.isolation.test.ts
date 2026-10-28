@@ -12,6 +12,7 @@ import {
   USER,
 } from './actors';
 import { resetDatabase, testPrisma } from './db';
+import { WEB } from './app';
 
 const actors = new TestActors()
   .set('platform', { userId: USER.platformAdmin, platform: PLATFORM_ADMIN })
@@ -50,9 +51,17 @@ afterAll(async () => {
 const as = (actor: string) => ({
   get: (path: string) => request(app.getHttpServer()).get(path).set(TEST_ACTOR_HEADER, actor),
   post: (path: string, body?: object) =>
-    request(app.getHttpServer()).post(path).set(TEST_ACTOR_HEADER, actor).send(body),
+    request(app.getHttpServer())
+      .post(path)
+      .set(TEST_ACTOR_HEADER, actor)
+      .set('origin', WEB)
+      .send(body),
   patch: (path: string, body?: object) =>
-    request(app.getHttpServer()).patch(path).set(TEST_ACTOR_HEADER, actor).send(body),
+    request(app.getHttpServer())
+      .patch(path)
+      .set(TEST_ACTOR_HEADER, actor)
+      .set('origin', WEB)
+      .send(body),
 });
 const platform = as('platform');
 

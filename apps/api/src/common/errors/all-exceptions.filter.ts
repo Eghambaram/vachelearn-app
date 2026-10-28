@@ -53,6 +53,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let body: ApiErrorBody;
     if (exception instanceof ApiException) {
       status = exception.getStatus();
+      for (const [name, value] of Object.entries(exception.headers ?? {}))
+        res.setHeader(name, value);
       body = {
         error: {
           code: exception.code,

@@ -47,6 +47,10 @@ strategy, email verification, password reset (hashed single-use tokens, expiry),
 "current user" endpoint. Web: login, logout, reset screens wired to real API.
 **AC:** wrong password and unknown email give the same response + timing class; reset token single-use and expiring;
 deactivated user's sessions stop working on next request; no token appears in logs (test).
+Split (owner, 2026-10-28) into **2.3b** API: User, password credential, AuthSession (8 h idle / 7 d max, D-084),
+login/logout/me, `__Host-` cookie via the web proxy (D-085), CSRF, security headers, rate limits, operator command
+creating a platform admin with no password (D-083); **2.3c** set-password / verification / reset tokens and emails
+through the 2.3a job runner (D-081); **2.3d** web screens wired to the real API.
 
 ### 2.4 Memberships, roles, permissions, request context
 Membership, BranchMembership, Role (system templates + tenant copies if needed), Permission registry, RoleAssignment
@@ -82,3 +86,4 @@ seed is idempotent and refuses production.
   Phase 3 (D-078). Validation/OpenAPI via an in-house Zod pipe (D-077: `nestjs-zod` does not support NestJS 12). Host
   ports 55432/51025/58025 so another local project on the standard ports is unaffected.
 - Phase 0 (2026-10-20) — added slice 2.3a: 2.3 needs email delivery, and the outbox runner (D-040) was not scheduled anywhere before Phase 3.
+- 2026-10-28 — Slice 2.3 split into 2.3b (API sign-in), 2.3c (verification + reset), 2.3d (web), approved by the owner: one reviewable change set each.

@@ -41,12 +41,40 @@ Framework errors use fixed messages (never the framework's wording or echoed inp
 
 ## Authorization (deny by default)
 
-Every route is either `@Public()` (`/health`, `/ready`) or names the permission it needs. No signed-in caller → 401;
-signed in without the permission → 403; a record outside the caller's tenant or branch scope → 404. Platform routes
+Every route is `@Public()` (`/health`, `/ready`, `POST /auth/login`), `@Authenticated()` (any signed-in caller, for
+their own session: `/auth/me`, `/auth/logout`) or names the permission it needs. No signed-in caller → 401; signed in
+without the permission → 403; a record outside the caller's tenant or branch scope → 404. Platform routes
 (`/api/v1/platform/**`) take platform permissions only — tenant roles never pass, and platform roles never imply
-tenant access (D-037). Until sessions exist (Slice 2.3) the API has no callers, so every protected route answers 401.
+tenant access (D-037). Until roles and memberships exist (Slice 2.4), a signed-in user holds no permission, so
+permission routes answer 403.
 A declared permission always wins over `@Public()`, and a route test (`test/routes.isolation.test.ts`) fails when a
 handler declares both or neither, or when a `platform/**` route names a tenant permission (or the reverse).
+
+## Sessions and cross-site protection (Slice 2.3b)
+
+- The browser calls the API through the web app's origin (`/api/v1/*` proxied by Next.js, D-085). Sign-in sets
+  `__Host-vl_session` (HttpOnly, Secure, SameSite=Lax, Path=/, expires with the session): 32 random bytes; the database
+  stores only their SHA-256. Sessions end after 8 hours idle or 7 days (D-084), and on the next request after the user
+  is deactivated (D-049); the end reason is recorded.
+- `POST /auth/login` `{ email, password }` → 200 `AuthSessionView` `{ user, csrfToken, expiresAt }`. Every failure
+  (unknown email, wrong password, no password yet, unverified, deactivated) is the same 401 `INVALID_CREDENTIALS` after
+  one Argon2id verification; a failure is logged as `auth.sign_in_failed` with a keyed hash, never the address. Rate
+  limits (D-086, Proposed): 10 attempts per account (by user id when the address exists, so case variants share it)
+  and 50 per client IP (IPv6 per /64) per 15 minutes → 429 `RATE_LIMITED` with `Retry-After`; keys are HMACs. At most
+  2 hashes run at once with 32 waiting, beyond that 503 `BUSY` with `Retry-After`. Bodies over 4 KB on `/auth/*` → 413.
+  Signing in from a browser that already holds a session ends that session.
+- `GET /auth/me` → `AuthSessionView`; `POST /auth/logout` → 204 and the cookie is cleared.
+- Every POST/PUT/PATCH/DELETE must come from the web origin (`Origin` equal to `WEB_ORIGIN`, or `Sec-Fetch-Site:
+  same-origin` when a browser sends no `Origin`); otherwise 403 `CROSS_ORIGIN`. A session-authenticated mutation also
+  needs `x-csrf-token` equal to its session's token (HMAC of the session id with `SESSION_SECRET`) → else 403 `CSRF`.
+  A mutation with a body must send `application/json` → else 415 `UNSUPPORTED_MEDIA_TYPE` (HTML forms cannot).
+  Deviation from the 2.1 review's "no-Origin mutations refused": `Sec-Fetch-Site: same-origin` is accepted in place
+  of `Origin` (browsers cannot forge it). Future signature-verified webhooks will need an explicit exemption.
+- Client IP (rate limits) honours exactly `TRUST_PROXY_HOPS` proxies (required in production; 1 locally behind the
+  web proxy; the API must be reachable only through its proxies, or clients choose their own IP). Responses carry
+  `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`,
+  `Referrer-Policy: no-referrer`, `Cache-Control: no-store` (helmet); HSTS in production only. `/api/docs` (never in
+  production) has its own CSP so Swagger UI loads.
 
 ## Tenancy (Slice 2.2)
 

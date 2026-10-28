@@ -7,6 +7,8 @@ const PROD = {
   ...BASE,
   NODE_ENV: 'production',
   CURSOR_SECRET: 'k'.repeat(32),
+  SESSION_SECRET: 's'.repeat(32),
+  TRUST_PROXY_HOPS: '1',
   EMAIL_PROVIDER: 'smtp',
   SMTP_HOST: 'smtp.example.com',
   SMTP_PORT: '587',
@@ -159,6 +161,10 @@ describe('OpenAPI documents', () => {
       const spec = await request(app.getHttpServer()).get('/api/docs-json');
       expect(spec.status).toBe(200);
       expect(spec.body.info.title).toBe('VacheLearn API');
+      // The docs page has its own policy, so Swagger UI can load its scripts and styles.
+      const page = await request(app.getHttpServer()).get('/api/docs/');
+      expect(page.headers['content-security-policy']).toContain("script-src 'self'");
+      expect(page.headers['content-security-policy']).toContain("frame-ancestors 'none'");
       const ready = spec.body.paths['/ready'].get.responses['200'];
       expect(ready.content['application/json'].schema.properties.status).toEqual({
         type: 'string',

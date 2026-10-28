@@ -33,6 +33,10 @@ built and the guarantees the database itself enforces.
 | `audit_events` | 2.2 | Evidence | Insert-only (trigger rejects UPDATE/DELETE); `(tenant_id, branch_id) → branches(tenant_id, id)` composite FK plus CHECK `branch_id IS NULL OR tenant_id IS NOT NULL` (a NULL would skip the FK); `actor_user_id` gets its FK to users in 2.3 |
 | `jobs` | 2.3a | Global (platform-internal; optional `tenant_id` FK) | `(type, business_key)` unique (enqueue is idempotent); status enum `queued/running/retrying/succeeded/failed`; CHECKs: `running` ⇔ locked, `succeeded/failed` ⇔ `completed_at`, `attempts` between 0 and `max_attempts` (1–20), `type` formatted `resource.action`; `last_error` ≤ 500 characters, sanitised by the runner; payload never holds secrets (D-081) |
 | `email_deliveries` | 2.3a | Global (one per email job) | `job_id` unique (one delivery per job → a retry after sending does not resend); `sent` ⇔ `sent_at` (CHECK); holds Message-ID and provider only — no address or body |
+| `users` | 2.3b | Global | `email` CITEXT unique (case-insensitive) and CHECK-formatted; deactivated ⇔ `deactivated_at` (CHECK); never deleted; `audit_events.actor_user_id` → `users` |
+| `user_credentials` | 2.3b | Global (1:1 user) | Argon2id PHC hash only (CHECK prefix `$argon2id$`); kept apart so ordinary user queries never select it |
+| `auth_sessions` | 2.3b | Global | `token_hash` = SHA-256 hex, unique (CHECK); `expires_at > created_at`; ended ⇔ `end_reason` (CHECK); rows are kept after ending |
+| `rate_limit_buckets` | 2.3b | Global (operational) | Fixed-window counters keyed by a hash of the subject (no address or IP in clear); `count ≥ 1` |
 
 Not built yet: everything else in §2 (Department waits for D-047 in 2.5).
 

@@ -6,6 +6,9 @@ import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/bootstrap';
 import { loadConfig, type AppConfig } from '../src/config/env';
 
+/** The web origin in tests (the default WEB_ORIGIN): state-changing requests must come from it (D-085). */
+export const WEB = 'http://localhost:3000';
+
 /** Captures the API's JSON log lines so tests can assert what is (and is not) logged. */
 export class LogCapture extends Writable {
   readonly lines: string[] = [];

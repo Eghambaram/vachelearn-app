@@ -9,12 +9,19 @@ import { createTestApp } from './app';
 import { TEST_ACTOR_HEADER } from './actors';
 
 /*
- * Every route of the real application declares exactly one access rule (deny by default, CLAUDE.md): `@Public()` or a
- * permission — never both, never neither — and platform routes (`platform/**`) require a platform permission while
- * every other protected route requires a tenant permission. A new controller that forgets this fails here.
+ * Every route of the real application declares exactly one access rule (deny by default, CLAUDE.md): `@Public()`,
+ * `@Authenticated()` or a permission — never both, never neither. Platform routes (`platform/**`) require a platform
+ * permission; `@Authenticated()` (any signed-in caller) is allowed only under `auth/**`; every other protected route
+ * requires a tenant permission. A new controller that forgets this fails here.
  */
 
-type Route = { path: string; handler: string; isPublic: boolean; requirement?: Requirement };
+type Route = {
+  path: string;
+  handler: string;
+  isPublic: boolean;
+  requirement?: Requirement;
+  classRequirement?: Requirement;
+};
 
 function routesOf(controller: Type): Route[] {
   const base = String(Reflect.getMetadata(PATH_METADATA, controller) ?? '');
@@ -30,6 +37,7 @@ function routesOf(controller: Type): Route[] {
       handler: `${controller.name}.${(fn as { name: string }).name}`,
       isPublic: classPublic || Reflect.getMetadata(PUBLIC, fn) === true,
       requirement: (Reflect.getMetadata(REQUIRES, fn) as Requirement | undefined) ?? classRequires,
+      classRequirement: classRequires,
     }));
 }
 
@@ -54,6 +62,21 @@ describe('route access declarations', () => {
       );
     },
   );
+});
+
+describe('signed-in-only routes (security review 2.3b)', () => {
+  it.each(routes.filter((r) => r.requirement?.scope === 'authenticated'))(
+    '$handler: @Authenticated() only on the caller’s own session and account (auth/**)',
+    (route) => {
+      expect(route.path.startsWith('auth/')).toBe(true);
+    },
+  );
+
+  it('no handler weakens a permission its class declares (e.g. @Authenticated() inside a tenant controller)', () => {
+    for (const route of routes.filter((r) => r.classRequirement)) {
+      expect(route.requirement?.scope, route.handler).toBe(route.classRequirement!.scope);
+    }
+  });
 });
 
 describe('the production module has no test caller hook', () => {

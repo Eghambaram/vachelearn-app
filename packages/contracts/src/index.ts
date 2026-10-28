@@ -11,3 +11,4 @@ export * from './certificates';
 export * from './compliance';
 export * from './health';
 export * from './tenancy';
+export * from './auth';

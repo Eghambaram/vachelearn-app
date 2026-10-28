@@ -102,6 +102,9 @@ notifications. These are not listed per role.
   their own branches). Registry: `apps/api/src/access/permissions.ts` (a test fails if a key is missing here). A
   global guard denies every route that is neither `@Public()` nor tied to a permission. Callers come from sessions
   from Slice 2.3; until then protected routes answer 401.
+- Slice 2.3b: callers are identified by their session; `@Authenticated()` routes (`/auth/me`, `/auth/logout`) need no
+  permission. Nobody holds a platform or tenant permission until roles and memberships (2.4), so every permission
+  route answers 403 to signed-in users.
 
 ## Notes and open points
 

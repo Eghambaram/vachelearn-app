@@ -125,7 +125,7 @@ model Branch {
 model AuditEvent {
   id               String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
   occurredAt       DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
-  /// The user who acted (null for system jobs). Foreign key to users arrives with identity (Slice 2.3).
+  /// The user who acted (null for system jobs).
   actorUserId      String?  @map("actor_user_id") @db.Uuid
   tenantId         String?  @map("tenant_id") @db.Uuid
   branchId         String?  @map("branch_id") @db.Uuid
@@ -143,6 +143,7 @@ model AuditEvent {
 
   tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   branch Branch? @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  actor  User?   @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
 
   @@index([tenantId, occurredAt])
   @@index([entityType, entityId])
@@ -210,4 +211,85 @@ model EmailDelivery {
   job Job @relation(fields: [jobId], references: [id], onDelete: Restrict)
 
   @@map("email_deliveries")
+}
+
+// ── Identity and sessions (Slice 2.3b, D-010 / D-049 / D-084) ──────────────────────────────────────────────────────
+
+enum UserStatus {
+  active
+  deactivated
+}
+
+/// Global identity (domain model §2): one person, any number of tenant memberships (2.4). Never deleted once it has
+/// history; deactivation ends every session on the next request (D-049).
+model User {
+  id                String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  /// Case-insensitive and unique across the platform.
+  email             String     @unique @db.Citext
+  displayName       String     @map("display_name") @db.VarChar(120)
+  locale            String?    @db.VarChar(20)
+  timezone          String?    @db.VarChar(64)
+  status            UserStatus @default(active)
+  /// Set when the user follows a set-password link (D-083); no sign-in before.
+  emailVerifiedAt   DateTime?  @map("email_verified_at") @db.Timestamptz(3)
+  deactivatedAt     DateTime?  @map("deactivated_at") @db.Timestamptz(3)
+  deactivatedReason String?    @map("deactivated_reason") @db.VarChar(500)
+  deactivatedById   String?    @map("deactivated_by_id") @db.Uuid
+  version           Int        @default(1)
+  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       String?    @map("created_by_id") @db.Uuid
+  updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  credential  UserCredential?
+  sessions    AuthSession[]
+  auditEvents AuditEvent[]
+
+  @@map("users")
+}
+
+/// The password hash lives apart from `users`, so no ordinary user query can select it by accident.
+model UserCredential {
+  userId       String   @id @map("user_id") @db.Uuid
+  /// PHC string: `$argon2id$v=19$m=…,t=…,p=…$salt$hash` (D-051).
+  passwordHash String   @map("password_hash") @db.VarChar(200)
+  changedAt    DateTime @map("changed_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("user_credentials")
+}
+
+enum SessionEndReason {
+  signed_out
+  idle_timeout
+  expired
+  user_deactivated
+  password_changed
+}
+
+/// Opaque server-side session (D-010). The cookie holds a random token; only its SHA-256 is stored. Checked on every
+/// request: 8 hours idle or 7 days after creation, whichever comes first (D-084).
+model AuthSession {
+  id         String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId     String            @map("user_id") @db.Uuid
+  tokenHash  String            @unique @map("token_hash") @db.Char(64)
+  createdAt  DateTime          @map("created_at") @db.Timestamptz(3)
+  lastSeenAt DateTime          @map("last_seen_at") @db.Timestamptz(3)
+  expiresAt  DateTime          @map("expires_at") @db.Timestamptz(3)
+  endedAt    DateTime?         @map("ended_at") @db.Timestamptz(3)
+  endReason  SessionEndReason? @map("end_reason")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, endedAt])
+  @@map("auth_sessions")
+}
+
+/// Fixed-window counters for rate limits (no Redis, D-040 spirit). Keys hold hashes, never an address or IP in clear.
+model RateLimitBucket {
+  key         String   @id @db.VarChar(120)
+  windowStart DateTime @map("window_start") @db.Timestamptz(3)
+  count       Int
+
+  @@map("rate_limit_buckets")
 }

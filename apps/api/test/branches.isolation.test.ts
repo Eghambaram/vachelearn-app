@@ -12,6 +12,7 @@ import {
   USER,
 } from './actors';
 import { resetDatabase, testPrisma } from './db';
+import { WEB } from './app';
 
 /*
  * Branches: functional rules and the isolation rules (.claude/rules/testing.md). Fixture: Tenant A with branches A1, A2;
@@ -31,9 +32,17 @@ let B1: BranchView;
 const as = (actor: string) => ({
   get: (path: string) => request(app.getHttpServer()).get(path).set(TEST_ACTOR_HEADER, actor),
   post: (path: string, body?: object) =>
-    request(app.getHttpServer()).post(path).set(TEST_ACTOR_HEADER, actor).send(body),
+    request(app.getHttpServer())
+      .post(path)
+      .set(TEST_ACTOR_HEADER, actor)
+      .set('origin', WEB)
+      .send(body),
   patch: (path: string, body?: object) =>
-    request(app.getHttpServer()).patch(path).set(TEST_ACTOR_HEADER, actor).send(body),
+    request(app.getHttpServer())
+      .patch(path)
+      .set(TEST_ACTOR_HEADER, actor)
+      .set('origin', WEB)
+      .send(body),
 });
 
 async function createBranch(actor: string, code: string, name: string) {

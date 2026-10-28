@@ -6,9 +6,9 @@ import type { PlatformPermission, TenantPermission } from './permissions';
  * Who is calling, resolved from the authenticated session only — never from a client-sent tenant id, header, slug,
  * query or body (CLAUDE.md non-negotiable). Services receive it explicitly.
  *
- * Until identity exists (Slice 2.3), the resolver below returns no context, so every protected route answers 401 on
- * a running server. Integration tests provide a context through the same token; Slices 2.3–2.4 replace the resolver
- * with sessions + memberships + role assignments and the suspended-tenant check.
+ * Slice 2.3b: the session resolver (auth/session.resolver.ts) identifies the signed-in user; platform and tenant
+ * grants stay null until roles and memberships arrive (2.4), so permission routes answer 403 to real users for now.
+ * Integration tests replace the resolver through the same token.
  */
 
 export type BranchScope = 'ALL' | readonly string[];
@@ -25,6 +25,8 @@ export type RequestContext = {
     /** Branches the caller may see: 'ALL' for tenant-wide roles, otherwise their branch ids. */
     branchScope: BranchScope;
   } | null;
+  /** Set when the caller is authenticated by a browser session: its mutations must carry this CSRF token. */
+  session?: { id: string; csrfToken: string; expiresAt: Date };
 };
 
 export interface ContextResolver {
@@ -33,20 +35,13 @@ export interface ContextResolver {
 
 export const CONTEXT_RESOLVER = Symbol('CONTEXT_RESOLVER');
 
-/** No sessions yet (Slice 2.3): nobody is signed in, so protected routes are 401. */
-export class NoSessionResolver implements ContextResolver {
-  async resolve(): Promise<null> {
-    return null;
-  }
-}
-
 export type WithContext = IncomingMessage & { vlContext?: RequestContext };
 
-/** The context the access guard resolved for this request (only on routes that require a permission). */
+/** The context the access guard resolved (routes marked `@Authenticated()` or with a permission). */
 export const Ctx = createParamDecorator(
   (_data: unknown, host: ExecutionContext): RequestContext => {
     const ctx = host.switchToHttp().getRequest<WithContext>().vlContext;
-    if (!ctx) throw new Error('No request context: the route is missing a permission decorator');
+    if (!ctx) throw new Error('No request context: the route is missing an access decorator');
     return ctx;
   },
 );

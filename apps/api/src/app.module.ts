@@ -3,7 +3,12 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { PinoLogger } from 'nestjs-pino';
 import type { DestinationStream } from 'pino';
 import { AccessGuard } from './access/access.guard';
-import { CONTEXT_RESOLVER, NoSessionResolver } from './access/request-context';
+import { CONTEXT_RESOLVER } from './access/request-context';
+import { AuthController } from './auth/auth.controller';
+import { AuthService } from './auth/auth.service';
+import { RateLimitService } from './auth/rate-limit.service';
+import { SessionResolver } from './auth/session.resolver';
+import { SessionsService } from './auth/sessions.service';
 import { AuditService } from './audit/audit.service';
 import { CURSORS, Cursors } from './common/pagination/keyset';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
@@ -37,11 +42,19 @@ export class AppModule {
       module: AppModule,
       global: true,
       imports: [loggingModule(config, options.logStream)],
-      controllers: [HealthController, PlatformTenantsController, BranchesController],
+      controllers: [
+        HealthController,
+        AuthController,
+        PlatformTenantsController,
+        BranchesController,
+      ],
       providers: [
         { provide: APP_CONFIG, useValue: config },
-        // Who is calling: nobody until sessions arrive (Slice 2.3). Tests replace this with `overrideProvider`.
-        { provide: CONTEXT_RESOLVER, useClass: NoSessionResolver },
+        // Who is calling: the session cookie (D-010). Tests replace this with `overrideProvider`.
+        SessionsService,
+        { provide: CONTEXT_RESOLVER, useClass: SessionResolver },
+        RateLimitService,
+        AuthService,
         { provide: CURSORS, useValue: new Cursors(config.cursorSecret) },
         PrismaService,
         AuditService,

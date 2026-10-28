@@ -5,7 +5,7 @@ import request from 'supertest';
 import { z } from 'zod';
 import { ApiErrorBody } from '@vachelearn/contracts';
 import { ZodValidationPipe } from '../src/common/validation/zod-validation.pipe';
-import { createTestApp } from './app';
+import { WEB, createTestApp } from './app';
 
 const Probe = z.strictObject({
   name: z.string().min(3),
@@ -58,6 +58,7 @@ describe('error envelope (spec §17)', () => {
   it('invalid body → 422 with one field error per problem, unknown fields rejected', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/test-probe')
+      .set('origin', WEB)
       .send({ name: 'ab', limit: 1000, tenantId: 'demo-tenant-2' });
     const body = expectEnvelope(res, 422, 'VALIDATION_FAILED');
     expect(body.error.fieldErrors?.map((f) => f.field).sort()).toEqual(['(root)', 'limit', 'name']);
@@ -67,7 +68,10 @@ describe('error envelope (spec §17)', () => {
   });
 
   it('valid body → handler gets the parsed, defaulted value', async () => {
-    const res = await request(app.getHttpServer()).post('/api/v1/test-probe').send({ name: 'abc' });
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/test-probe')
+      .set('origin', WEB)
+      .send({ name: 'abc' });
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ received: { name: 'abc', limit: 25 } });
   });
@@ -80,6 +84,7 @@ describe('error envelope (spec §17)', () => {
   it('malformed JSON → 400 BAD_REQUEST with fixed wording', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/test-probe')
+      .set('origin', WEB)
       .set('content-type', 'application/json')
       .send('{"name": ');
     const body = expectEnvelope(res, 400, 'BAD_REQUEST');
