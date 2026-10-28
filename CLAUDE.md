@@ -92,6 +92,7 @@ tests pass.
 | E2E (Playwright + axe) | `pnpm test:e2e` (first time: `pnpm --filter web exec playwright install chromium`) |
 | Build | `pnpm build` |
 | DB migrate (dev) / deploy / reset | `pnpm --filter api db:migrate` · `db:deploy` · `db:reset` (localhost only); *Phase 2.6:* `db:seed` |
+| Create an account (operator) | `pnpm --filter api user:create --email <address> --name "<name>" --reason "<why>"` (sends a set-password email; D-083) |
 | All gates (run before reporting a slice done) | `pnpm verify` = ignored-source check + format:check + lint + typecheck + test + build (needs local services for api tests) |
 
 ## How to work (every slice)

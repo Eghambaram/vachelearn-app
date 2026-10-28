@@ -76,6 +76,24 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   `Referrer-Policy: no-referrer`, `Cache-Control: no-store` (helmet); HSTS in production only. `/api/docs` (never in
   production) has its own CSP so Swagger UI loads.
 
+## Password links (Slice 2.3c)
+
+- Accounts start without a password (D-083): `pnpm --filter api user:create --email … --name … --reason …` creates one and sends
+  its set-password email (invitations reuse this in Phase 3). Links are single-use, minted when the email is sent
+  (only the SHA-256 is stored, D-081), carry the token in the URL **fragment** (`/set-password#token=…`,
+  `/reset-password#token=…`) so it never reaches a server log or `Referer`, and expire after 7 days (set) or
+  30 minutes (reset) (D-087). A newer link of the same kind revokes the older one.
+- `POST /auth/password/forgot` `{ email }` → always 202, empty body (no account enumeration). Active account with a
+  password → reset link; without one yet → a fresh set-password link; unknown or deactivated → nothing. The account
+  lookup runs after the 202 is sent, so response time does not reveal registered addresses. Limits
+  (D-086, Proposed): 3 per account and 20 per IP per hour → 429, the same for known and unknown addresses.
+- `POST /auth/password/set` `{ token, password }` → 204. Policy problems → 422 on `password` (`too_short`,
+  `too_long`, `too_common`; the link stays usable). Unknown, used, revoked or expired link, or a deactivated account →
+  400 `INVALID_LINK`. Success sets the password, verifies the address, revokes the user's other links and ends every
+  session (D-049); the user then signs in. 30 attempts per IP per 15 minutes. A set-password link is refused once the
+  account has a password. Minting, consuming and the email's delivery record run under the user's row lock and in
+  the delivery transaction (D-081); each send attempt has its own Message-ID, because a resend carries a new link.
+
 ## Tenancy (Slice 2.2)
 
 - Platform: `POST /platform/tenants` (duplicate slug → 422 `fieldErrors: [{ field: "slug", code: "taken" }]`),

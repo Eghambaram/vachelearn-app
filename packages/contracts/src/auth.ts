@@ -35,3 +35,22 @@ export const AuthSessionView = z.object({
   expiresAt: IsoInstant,
 });
 export type AuthSessionView = z.infer<typeof AuthSessionView>;
+
+/**
+ * `POST /auth/password/forgot`. Always answers 202 with no body, whether or not the address has an account (D-087), so
+ * the response never reveals who is registered.
+ */
+export const ForgotPasswordBody = z.object({ email: z.string().trim().max(254) }).strict();
+
+/**
+ * `POST /auth/password/set` — consumes a set-password or reset link (D-083, D-087). The token travels in the link's
+ * fragment (`/set-password#token=…`), so it never reaches a server log or a Referer; the page posts it here. The new
+ * password must meet the policy (D-051); a problem is a 422 field error on `password` (`too_short`, `too_long`,
+ * `too_common`). An unknown, used, revoked or expired token is a 400 `INVALID_LINK`.
+ */
+export const SetPasswordBody = z
+  .object({
+    token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+    password: z.string().min(1).max(256),
+  })
+  .strict();

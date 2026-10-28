@@ -6,6 +6,7 @@ import { AccessGuard } from './access/access.guard';
 import { CONTEXT_RESOLVER } from './access/request-context';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
+import { PasswordLinksService } from './auth/password-links.service';
 import { RateLimitService } from './auth/rate-limit.service';
 import { SessionResolver } from './auth/session.resolver';
 import { SessionsService } from './auth/sessions.service';
@@ -25,6 +26,7 @@ import { BranchesController } from './tenancy/branches.controller';
 import { BranchesService } from './tenancy/branches.service';
 import { PlatformTenantsController } from './tenancy/platform-tenants.controller';
 import { TenantsService } from './tenancy/tenants.service';
+import { UsersService } from './users/users.service';
 
 export type AppModuleOptions = {
   /** Where logs go (tests capture them); stdout when omitted. */
@@ -55,6 +57,8 @@ export class AppModule {
         { provide: CONTEXT_RESOLVER, useClass: SessionResolver },
         RateLimitService,
         AuthService,
+        PasswordLinksService,
+        UsersService,
         { provide: CURSORS, useValue: new Cursors(config.cursorSecret) },
         PrismaService,
         AuditService,
@@ -74,7 +78,7 @@ export class AppModule {
         { provide: APP_GUARD, useClass: AccessGuard },
         { provide: APP_FILTER, useClass: AllExceptionsFilter },
       ],
-      exports: [APP_CONFIG, PrismaService, AuditService, JobsService, EmailJobs],
+      exports: [APP_CONFIG, PrismaService, AuditService, JobsService, EmailJobs, UsersService],
     };
   }
 }

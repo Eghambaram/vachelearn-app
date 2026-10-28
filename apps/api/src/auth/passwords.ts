@@ -131,3 +131,6 @@ export class HashGate {
     }
   }
 }
+
+/** The process-wide gate: every Argon2id hash or verification (sign-in, set and reset) shares its slots. */
+export const hashGate = new HashGate();

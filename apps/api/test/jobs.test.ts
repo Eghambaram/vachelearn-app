@@ -352,3 +352,17 @@ describe('security review 2.3a fixes', () => {
     expect(composed).toBe(1);
   });
 });
+
+describe('running one job (operator commands)', () => {
+  it('runJob runs only the named job and leaves everything else queued', async () => {
+    await enqueue('mine');
+    await enqueue('someone-else');
+    const mine = await db.job.findFirstOrThrow({ where: { businessKey: 'mine' } });
+    expect(await jobs.runJob('cli', mine.id)).toBe(true);
+    const rows = await db.job.findMany({ orderBy: { businessKey: 'asc' } });
+    expect(rows.map((r) => [r.businessKey, r.status])).toEqual([
+      ['mine', 'succeeded'],
+      ['someone-else', 'queued'],
+    ]);
+  });
+});

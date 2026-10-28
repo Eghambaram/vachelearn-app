@@ -240,9 +240,10 @@ model User {
   createdById       String?    @map("created_by_id") @db.Uuid
   updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  credential  UserCredential?
-  sessions    AuthSession[]
-  auditEvents AuditEvent[]
+  credential    UserCredential?
+  sessions      AuthSession[]
+  auditEvents   AuditEvent[]
+  passwordLinks PasswordLink[]
 
   @@map("users")
 }
@@ -292,4 +293,31 @@ model RateLimitBucket {
   count       Int
 
   @@map("rate_limit_buckets")
+}
+
+// ── Password links (Slice 2.3c, D-081 / D-083 / D-087) ────────────────────────────────────────────────────────────
+
+enum PasswordLinkPurpose {
+  set_password
+  reset_password
+}
+
+/// A single-use emailed link to set or reset a password. Minted when the email is sent (D-081); only the token's
+/// SHA-256 is stored. A newer link of the same purpose revokes the older one (partial unique index in the migration).
+model PasswordLink {
+  id        String              @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  purpose   PasswordLinkPurpose
+  tokenHash String              @unique @map("token_hash") @db.Char(64)
+  /// The email job that delivered it (one job may mint again on retry, revoking its own earlier link).
+  jobId     String?             @map("job_id") @db.Uuid
+  createdAt DateTime            @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime            @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime?           @map("used_at") @db.Timestamptz(3)
+  revokedAt DateTime?           @map("revoked_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, purpose])
+  @@map("password_links")
 }

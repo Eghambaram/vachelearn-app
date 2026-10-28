@@ -72,7 +72,8 @@ describe('email over SMTP (Mailpit)', () => {
     expect(job.delivery).toMatchObject({ status: 'sent', provider: 'smtp', attempts: 1 });
     let messages = await mailpitSearch(tag);
     expect(messages).toHaveLength(1);
-    expect(messages[0]!.MessageID).toBe(`job-${job.id}@vachelearn.invalid`);
+    // One Message-ID per attempt (a resend carries a different link).
+    expect(messages[0]!.MessageID).toBe(`job-${job.id}.1@vachelearn.invalid`);
     expect(await mailpitText(messages[0]!.ID)).toContain(minted.at(-1));
 
     // The worker stopped after the SMTP server accepted the message but before the job was marked done.

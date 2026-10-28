@@ -8,7 +8,7 @@ import { AuditService } from '../audit/audit.service';
 import { ApiException } from '../common/errors/api-exception';
 import { APP_CONFIG, type AppConfig } from '../config/env';
 import { PrismaService } from '../prisma/prisma.service';
-import { dummyHash, HashCapacityError, HashGate, verifyPassword } from './passwords';
+import { dummyHash, HashCapacityError, hashGate, verifyPassword } from './passwords';
 import { hashSessionToken } from './session-tokens';
 import { ipSubject, RateLimitService, type Limit } from './rate-limit.service';
 import { SessionsService } from './sessions.service';
@@ -33,8 +33,6 @@ export const invalidCredentials = () =>
 
 @Injectable()
 export class AuthService implements OnModuleInit {
-  private readonly hashing = new HashGate();
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
@@ -76,12 +74,10 @@ export class AuthService implements OnModuleInit {
     const stored = user?.credential?.passwordHash ?? (await dummyHash());
     let matches: boolean;
     try {
-      matches = await this.hashing.run(() => verifyPassword(input.password, stored));
+      matches = await hashGate.run(() => verifyPassword(input.password, stored));
     } catch (err) {
       if (err instanceof HashCapacityError) {
-        throw new ApiException(503, 'BUSY', 'Sign-in is busy. Try again shortly.', undefined, {
-          'Retry-After': '2',
-        });
+        throw busy();
       }
       throw err;
     }
@@ -158,4 +154,11 @@ export class AuthService implements OnModuleInit {
 function requireSession(ctx: RequestContext) {
   if (!ctx.session) throw new ApiException(401, 'UNAUTHENTICATED', 'Not signed in');
   return ctx.session;
+}
+
+/** Every hashing slot is taken (see `HashGate`): ask the client to come back shortly instead of queueing forever. */
+export function busy() {
+  return new ApiException(503, 'BUSY', 'The service is busy. Try again shortly.', undefined, {
+    'Retry-After': '2',
+  });
 }

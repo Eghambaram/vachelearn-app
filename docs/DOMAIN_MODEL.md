@@ -37,6 +37,7 @@ built and the guarantees the database itself enforces.
 | `user_credentials` | 2.3b | Global (1:1 user) | Argon2id PHC hash only (CHECK prefix `$argon2id$`); kept apart so ordinary user queries never select it |
 | `auth_sessions` | 2.3b | Global | `token_hash` = SHA-256 hex, unique (CHECK); `expires_at > created_at`; ended ⇔ `end_reason` (CHECK); rows are kept after ending |
 | `rate_limit_buckets` | 2.3b | Global (operational) | Fixed-window counters keyed by a hash of the subject (no address or IP in clear); `count ≥ 1` |
+| `password_links` | 2.3c | Global (per user) | `token_hash` SHA-256 hex unique; `expires_at > created_at`; never both used and revoked (CHECK); **at most one live link per user and purpose** (partial unique index); purpose `set_password` / `reset_password` |
 
 Not built yet: everything else in §2 (Department waits for D-047 in 2.5).
 

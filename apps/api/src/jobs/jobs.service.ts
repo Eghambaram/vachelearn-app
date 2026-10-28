@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-import type { Job, Prisma } from '../../generated/prisma/client';
+import { Prisma, type Job } from '../../generated/prisma/client';
 import type { Tx } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobRegistry, PermanentJobError } from './job-handlers';
@@ -109,10 +109,10 @@ export class JobsService {
   }
 
   /** Reclaims expired leases, then claims and runs one due job. Returns false when nothing was due. */
-  async runOnce(workerId: string, clockArg?: ClockArg): Promise<boolean> {
+  async runOnce(workerId: string, clockArg?: ClockArg, onlyJobId?: string): Promise<boolean> {
     const clock = clockOf(clockArg);
     await this.reclaimExpired(clock());
-    const job = await this.claim(workerId, clock());
+    const job = await this.claim(workerId, clock(), onlyJobId);
     if (!job) return false;
 
     const handler = this.registry.get(job.type);
@@ -160,14 +160,20 @@ export class JobsService {
       .catch((err: unknown) => this.logger.warn({ err, jobId: id }, 'job lease renewal failed'));
   }
 
-  private async claim(workerId: string, now: Date): Promise<Job | null> {
+  /** Runs one specific job if it is due (operator commands run only their own work). */
+  runJob(workerId: string, jobId: string) {
+    return this.runOnce(workerId, undefined, jobId);
+  }
+
+  private async claim(workerId: string, now: Date, onlyJobId?: string): Promise<Job | null> {
+    const onlyThis = onlyJobId ? Prisma.sql`AND id = ${onlyJobId}::uuid` : Prisma.empty;
     const rows = await this.prisma.$queryRaw<ClaimedRow[]>`
       UPDATE jobs
          SET status = 'running', attempts = attempts + 1, locked_at = ${now}, locked_by = ${workerId},
              updated_at = ${now}
        WHERE id = (
          SELECT id FROM jobs
-          WHERE status IN ('queued', 'retrying') AND run_after <= ${now}
+          WHERE status IN ('queued', 'retrying') AND run_after <= ${now} ${onlyThis}
           ORDER BY run_after, id
           FOR UPDATE SKIP LOCKED
           LIMIT 1)
