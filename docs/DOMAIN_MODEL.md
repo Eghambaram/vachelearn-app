@@ -31,6 +31,8 @@ built and the guarantees the database itself enforces.
 | `tenant_settings` | 2.2 | Tenant-owned (1:1) | Five feature flags, all false by default (D-031) |
 | `branches` | 2.2 | Tenant-owned | `(tenant_id, id)` unique (target of composite FKs); `(tenant_id, code)` unique; code CHECK-formatted, uppercase; inactive rows must record when and why |
 | `audit_events` | 2.2 | Evidence | Insert-only (trigger rejects UPDATE/DELETE); `(tenant_id, branch_id) → branches(tenant_id, id)` composite FK plus CHECK `branch_id IS NULL OR tenant_id IS NOT NULL` (a NULL would skip the FK); `actor_user_id` gets its FK to users in 2.3 |
+| `jobs` | 2.3a | Global (platform-internal; optional `tenant_id` FK) | `(type, business_key)` unique (enqueue is idempotent); status enum `queued/running/retrying/succeeded/failed`; CHECKs: `running` ⇔ locked, `succeeded/failed` ⇔ `completed_at`, `attempts` between 0 and `max_attempts` (1–20), `type` formatted `resource.action`; `last_error` ≤ 500 characters, sanitised by the runner; payload never holds secrets (D-081) |
+| `email_deliveries` | 2.3a | Global (one per email job) | `job_id` unique (one delivery per job → a retry after sending does not resend); `sent` ⇔ `sent_at` (CHECK); holds Message-ID and provider only — no address or body |
 
 Not built yet: everything else in §2 (Department waits for D-047 in 2.5).
 

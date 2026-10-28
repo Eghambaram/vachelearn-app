@@ -61,6 +61,7 @@ model Tenant {
   settings    TenantSetting?
   branches    Branch[]
   auditEvents AuditEvent[]
+  jobs        Job[]
 
   @@index([status, createdAt])
   @@map("tenants")
@@ -146,4 +147,67 @@ model AuditEvent {
   @@index([tenantId, occurredAt])
   @@index([entityType, entityId])
   @@map("audit_events")
+}
+
+// ── Jobs and email (Slice 2.3a, D-040) ─────────────────────────────────────────────────────────────────────────────
+
+enum JobStatus {
+  queued
+  running
+  retrying
+  succeeded
+  failed
+}
+
+/// Postgres-backed job/outbox row (D-040). Written in the same transaction as the change that needs it, run after
+/// commit by the in-process worker. `(type, business_key)` is unique, so enqueueing the same work twice is a no-op.
+/// The payload is validated per job type and never holds secrets (D-081: tokens are minted when an email is sent).
+model Job {
+  id          String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  type        String    @db.VarChar(80)
+  businessKey String    @map("business_key") @db.VarChar(200)
+  /// The tenant the work belongs to, when it has one (handlers re-check tenant status before acting).
+  tenantId    String?   @map("tenant_id") @db.Uuid
+  payload     Json
+  status      JobStatus @default(queued)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5) @map("max_attempts")
+  runAfter    DateTime  @default(now()) @map("run_after") @db.Timestamptz(3)
+  lockedAt    DateTime? @map("locked_at") @db.Timestamptz(3)
+  lockedBy    String?   @map("locked_by") @db.VarChar(100)
+  /// Sanitised: error type and scrubbed message only — never a token, link, address or payload value.
+  lastError   String?   @map("last_error") @db.VarChar(500)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(3)
+
+  tenant   Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  delivery EmailDelivery?
+
+  @@unique([type, businessKey])
+  @@index([status, runAfter])
+  @@index([tenantId])
+  @@map("jobs")
+}
+
+enum EmailDeliveryStatus {
+  sending
+  sent
+}
+
+/// One per email job: a retry after a successful send sees `sent` and does not send again. Holds no address or body.
+model EmailDelivery {
+  id        String              @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  jobId     String              @unique @map("job_id") @db.Uuid
+  /// Stable per job (`<job-{id}@…>`), so a provider or mail client can recognise a resend after a crash.
+  messageId String              @map("message_id") @db.VarChar(200)
+  provider  String              @db.VarChar(40)
+  status    EmailDeliveryStatus @default(sending)
+  attempts  Int                 @default(1)
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  sentAt    DateTime?           @map("sent_at") @db.Timestamptz(3)
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Restrict)
+
+  @@map("email_deliveries")
 }

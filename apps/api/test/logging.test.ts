@@ -1,7 +1,7 @@
 import pino from 'pino';
 import request from 'supertest';
 import { loadConfig } from '../src/config/env';
-import { pinoOptions, scrubText } from '../src/logging/logging.module';
+import { pinoOptions, scrubText, serializeError } from '../src/logging/logging.module';
 import { createTestApp, LogCapture } from './app';
 
 describe('structured logs (secrets never logged)', () => {
@@ -79,5 +79,19 @@ describe('structured logs (secrets never logged)', () => {
     expect(
       logs.records.some((r) => (r.req as { url?: string } | undefined)?.url === '/ready'),
     ).toBe(false);
+  });
+});
+
+describe('serializeError (security review 2.3a)', () => {
+  it('scrubs links, tokens and addresses from the message and never repeats the message in the stack', () => {
+    const err = new Error(
+      'see https://x.example/verify?token=abcdefghijklmnopqrstuvwxyz123 for a@b.com',
+    );
+    const out = serializeError(err);
+    const text = JSON.stringify(out);
+    for (const leak of ['abcdefghijklmnopqrstuvwxyz123', 'x.example', 'a@b.com']) {
+      expect(text).not.toContain(leak);
+    }
+    expect((out as { stack?: string }).stack).toMatch(/^\s+at /);
   });
 });

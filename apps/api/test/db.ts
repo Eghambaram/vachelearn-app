@@ -18,6 +18,6 @@ export async function resetDatabase(prisma: PrismaClient) {
   if (!name.endsWith('_test'))
     throw new Error(`Refusing to empty "${name}": not a _test database.`);
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE audit_events, branches, tenant_settings, tenants RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE email_deliveries, jobs, audit_events, branches, tenant_settings, tenants RESTART IDENTITY CASCADE',
   );
 }

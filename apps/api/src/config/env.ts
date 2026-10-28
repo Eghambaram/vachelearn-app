@@ -35,8 +35,33 @@ const EnvSchema = z
     ENABLE_API_DOCS: z.enum(['true', 'false']).optional(),
     /** Signs list cursors (HMAC). Required in production; elsewhere a random key per process is used. */
     CURSOR_SECRET: z.string().min(32, 'must be at least 32 characters').optional(),
+    /** Runs queued jobs in this process (D-040). Default: on, except in tests (they run jobs explicitly). */
+    JOBS_WORKER: z.enum(['true', 'false']).optional(),
+    /** `console` logs recipient and subject only (never the body); `smtp` sends (Mailpit locally). D-082. */
+    EMAIL_PROVIDER: z.enum(['console', 'smtp']).default('console'),
+    EMAIL_FROM: z.string().min(3).max(200).optional(),
+    SMTP_HOST: z.string().min(1).optional(),
+    SMTP_PORT: z.coerce.number().int().min(1).max(65_535).optional(),
+    /** TLS from the first byte (port 465). Otherwise STARTTLS is used when the server offers it. */
+    SMTP_SECURE: z.enum(['true', 'false']).default('false'),
+    SMTP_USER: z.string().min(1).optional(),
+    SMTP_PASSWORD: z.string().min(1).optional(),
   })
   .superRefine((env, ctx) => {
+    if (env.EMAIL_PROVIDER === 'smtp' && (!env.SMTP_HOST || !env.SMTP_PORT)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [env.SMTP_HOST ? 'SMTP_PORT' : 'SMTP_HOST'],
+        message: 'is required when EMAIL_PROVIDER is smtp',
+      });
+    }
+    if (!env.SMTP_USER !== !env.SMTP_PASSWORD) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SMTP_PASSWORD'],
+        message: 'SMTP_USER and SMTP_PASSWORD must be set together',
+      });
+    }
     if (env.NODE_ENV === 'production') {
       if (!env.WEB_ORIGIN)
         ctx.addIssue({
@@ -64,6 +89,26 @@ const EnvSchema = z
           message: 'is still the .env.example placeholder',
         });
       }
+      if (env.EMAIL_PROVIDER === 'console') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['EMAIL_PROVIDER'],
+          message: 'must be smtp in production (console would drop every email)',
+        });
+      }
+      if (!env.EMAIL_FROM) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['EMAIL_FROM'],
+          message: 'is required in production',
+        });
+      } else if (/(\.invalid|@example\.[a-z]+)>?\s*$/i.test(env.EMAIL_FROM)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['EMAIL_FROM'],
+          message: 'is still a placeholder address',
+        });
+      }
       if (env.ENABLE_API_DOCS === 'true') {
         ctx.addIssue({
           code: 'custom',
@@ -82,6 +127,24 @@ const EnvSchema = z
     apiDocs: env.ENABLE_API_DOCS ? env.ENABLE_API_DOCS === 'true' : env.NODE_ENV === 'development',
     // Outside production a per-process key is fine: cursors simply stop working across a restart.
     cursorSecret: env.CURSOR_SECRET ?? randomBytes(32).toString('base64url'),
+    jobsWorker: env.JOBS_WORKER ? env.JOBS_WORKER === 'true' : env.NODE_ENV !== 'test',
+    email: {
+      provider: env.EMAIL_PROVIDER,
+      from: env.EMAIL_FROM ?? 'VacheLearn (Demo) <no-reply@vachelearn.invalid>',
+      smtp:
+        env.EMAIL_PROVIDER === 'smtp'
+          ? {
+              host: env.SMTP_HOST!,
+              port: env.SMTP_PORT!,
+              secure: env.SMTP_SECURE === 'true',
+              // Production never sends in clear text: without implicit TLS, STARTTLS is mandatory, so a network
+              // attacker who strips the server's STARTTLS offer gets a failed send, not the password or a reset
+              // link (security review 2.3a). Locally Mailpit has no TLS.
+              requireTLS: env.NODE_ENV === 'production' && env.SMTP_SECURE !== 'true',
+              auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASSWORD! } : undefined,
+            }
+          : null,
+    },
   }));
 
 export type AppConfig = Readonly<z.output<typeof EnvSchema>>;
@@ -92,7 +155,10 @@ export class ConfigError extends Error {
 
 /** Parses the environment; throws `ConfigError` naming every invalid variable (values are never echoed). */
 export function loadConfig(env: Record<string, string | undefined> = process.env): AppConfig {
-  const parsed = EnvSchema.safeParse(env);
+  // `NAME=` in an env file (as `.env.example` ships optional settings) means "not set", not an empty value.
+  const parsed = EnvSchema.safeParse(
+    Object.fromEntries(Object.entries(env).filter(([, value]) => value !== '')),
+  );
   if (parsed.success) return Object.freeze(parsed.data);
   const problems = parsed.error.issues.map((issue) => `${issue.path.join('.')} ${issue.message}`);
   throw new ConfigError(`Invalid configuration: ${problems.join('; ')}`);

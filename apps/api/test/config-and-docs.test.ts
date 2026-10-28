@@ -3,7 +3,15 @@ import { ConfigError, loadConfig } from '../src/config/env';
 import { createTestApp } from './app';
 
 const BASE = { NODE_ENV: 'test', DATABASE_URL: 'postgresql://localhost/x' } as const;
-const PROD = { ...BASE, NODE_ENV: 'production', CURSOR_SECRET: 'k'.repeat(32) } as const;
+const PROD = {
+  ...BASE,
+  NODE_ENV: 'production',
+  CURSOR_SECRET: 'k'.repeat(32),
+  EMAIL_PROVIDER: 'smtp',
+  SMTP_HOST: 'smtp.example.com',
+  SMTP_PORT: '587',
+  EMAIL_FROM: 'VacheLearn <no-reply@mail.vachelearn.test>',
+} as const;
 
 describe('configuration (fail fast, nothing fails open)', () => {
   it('names every missing or malformed variable, never its value', () => {
@@ -55,7 +63,7 @@ describe('configuration (fail fast, nothing fails open)', () => {
   });
 
   it('CURSOR_SECRET: required and real in production, random per process elsewhere', () => {
-    const prod = { ...BASE, NODE_ENV: 'production', WEB_ORIGIN: 'https://a.example' };
+    const prod = { ...PROD, CURSOR_SECRET: undefined, WEB_ORIGIN: 'https://a.example' };
     expect(() => loadConfig(prod)).toThrow(/CURSOR_SECRET is required in production/);
     expect(() => loadConfig({ ...prod, CURSOR_SECRET: 'short' })).toThrow(/at least 32/);
     expect(() =>
@@ -67,6 +75,64 @@ describe('configuration (fail fast, nothing fails open)', () => {
     const a = loadConfig(BASE).cursorSecret;
     expect(a.length).toBeGreaterThanOrEqual(32);
     expect(loadConfig(BASE).cursorSecret).not.toBe(a);
+  });
+
+  it('email: smtp needs host and port; production refuses console and needs a sender', () => {
+    expect(loadConfig(BASE).email).toMatchObject({ provider: 'console', smtp: null });
+    expect(() => loadConfig({ ...BASE, EMAIL_PROVIDER: 'smtp' })).toThrow(/SMTP_HOST is required/);
+    expect(() =>
+      loadConfig({
+        ...BASE,
+        EMAIL_PROVIDER: 'smtp',
+        SMTP_HOST: 'h',
+        SMTP_PORT: '25',
+        SMTP_USER: 'u',
+      }),
+    ).toThrow(/SMTP_USER and SMTP_PASSWORD must be set together/);
+    const prod = { ...PROD, WEB_ORIGIN: 'https://a.example' };
+    expect(() => loadConfig({ ...prod, EMAIL_PROVIDER: 'console' })).toThrow(
+      /EMAIL_PROVIDER must be smtp in production/,
+    );
+    expect(() => loadConfig({ ...prod, EMAIL_FROM: undefined })).toThrow(
+      /EMAIL_FROM is required in production/,
+    );
+    expect(loadConfig(prod).email.smtp).toEqual({
+      host: 'smtp.example.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      auth: undefined,
+    });
+    expect(loadConfig({ ...prod, SMTP_SECURE: 'true' }).email.smtp?.requireTLS).toBe(false);
+    expect(
+      loadConfig({ ...BASE, EMAIL_PROVIDER: 'smtp', SMTP_HOST: 'h', SMTP_PORT: '25' }).email.smtp
+        ?.requireTLS,
+    ).toBe(false);
+    for (const from of ['VacheLearn <no-reply@example.invalid>', 'no-reply@example.com']) {
+      expect(() => loadConfig({ ...prod, EMAIL_FROM: from })).toThrow(
+        /EMAIL_FROM is still a placeholder/,
+      );
+    }
+  });
+
+  it('job worker: on by default, off in tests, explicit setting wins', () => {
+    expect(loadConfig({ ...BASE, NODE_ENV: 'development' }).jobsWorker).toBe(true);
+    expect(loadConfig(BASE).jobsWorker).toBe(false);
+    expect(loadConfig({ ...BASE, JOBS_WORKER: 'true' }).jobsWorker).toBe(true);
+  });
+
+  it('an empty value (NAME= as in .env.example) means "not set"', () => {
+    const config = loadConfig({
+      ...BASE,
+      NODE_ENV: 'development',
+      ENABLE_API_DOCS: '',
+      CURSOR_SECRET: '',
+      WEB_ORIGIN: '',
+      JOBS_WORKER: '',
+    });
+    expect(config.apiDocs).toBe(true);
+    expect(config.WEB_ORIGIN).toBe('http://localhost:3000');
+    expect(config.cursorSecret.length).toBeGreaterThanOrEqual(32);
   });
 
   it('API docs: on in development, off elsewhere unless opted in, never in production', () => {
@@ -106,9 +172,10 @@ describe('OpenAPI documents', () => {
   it('are not served in production, nor by default in any other environment', async () => {
     const envs: Record<string, string>[] = [
       {
-        NODE_ENV: 'production',
+        ...PROD,
+        DATABASE_URL: process.env.DATABASE_URL!,
         WEB_ORIGIN: 'https://app.example.com',
-        CURSOR_SECRET: 'k'.repeat(32),
+        JOBS_WORKER: 'false',
       },
       { NODE_ENV: 'test' },
     ];

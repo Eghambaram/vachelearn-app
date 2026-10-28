@@ -1,5 +1,6 @@
 import { Module, type DynamicModule } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { PinoLogger } from 'nestjs-pino';
 import type { DestinationStream } from 'pino';
 import { AccessGuard } from './access/access.guard';
 import { CONTEXT_RESOLVER, NoSessionResolver } from './access/request-context';
@@ -7,7 +8,12 @@ import { AuditService } from './audit/audit.service';
 import { CURSORS, Cursors } from './common/pagination/keyset';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
 import { APP_CONFIG, type AppConfig } from './config/env';
+import { EMAIL_PROVIDER, EmailJobs } from './email/email-jobs';
+import { createEmailProvider } from './email/email.provider';
 import { HealthController } from './health/health.controller';
+import { JobRegistry } from './jobs/job-handlers';
+import { JobWorker } from './jobs/job-worker';
+import { JobsService } from './jobs/jobs.service';
 import { loggingModule } from './logging/logging.module';
 import { PrismaService } from './prisma/prisma.service';
 import { BranchesController } from './tenancy/branches.controller';
@@ -41,11 +47,21 @@ export class AppModule {
         AuditService,
         TenantsService,
         BranchesService,
+        // Background jobs and email (D-040, D-081).
+        { provide: JobRegistry, useValue: new JobRegistry() },
+        JobsService,
+        JobWorker,
+        {
+          provide: EMAIL_PROVIDER,
+          inject: [PinoLogger],
+          useFactory: (logger: PinoLogger) => createEmailProvider(config, logger),
+        },
+        EmailJobs,
         // Deny by default: every route must be @Public() or name its permission.
         { provide: APP_GUARD, useClass: AccessGuard },
         { provide: APP_FILTER, useClass: AllExceptionsFilter },
       ],
-      exports: [APP_CONFIG, PrismaService, AuditService],
+      exports: [APP_CONFIG, PrismaService, AuditService, JobsService, EmailJobs],
     };
   }
 }

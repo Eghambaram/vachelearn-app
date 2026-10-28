@@ -32,8 +32,21 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 20
+      # SMTP sink for the email job tests (same image as infra/docker-compose.yml).
+      mailpit:
+        image: axllent/mailpit:v1.31.6
+        ports:
+          - 1025:1025
+          - 8025:8025
+        options: >-
+          --health-cmd "/mailpit readyz"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     env:
       TEST_DATABASE_URL: postgresql://vachelearn:ci-only-placeholder@localhost:5432/vachelearn_test
+      MAILPIT_URL: http://127.0.0.1:8025
+      MAILPIT_SMTP_PORT: '1025'
     steps:
       - uses: actions/checkout@v7
 

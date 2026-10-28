@@ -87,7 +87,7 @@ tests pass.
 | Dev servers | `pnpm dev` (web :3000, api :4000; needs a root `.env` copied from `.env.example`) |
 | Lint / format check / format | `pnpm lint` · `pnpm format:check` · `pnpm format` (run Prettier from the root only: from `apps/web` it reformats the vendored CSS) |
 | Type-check | `pnpm typecheck` (web runs `next typegen`; api builds contracts + `prisma generate` first) |
-| Unit + integration tests | `pnpm test` (contracts, web, api; api needs `pnpm services:up` — real Postgres test DB `vachelearn_test`). Single: `pnpm --filter web test -- <pattern>`, `pnpm --filter api test -- <pattern>` |
+| Unit + integration tests | `pnpm test` (contracts, web, api; api needs `pnpm services:up` — real Postgres test DB `vachelearn_test` and Mailpit for the email tests). Single: `pnpm --filter web test -- <pattern>`, `pnpm --filter api test -- <pattern>` |
 | Tenant/branch isolation suite | `pnpm --filter api test:isolation` (also part of `pnpm test`; full two-tenant fixture in 2.6) |
 | E2E (Playwright + axe) | `pnpm test:e2e` (first time: `pnpm --filter web exec playwright install chromium`) |
 | Build | `pnpm build` |

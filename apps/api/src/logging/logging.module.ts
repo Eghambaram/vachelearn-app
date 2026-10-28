@@ -17,6 +17,10 @@ import { clientRequestIdOf, requestIdOf } from '../common/request-id';
 
 const SECRET_FIELDS = [
   'password',
+  'pass',
+  'auth',
+  'authorization',
+  'cookie',
   'newPassword',
   'currentPassword',
   'token',
@@ -47,16 +51,47 @@ export function scrubText(text: string) {
     .replace(/\b(password|passwd|pwd|secret|token)=([^\s&;]+)/gi, '$1=[REDACTED]');
 }
 
+/**
+ * Everything `scrubText` removes, plus whatever could be a link, an address or a token in an error message (security
+ * review 2.3a): http(s) links and scheme-less verify/reset/invite paths, email addresses, `key: value` / JSON secrets,
+ * and any opaque run of 20+ token characters (a 128-bit base64url token is 22). Used for every logged error message
+ * and for `jobs.last_error`; it over-redacts on purpose.
+ */
+export function scrubSecrets(text: string) {
+  return scrubText(text)
+    .replace(
+      /\b(password|passwd|pwd|pass|secret|token|otp|api[_-]?key|sig|signature)(["']?\s*[:=]\s*["']?)[^\s"'&;,}]+/gi,
+      '$1$2[REDACTED]',
+    )
+    .replace(/\bhttps?:\/\/\S+/gi, '[URL]')
+    .replace(/\S*\/(verify|reset|invite|accept)\b\S*/gi, '[URL]')
+    .replace(/[^\s<>()[\]"',;:/@]+@[^\s<>()[\]"',;:/@]+/g, '[EMAIL]')
+    .replace(/[A-Za-z0-9_\-+/=]{20,}/g, '[REDACTED]');
+}
+
+/** An error name is a class name; anything else (a name carrying data) is reduced to `Error`. */
+export function safeErrorName(name: unknown) {
+  return typeof name === 'string' && /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(name) ? name : 'Error';
+}
+
 type ErrorLike = { name?: unknown; message?: unknown; stack?: unknown; code?: unknown };
 
 export function serializeError(err: unknown) {
-  if (!err || typeof err !== 'object') return { message: scrubText(String(err)).slice(0, 500) };
+  if (!err || typeof err !== 'object') return { message: scrubSecrets(String(err)).slice(0, 500) };
   const e = err as ErrorLike;
   return {
-    type: typeof e.name === 'string' ? e.name : 'Error',
+    type: safeErrorName(e.name),
     ...(typeof e.code === 'string' || typeof e.code === 'number' ? { code: e.code } : {}),
-    message: scrubText(String(e.message ?? '')).slice(0, 500),
-    ...(typeof e.stack === 'string' ? { stack: scrubText(e.stack) } : {}),
+    message: scrubSecrets(String(e.message ?? '')).slice(0, 500),
+    // Frames only: the stack's first line repeats the message unscrubbed.
+    ...(typeof e.stack === 'string'
+      ? {
+          stack: e.stack
+            .split('\n')
+            .filter((line) => /^\s+at /.test(line))
+            .join('\n'),
+        }
+      : {}),
   };
 }
 
