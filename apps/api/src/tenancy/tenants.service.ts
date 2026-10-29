@@ -9,6 +9,7 @@ import type {
 import type { z } from 'zod';
 import type { Tenant, TenantStatus } from '../../generated/prisma/client';
 import type { RequestContext } from '../access/request-context';
+import { SupportSessionsService } from '../access/support-sessions.service';
 import { AuditService, changedFields } from '../audit/audit.service';
 import { ApiException } from '../common/errors/api-exception';
 import { CURSORS, Cursors, afterCursor, queryKey } from '../common/pagination/keyset';
@@ -56,6 +57,7 @@ export class TenantsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly support: SupportSessionsService,
     @Inject(CURSORS) private readonly cursors: Cursors,
   ) {}
 
@@ -208,6 +210,8 @@ export class TenantsService {
           `A ${current.status} tenant cannot be changed this way`,
         );
       }
+      // Archiving ends every live support session into the tenant, audited (D-037, D-098).
+      if (kind === 'archive') await this.support.endForTenant(tx, id, ctx);
       await this.audit.record(tx, {
         actorUserId: ctx.userId,
         tenantId: id,

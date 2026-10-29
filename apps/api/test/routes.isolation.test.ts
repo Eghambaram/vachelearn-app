@@ -1,8 +1,9 @@
 import 'reflect-metadata';
 import { PATH_METADATA, METHOD_METADATA } from '@nestjs/common/constants';
-import type { Type } from '@nestjs/common';
+import { RequestMethod, type Type } from '@nestjs/common';
 import request from 'supertest';
 import { PUBLIC, REQUIRES, type Requirement } from '../src/access/access.guard';
+import { SUPPORT_PERMISSIONS } from '../src/access/permissions';
 import { AppModule } from '../src/app.module';
 import { loadConfig } from '../src/config/env';
 import { createTestApp } from './app';
@@ -21,6 +22,8 @@ type Route = {
   isPublic: boolean;
   requirement?: Requirement;
   classRequirement?: Requirement;
+  /** Nest's RequestMethod enum value (0 = GET). */
+  method: number;
 };
 
 function routesOf(controller: Type): Route[] {
@@ -38,6 +41,7 @@ function routesOf(controller: Type): Route[] {
       isPublic: classPublic || Reflect.getMetadata(PUBLIC, fn) === true,
       requirement: (Reflect.getMetadata(REQUIRES, fn) as Requirement | undefined) ?? classRequires,
       classRequirement: classRequires,
+      method: Reflect.getMetadata(METHOD_METADATA, fn) as number,
     }));
 }
 
@@ -76,6 +80,19 @@ describe('signed-in-only routes (security review 2.3b)', () => {
     for (const route of routes.filter((r) => r.classRequirement)) {
       expect(route.requirement?.scope, route.handler).toBe(route.classRequirement!.scope);
     }
+  });
+});
+
+describe('support sessions stay read-only by construction (D-037)', () => {
+  it('every route that a support permission (SS) reaches is a GET', () => {
+    const support = new Set<string>(SUPPORT_PERMISSIONS);
+    const writes = routes.filter(
+      (r) =>
+        r.requirement?.scope === 'tenant' &&
+        support.has(r.requirement.permission) &&
+        r.method !== RequestMethod.GET,
+    );
+    expect(writes.map((r) => r.handler)).toEqual([]);
   });
 });
 

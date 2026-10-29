@@ -9,7 +9,7 @@ import {
 } from '@vachelearn/contracts';
 import type { Request, Response } from 'express';
 import type { z } from 'zod';
-import { Authenticated, Public } from '../access/access.guard';
+import { AllowedDuringSupport, Authenticated, Public } from '../access/access.guard';
 import { Ctx, type RequestContext } from '../access/request-context';
 import { ApiZodBody, ApiZodResponse } from '../common/openapi/zod-openapi';
 import { requestIdOf } from '../common/request-id';
@@ -59,6 +59,7 @@ export class AuthController {
 
   @Post('logout')
   @Authenticated()
+  @AllowedDuringSupport()
   @HttpCode(204)
   async logout(@Ctx() ctx: RequestContext, @Res({ passthrough: true }) res: Response) {
     await this.auth.logout(ctx);

@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { busy } from './auth.service';
 import { HashCapacityError, hashGate, hashPassword, passwordProblem } from './passwords';
 import { ipSubject, RateLimitService, type Limit } from './rate-limit.service';
+import { SupportSessionsService } from '../access/support-sessions.service';
 import { hashSessionToken } from './session-tokens';
 
 /*
@@ -64,6 +65,7 @@ export class PasswordLinksService implements OnModuleInit, OnApplicationShutdown
     private readonly emailJobs: EmailJobs,
     private readonly audit: AuditService,
     private readonly rateLimits: RateLimitService,
+    private readonly support: SupportSessionsService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly logger: PinoLogger,
   ) {
@@ -210,6 +212,11 @@ export class PasswordLinksService implements OnModuleInit, OnApplicationShutdown
         where: { userId: link.userId, endedAt: null },
         data: { endedAt: now, endReason: 'password_changed' },
       });
+      await this.support.endForAuthSessions(
+        tx,
+        { staffUserId: link.userId },
+        { userId: link.userId, requestId },
+      );
       await this.audit.record(tx, {
         actorUserId: link.userId,
         action: link.purpose === 'set_password' ? 'auth.password_set' : 'auth.password_reset',

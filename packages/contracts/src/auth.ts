@@ -39,6 +39,14 @@ export const ActiveTenant = z.object({
 export const AuthSessionView = z.object({
   user: SessionUser,
   activeTenant: ActiveTenant.nullable(),
+  /** Platform staff inside a support session (D-037): that tenant, read-only, until `expiresAt`. */
+  support: z
+    .object({
+      sessionId: z.uuid(),
+      tenant: z.object({ id: z.uuid(), slug: z.string(), displayName: z.string() }),
+      expiresAt: IsoInstant,
+    })
+    .nullable(),
   csrfToken: z.string().min(20),
   /** When the session ends at the latest (D-084: 7 days); idle time also ends it (8 hours). */
   expiresAt: IsoInstant,

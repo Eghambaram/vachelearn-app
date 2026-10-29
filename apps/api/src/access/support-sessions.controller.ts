@@ -9,7 +9,7 @@ import type { z } from 'zod';
 import { ApiZodBody, ApiZodResponse } from '../common/openapi/zod-openapi';
 import { UuidParamPipe } from '../common/validation/uuid-param.pipe';
 import { ZodValidationPipe } from '../common/validation/zod-validation.pipe';
-import { RequirePlatformPermission } from './access.guard';
+import { AllowedDuringSupport, RequirePlatformPermission } from './access.guard';
 import { Ctx, type RequestContext } from './request-context';
 import { SupportSessionsService } from './support-sessions.service';
 
@@ -21,6 +21,7 @@ export class SupportSessionsController {
 
   @Post()
   @RequirePlatformPermission('platform.support_access.start')
+  @AllowedDuringSupport()
   @ApiZodBody(StartSupportSessionBody)
   @ApiZodResponse(201, SupportSessionView)
   start(
@@ -40,6 +41,7 @@ export class SupportSessionsController {
 
   @Post(':id/end')
   @RequirePlatformPermission('platform.support_access.start')
+  @AllowedDuringSupport()
   @HttpCode(204)
   async end(@Ctx() ctx: RequestContext, @Param('id', UuidParamPipe) id: string) {
     await this.support.end(ctx, id);

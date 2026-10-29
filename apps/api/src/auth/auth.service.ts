@@ -121,6 +121,7 @@ export class AuthService implements OnModuleInit {
     const view: AuthSessionView = {
       user: { id: user.id, email: user.email, displayName: user.displayName },
       activeTenant,
+      support: null,
       csrfToken: created.csrfToken,
       expiresAt: created.session.expiresAt.toISOString(),
     };
@@ -144,9 +145,13 @@ export class AuthService implements OnModuleInit {
       ctx.userId,
       session.activeMembershipId,
     );
+    const support = ctx.support ? await this.support.current(ctx) : null;
     return {
       user,
       activeTenant,
+      support: support
+        ? { sessionId: support.id, tenant: support.tenant, expiresAt: support.expiresAt }
+        : null,
       csrfToken: session.csrfToken,
       expiresAt: session.expiresAt.toISOString(),
     };
@@ -154,13 +159,13 @@ export class AuthService implements OnModuleInit {
 
   async logout(ctx: RequestContext) {
     const session = requireSession(ctx);
-    // A support session opened from this browser session ends with it (D-037).
-    await this.support.endForSignOut(ctx, session.id);
     await this.prisma.$transaction(async (tx) => {
       await tx.authSession.updateMany({
         where: { id: session.id, endedAt: null },
         data: { endedAt: new Date(), endReason: 'signed_out' },
       });
+      // A support session opened from this browser session ends with it, in the same transaction (D-037).
+      await this.support.endForAuthSessions(tx, { authSessionId: session.id }, ctx);
       await this.audit.record(tx, {
         actorUserId: ctx.userId,
         action: 'auth.signed_out',

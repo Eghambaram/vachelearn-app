@@ -104,8 +104,14 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   `SUPPORT_READ_ONLY`; permissions outside `SS` → 403. Every allowed tenant request writes `support.accessed`
   (tenant, support session id, method, handler and permission — no URL or query). Opening and ending are audited
   (`support_session.started|ended|expired`) with the tenant, so the tenant's audit log shows them.
-- It ends when ended, after 60 minutes, on sign-out, when the tenant is archived or when the staff member loses the
-  platform role — checked on every request.
+- It ends when ended, after 60 minutes, on sign-out or any other end of the browser session (idle or absolute expiry,
+  password change, deactivation), when the tenant is archived or when the staff member loses
+  `platform.support_access.start` — checked on every request, and abandoned sessions are closed by a sweep every
+  minute (`expired`). Every end is audited.
+- While in support, every mutation except sign-out and starting/ending support → 403 `SUPPORT_READ_ONLY` (switching
+  tenant included); refused tenant requests are audited `support.denied` (method, handler, permission, code);
+  non-tenant routes never see the support tenant. `current` and `AuthSessionView.support` report the session of this
+  browser session only. Two starts at once → one 201, one 409. A route test keeps every SS-permission route a GET.
 
 ## Role assignments (Slice 2.4b)
 

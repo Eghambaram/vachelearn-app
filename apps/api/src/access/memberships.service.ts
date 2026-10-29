@@ -138,6 +138,14 @@ export class MembershipsService {
    */
   async switchTenant(ctx: RequestContext, membershipId: string) {
     if (!ctx.session) throw new ApiException(401, 'UNAUTHENTICATED', 'Not signed in');
+    // Inside a support session the tenant is the support tenant; switching would mislabel what is shown.
+    if (ctx.support) {
+      throw new ApiException(
+        409,
+        'SUPPORT_ACTIVE',
+        'End the support session before switching organisation',
+      );
+    }
     const membership = await this.prisma.membership.findFirst({
       where: { id: membershipId, userId: ctx.userId, status: 'active' },
       select: { id: true, tenantId: true, tenant: { select: { status: true } } },

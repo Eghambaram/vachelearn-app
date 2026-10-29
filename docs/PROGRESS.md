@@ -1,13 +1,13 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — Slice 2.4c done** (platform support sessions, API). 2.4b 37e9a3b (CI
+**Phase 2 · Platform foundation (R1) — Slice 2.4c done** (platform support sessions, API: b6ecdfd). 2.4b 37e9a3b (CI
 success); 2.4a 97ef679; Slice 2.3 done (53135bf). Phase 1 approved (a51d042). Next: 2.4d web.
 
 ## Last verified
-2026-10-29, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.4c tree:
-- `pnpm verify` → exit 0 · contracts 53, web 574 (38 files), api 276 (21 files) · build OK
-- `pnpm --filter api test:isolation` → 161 passed
+2026-10-29, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the 2.4c audit-fix tree:
+- `pnpm verify` → exit 0 · contracts 53, web 574 (38 files), api 285 (21 files) · build OK
+- `pnpm --filter api test:isolation` → 170 passed
 - `pnpm test:e2e` not rerun (web unchanged; 244 passed on the 2.4a tree)
 
 ## Done in this phase
@@ -18,13 +18,14 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
 - 2.4b role-assignment API + first Tenant Admin (D-091–D-095) (37e9a3b).
 - 2.4c support sessions: `/platform/support-sessions` start/current/end; read-only SS context, 60 min, bound to the
   opening browser session, every request audited with the session id; ends on end/expiry/sign-out/archive/role loss
-  (D-037, D-098). Isolation audit running at commit time (owner asked to commit); findings → follow-up commit.
+  (D-037, D-098). Audit fixes (follow-up commit): denied attempts audited, read-only on every route, composite FKs
+  for support audit rows, ended on every browser-session end + archive + sweep, D-099 Needs decision.
 
 ## In progress / uncommitted
-- Apply the 2.4c audit findings (follow-up commit), then 2.4d.
+- Nothing.
 
 ## Next step
-Apply the 2.4c isolation-audit findings, then 2.4d web: real session in the app shell (workspace by most capable role
+2.4d web: real session in the app shell (workspace by most capable role
 with a switcher, D-096), honest "not available yet" for screens without an API (D-097), tenant switcher
 (`/me/memberships`, `POST /auth/session/tenant`), support-session banner with end button and expiry for staff. 2.5:
 people basics (same tenant lock + D-095 predicate when deactivating members).
@@ -33,7 +34,7 @@ people basics (same tenant lock + D-095 predicate when deactivating members).
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
 - Review D-070 (resume = first unfinished lesson vs last opened); decide D-076 (verifying suspended tenants'
   certificates).
-- Phase 2: D-047 (2.5) · review D-080, D-086, D-088, D-090, D-095 and the matrix split note (PSA `saved_report.manage`) ·
+- Phase 2: D-047 (2.5) · review D-080, D-086, D-088, D-090, D-095, decide D-099, and the matrix split note (PSA `saved_report.manage`) ·
   D-082 production email provider (launch).
 
 ## Known issues

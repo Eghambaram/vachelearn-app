@@ -7,6 +7,7 @@ const SESSION = {
     displayName: 'Asha (Demo)',
   },
   activeTenant: null,
+  support: null,
   csrfToken: 'c'.repeat(43),
   expiresAt: '2026-11-04T09:00:00.000Z',
 };

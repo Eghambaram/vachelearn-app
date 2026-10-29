@@ -3,6 +3,8 @@ import { CurrentSupportSession, SupportSessionView } from '@vachelearn/contracts
 import type { PrismaClient } from '../generated/prisma/client';
 import { SUPPORT_PERMISSIONS } from '../src/access/permissions';
 import { GRANTS } from '../src/access/role-grants';
+import { SupportSessionsService } from '../src/access/support-sessions.service';
+import { SessionsService } from '../src/auth/sessions.service';
 import { hashPassword } from '../src/auth/passwords';
 import { createTestApp } from './app';
 import { resetDatabase, testPrisma } from './db';
@@ -312,5 +314,136 @@ describe('who and where', () => {
         data: { ...base, expiresAt: new Date(Date.now() + 30 * 60_000) },
       }),
     ).rejects.toThrow();
+  });
+});
+
+describe('isolation audit 2.4c fixes', () => {
+  it('refused attempts are audited too (support.denied with the reason code)', async () => {
+    const { s, view } = await staffInSupport();
+    await s.post(`/api/v1/branches/${A1}/deactivate`, { reason: 'Support should not' });
+    const member = await db.membership.findFirstOrThrow({ where: { tenantId: tenantA } });
+    await s.get(`/api/v1/role-assignments?membershipId=${member.id}`);
+    const denied = await db.auditEvent.findMany({
+      where: { action: 'support.denied', supportSessionId: view.id },
+      orderBy: { occurredAt: 'asc' },
+    });
+    expect(denied.map((e) => (e.after as { code: string }).code)).toEqual([
+      'SUPPORT_READ_ONLY',
+      'FORBIDDEN',
+    ]);
+    expect(denied.every((e) => e.tenantId === tenantA)).toBe(true);
+  });
+
+  it('during support only sign-out and support start/end may change anything; switching tenant is refused', async () => {
+    // A staff account with a membership (possible only through the operator path).
+    const { membershipId } = await actors.grant(staffId, tenantB, 'learner');
+    const { s } = await staffInSupport();
+    const archive = await s.post(`/api/v1/platform/tenants/${tenantB}/suspend`, {
+      reason: 'Not now',
+    });
+    expect(archive.body.error.code).toBe('SUPPORT_READ_ONLY');
+    const sw = await s.post('/api/v1/auth/session/tenant', { membershipId });
+    expect(sw.status).toBe(403);
+    // /auth/me reports the support session as the one source of truth.
+    const me = await s.get('/api/v1/auth/me');
+    expect(me.body.support).toMatchObject({ tenant: { id: tenantA } });
+  });
+
+  it('the database ties a support audit row to a session of its own tenant', async () => {
+    const { view } = await staffInSupport();
+    const base = {
+      actorUserId: staffId,
+      action: 'support.accessed',
+      entityType: 'support_session',
+      entityId: view.id,
+      supportSessionId: view.id,
+    };
+    await expect(db.auditEvent.create({ data: { ...base, tenantId: tenantB } })).rejects.toThrow();
+    await expect(db.auditEvent.create({ data: { ...base, tenantId: null } })).rejects.toThrow(
+      'audit_events_support_needs_tenant',
+    );
+  });
+
+  it('“current” is the session of this browser only', async () => {
+    await staffInSupport();
+    const other = await actors.signIn('psa@example.test');
+    const current = CurrentSupportSession.parse(
+      (await other.get('/api/v1/platform/support-sessions/current')).body,
+    );
+    expect(current.data).toBeNull();
+  });
+
+  it('two starts at once: one 201 and one 409, never a 500', async () => {
+    const s = await actors.signIn('psa@example.test');
+    const results = await Promise.all([
+      s.post('/api/v1/platform/support-sessions', { tenantId: tenantA, reason: 'First tab' }),
+      s.post('/api/v1/platform/support-sessions', { tenantId: tenantB, reason: 'Second tab' }),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
+    expect(
+      await db.platformSupportSession.count({ where: { staffUserId: staffId, endedAt: null } }),
+    ).toBe(1);
+  });
+
+  it('ends (audited) whenever the browser session ends: idle timeout, password change, deactivation', async () => {
+    const idle = await staffInSupport();
+    await db.authSession.updateMany({
+      where: { userId: staffId, endedAt: null },
+      data: { lastSeenAt: new Date(Date.now() - 9 * 60 * 60_000) },
+    });
+    expect((await idle.s.get('/api/v1/branches')).status).toBe(401);
+    expect(
+      await db.platformSupportSession.findUniqueOrThrow({ where: { id: idle.view.id } }),
+    ).toMatchObject({
+      endReason: 'signed_out',
+    });
+
+    const reset = await staffInSupport();
+    await app.get(SessionsService).endAllForUser(staffId, 'password_changed');
+    expect(
+      await db.platformSupportSession.findUniqueOrThrow({ where: { id: reset.view.id } }),
+    ).toMatchObject({
+      endReason: 'signed_out',
+    });
+    expect(
+      await db.auditEvent.count({
+        where: { action: 'support_session.ended', supportSessionId: reset.view.id },
+      }),
+    ).toBe(1);
+  });
+
+  it('archiving the tenant through the platform API ends support into it at once', async () => {
+    const { view } = await staffInSupport();
+    const otherStaff = await actors.user('psa-2@example.test');
+    await actors
+      .memberships()
+      .operatorGrantPlatformRole({ userId: otherStaff, role: 'platform_super_admin' }, OPERATOR);
+    const s2 = await actors.signIn('psa-2@example.test');
+    expect(
+      (await s2.post(`/api/v1/platform/tenants/${tenantA}/archive`, { reason: 'Closed' })).status,
+    ).toBe(200);
+    expect(
+      await db.platformSupportSession.findUniqueOrThrow({ where: { id: view.id } }),
+    ).toMatchObject({
+      endReason: 'tenant_archived',
+    });
+  });
+
+  it('abandoned sessions are closed by the sweep as expired, audited', async () => {
+    const { view } = await staffInSupport();
+    const swept = await app
+      .get(SupportSessionsService)
+      .sweepExpired(new Date(Date.now() + 61 * 60_000));
+    expect(swept).toBe(1);
+    expect(
+      await db.platformSupportSession.findUniqueOrThrow({ where: { id: view.id } }),
+    ).toMatchObject({
+      endReason: 'expired',
+    });
+    expect(
+      await db.auditEvent.count({
+        where: { action: 'support_session.expired', supportSessionId: view.id },
+      }),
+    ).toBe(1);
   });
 });

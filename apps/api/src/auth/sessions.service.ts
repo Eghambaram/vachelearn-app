@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { AuthSession, SessionEndReason, User } from '../../generated/prisma/client';
 import type { Tx } from '../audit/audit.service';
 import { APP_CONFIG, type AppConfig } from '../config/env';
+import { SupportSessionsService } from '../access/support-sessions.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { csrfTokenFor, hashSessionToken, newSessionToken } from './session-tokens';
 
@@ -27,6 +28,7 @@ export class SessionsService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly support: SupportSessionsService,
   ) {}
 
   /** Starts a session (in the caller's transaction); returns the cookie token (never stored) and the row. */
@@ -86,19 +88,40 @@ export class SessionsService {
 
   /** Ends one session (idempotent: an already-ended session keeps its first reason). */
   async end(sessionId: string, reason: SessionEndReason, now = new Date()) {
-    await this.prisma.authSession.updateMany({
-      where: { id: sessionId, endedAt: null },
-      data: { endedAt: now, endReason: reason },
+    await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.authSession.updateMany({
+        where: { id: sessionId, endedAt: null },
+        data: { endedAt: now, endReason: reason },
+      });
+      // A support session opened from it ends too, so the tenant's log gets its end event (D-037).
+      if (count === 1) {
+        const owner = await tx.authSession.findUniqueOrThrow({
+          where: { id: sessionId },
+          select: { userId: true },
+        });
+        await this.support.endForAuthSessions(
+          tx,
+          { authSessionId: sessionId },
+          { userId: owner.userId, requestId: null },
+        );
+      }
     });
   }
 
   /** Ends every live session of a user (deactivation, password change). Returns how many ended. */
   async endAllForUser(userId: string, reason: SessionEndReason, now = new Date()) {
-    const { count } = await this.prisma.authSession.updateMany({
-      where: { userId, endedAt: null },
-      data: { endedAt: now, endReason: reason },
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.authSession.updateMany({
+        where: { userId, endedAt: null },
+        data: { endedAt: now, endReason: reason },
+      });
+      await this.support.endForAuthSessions(
+        tx,
+        { staffUserId: userId },
+        { userId, requestId: null },
+      );
+      return count;
     });
-    return count;
   }
 
   private csrfToken(sessionId: string) {

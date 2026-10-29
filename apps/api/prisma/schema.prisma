@@ -149,7 +149,7 @@ model AuditEvent {
   tenant         Tenant?                 @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   branch         Branch?                 @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
   actor          User?                   @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
-  supportSession PlatformSupportSession? @relation(fields: [supportSessionId], references: [id], onDelete: Restrict)
+  supportSession PlatformSupportSession? @relation(fields: [tenantId, supportSessionId], references: [tenantId, id], onDelete: Restrict)
 
   @@index([tenantId, occurredAt])
   @@index([entityType, entityId])
@@ -298,6 +298,7 @@ model AuthSession {
   supportSession   PlatformSupportSession?  @relation("ActiveSupport", fields: [userId, supportSessionId], references: [staffUserId, id], onDelete: Restrict)
   openedSupport    PlatformSupportSession[] @relation("OpenedFrom")
 
+  @@unique([userId, id])
   @@index([userId, endedAt])
   @@map("auth_sessions")
 }
@@ -471,11 +472,12 @@ model PlatformSupportSession {
 
   staff       User          @relation(fields: [staffUserId], references: [id], onDelete: Restrict)
   tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  authSession AuthSession   @relation("OpenedFrom", fields: [authSessionId], references: [id], onDelete: Restrict)
+  authSession AuthSession   @relation("OpenedFrom", fields: [staffUserId, authSessionId], references: [userId, id], onDelete: Restrict)
   activeIn    AuthSession[] @relation("ActiveSupport")
   auditEvents AuditEvent[]
 
   @@unique([staffUserId, id])
+  @@unique([tenantId, id])
   @@index([tenantId, startedAt])
   @@index([staffUserId, endedAt])
   @@map("platform_support_sessions")

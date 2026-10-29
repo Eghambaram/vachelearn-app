@@ -15,7 +15,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ApiException } from '../common/errors/api-exception';
 import { requestIdOf } from '../common/request-id';
 import type { PlatformPermission, TenantPermission } from './permissions';
-import { CONTEXT_RESOLVER, type ContextResolver, type WithContext } from './request-context';
+import {
+  CONTEXT_RESOLVER,
+  type ContextResolver,
+  type RequestContext,
+  type WithContext,
+} from './request-context';
 
 export const PUBLIC = 'vl:public';
 export const REQUIRES = 'vl:requires';
@@ -28,6 +33,14 @@ export type Requirement =
 
 /** No authentication: probes, public verification, webhooks. Return minimal data from these. */
 export const Public = () => SetMetadata(PUBLIC, true);
+
+const SUPPORT_WRITE = 'vl:support-write';
+
+/**
+ * The few state changes allowed while platform staff are inside a support session (D-037): signing out and starting or
+ * ending support. Every other mutation is refused during support.
+ */
+export const AllowedDuringSupport = () => SetMetadata(SUPPORT_WRITE, true);
 
 /** Signed-in callers only, whoever they are: for the caller's own session and account. */
 export const Authenticated = () =>
@@ -95,9 +108,25 @@ export class AccessGuard implements CanActivate {
       throw new ApiException(403, 'CSRF', 'Missing or invalid CSRF token');
     }
 
-    // Support sessions are read-only (D-037), whatever the route's permission: say so before anything else.
-    if (requirement.scope === 'tenant' && ctx.support && mutating) {
-      throw new ApiException(403, 'SUPPORT_READ_ONLY', 'Support sessions are read-only');
+    // Support sessions (D-037): read-only on every route — only sign-out and starting/ending support may change
+    // anything — and a refusal is audited too, so the tenant sees attempts as well as reads.
+    const route = `${context.getClass().name}.${context.getHandler().name}`;
+    if (ctx.support) {
+      const allowedWrite =
+        this.reflector.getAllAndOverride<boolean>(SUPPORT_WRITE, targets) === true;
+      if (mutating && !allowedWrite) {
+        await this.recordSupport(
+          ctx,
+          'support.denied',
+          req.method,
+          route,
+          requirement,
+          'SUPPORT_READ_ONLY',
+        );
+        throw new ApiException(403, 'SUPPORT_READ_ONLY', 'Support sessions are read-only');
+      }
+      // Only tenant routes work in the support tenant: anything else never sees it.
+      if (requirement.scope !== 'tenant') ctx.tenant = null;
     }
     if (requirement.scope === 'tenant' && ctx.tenantBlocked) {
       throw ctx.tenantBlocked === 'suspended'
@@ -110,7 +139,19 @@ export class AccessGuard implements CanActivate {
         : requirement.scope === 'platform'
           ? (ctx.platform?.permissions.has(requirement.permission) ?? false)
           : (ctx.tenant?.permissions.has(requirement.permission) ?? false);
-    if (!allowed) throw new ApiException(403, 'FORBIDDEN', 'Forbidden');
+    if (!allowed) {
+      if (ctx.support && requirement.scope === 'tenant') {
+        await this.recordSupport(
+          ctx,
+          'support.denied',
+          req.method,
+          route,
+          requirement,
+          'FORBIDDEN',
+        );
+      }
+      throw new ApiException(403, 'FORBIDDEN', 'Forbidden');
+    }
     // Real callers: the branch scope is the reach of the permission this route requires — a Learner of the whole tenant
     // who is Branch Admin of A1 manages branches in A1 only.
     if (requirement.scope === 'tenant' && ctx.tenant?.grants) {
@@ -121,23 +162,37 @@ export class AccessGuard implements CanActivate {
     // Support sessions (D-037): read-only, and every tenant request audited with the session id — the tenant's audit
     // log shows what platform staff looked at. The route is named by its handler, never by URL or query.
     if (ctx.support && requirement.scope === 'tenant') {
-      await this.audit.record(this.prisma, {
-        actorUserId: ctx.userId,
-        tenantId: ctx.support.tenantId,
-        action: 'support.accessed',
-        entityType: 'support_session',
-        entityId: ctx.support.sessionId,
-        requestId: ctx.requestId,
-        supportSessionId: ctx.support.sessionId,
-        after: {
-          method: req.method ?? 'GET',
-          route: `${context.getClass().name}.${context.getHandler().name}`,
-          permission: requirement.permission,
-        },
-      });
+      await this.recordSupport(ctx, 'support.accessed', req.method, route, requirement);
     }
     req.vlContext = ctx;
     return true;
+  }
+
+  /** One audit row per support request, allowed or refused: method, handler and permission — never URL or query. */
+  private async recordSupport(
+    ctx: RequestContext,
+    action: 'support.accessed' | 'support.denied',
+    method: string | undefined,
+    route: string,
+    requirement: Requirement,
+    code?: string,
+  ) {
+    const support = ctx.support!;
+    await this.audit.record(this.prisma, {
+      actorUserId: ctx.userId,
+      tenantId: support.tenantId,
+      action,
+      entityType: 'support_session',
+      entityId: support.sessionId,
+      requestId: ctx.requestId,
+      supportSessionId: support.sessionId,
+      after: {
+        method: method ?? 'GET',
+        route,
+        ...('permission' in requirement ? { permission: requirement.permission } : {}),
+        ...(code ? { code } : {}),
+      },
+    });
   }
 
   /** `Origin` equal to the web origin; without one, a browser's `Sec-Fetch-Site: same-origin`. Neither: refused. */
