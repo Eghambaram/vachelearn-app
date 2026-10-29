@@ -55,7 +55,7 @@ export const Industry = z.enum([
 export type Industry = z.infer<typeof Industry>;
 
 const DisplayName = z.string().trim().min(2).max(120);
-const Reason = z.string().trim().min(3).max(500);
+export const Reason = z.string().trim().min(3).max(500);
 const Version = z.number().int().min(1);
 
 export const TenantView = z.object({

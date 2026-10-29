@@ -9,7 +9,9 @@ import {
 import { Reflector } from '@nestjs/core';
 import { CSRF_HEADER } from '@vachelearn/contracts';
 import { timingSafeEqual } from 'node:crypto';
+import { AuditService } from '../audit/audit.service';
 import { APP_CONFIG, type AppConfig } from '../config/env';
+import { PrismaService } from '../prisma/prisma.service';
 import { ApiException } from '../common/errors/api-exception';
 import { requestIdOf } from '../common/request-id';
 import type { PlatformPermission, TenantPermission } from './permissions';
@@ -51,6 +53,8 @@ export class AccessGuard implements CanActivate {
     private readonly reflector: Reflector,
     @Inject(CONTEXT_RESOLVER) private readonly resolver: ContextResolver,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly audit: AuditService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -91,6 +95,10 @@ export class AccessGuard implements CanActivate {
       throw new ApiException(403, 'CSRF', 'Missing or invalid CSRF token');
     }
 
+    // Support sessions are read-only (D-037), whatever the route's permission: say so before anything else.
+    if (requirement.scope === 'tenant' && ctx.support && mutating) {
+      throw new ApiException(403, 'SUPPORT_READ_ONLY', 'Support sessions are read-only');
+    }
     if (requirement.scope === 'tenant' && ctx.tenantBlocked) {
       throw ctx.tenantBlocked === 'suspended'
         ? new ApiException(403, 'TENANT_SUSPENDED', 'This organisation is suspended')
@@ -109,6 +117,24 @@ export class AccessGuard implements CanActivate {
       const grant = ctx.tenant.grants.get(requirement.permission);
       ctx.tenant.branchScope =
         grant?.kind === 'all' ? 'ALL' : grant?.kind === 'branches' ? [...grant.branchIds] : [];
+    }
+    // Support sessions (D-037): read-only, and every tenant request audited with the session id — the tenant's audit
+    // log shows what platform staff looked at. The route is named by its handler, never by URL or query.
+    if (ctx.support && requirement.scope === 'tenant') {
+      await this.audit.record(this.prisma, {
+        actorUserId: ctx.userId,
+        tenantId: ctx.support.tenantId,
+        action: 'support.accessed',
+        entityType: 'support_session',
+        entityId: ctx.support.sessionId,
+        requestId: ctx.requestId,
+        supportSessionId: ctx.support.sessionId,
+        after: {
+          method: req.method ?? 'GET',
+          route: `${context.getClass().name}.${context.getHandler().name}`,
+          permission: requirement.permission,
+        },
+      });
     }
     req.vlContext = ctx;
     return true;

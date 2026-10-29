@@ -1,13 +1,13 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — Slice 2.4b done, awaiting commit approval** (role-assignment API, first
-Tenant Admin). 2.4a 97ef679 (CI success); Slice 2.3 done (53135bf). Phase 1 approved (a51d042).
+**Phase 2 · Platform foundation (R1) — Slice 2.4c done** (platform support sessions, API). 2.4b 37e9a3b (CI
+success); 2.4a 97ef679; Slice 2.3 done (53135bf). Phase 1 approved (a51d042). Next: 2.4d web.
 
 ## Last verified
-2026-10-29, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.4b tree:
-- `pnpm verify` → exit 0 · contracts 53, web 574 (38 files), api 257 (20 files) · build OK
-- `pnpm --filter api test:isolation` → 142 passed
+2026-10-29, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.4c tree:
+- `pnpm verify` → exit 0 · contracts 53, web 574 (38 files), api 276 (21 files) · build OK
+- `pnpm --filter api test:isolation` → 161 passed
 - `pnpm test:e2e` not rerun (web unchanged; 244 passed on the 2.4a tree)
 
 ## Done in this phase
@@ -15,18 +15,19 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
 - 2.1 API scaffold (cd9d922) · 2.2 tenancy + isolation suite (a2ae10b) · 2.3a jobs + email (353a2e2) · 2.3b sign-in +
   sessions (360f8f6) · 2.3c password links + `user:create` (68f5930) · 2.3d web sign-in + proxy + headers (53135bf).
 - 2.4a memberships, fixed roles, real request context, `user:grant` (97ef679).
-- 2.4b `/role-assignments` (TA any role, BA Learner/Instructor on own branches; no self-change; last usable TA kept,
-  D-091/D-095; per-tenant lock + actor re-check), `POST /platform/tenants/:id/first-admin` (D-092; never staff or
-  self) · D-091–D-094 Confirmed, D-095 Proposed · isolation audit: High + Mediums + Lows fixed (uncommitted).
+- 2.4b role-assignment API + first Tenant Admin (D-091–D-095) (37e9a3b).
+- 2.4c support sessions: `/platform/support-sessions` start/current/end; read-only SS context, 60 min, bound to the
+  opening browser session, every request audited with the session id; ends on end/expiry/sign-out/archive/role loss
+  (D-037, D-098). Isolation audit running at commit time (owner asked to commit); findings → follow-up commit.
 
 ## In progress / uncommitted
-- Slice 2.4b — awaiting the owner's go-ahead to commit and push.
+- Apply the 2.4c audit findings (follow-up commit), then 2.4d.
 
 ## Next step
-Commit 2.4b on approval, then 2.4c: support sessions (D-037: separate resolver path, read-only `SS` keys only, 60 min,
-reason, audited with the session id and visible in the tenant's log; never `role.assign`/`tenant.update`) and the
-web: real session in the app shell, tenant switcher (`/me/memberships`, `POST /auth/session/tenant`). 2.5 people
-work must take the same tenant lock and the D-095 predicate when deactivating members (never the last usable TA).
+Apply the 2.4c isolation-audit findings, then 2.4d web: real session in the app shell (workspace by most capable role
+with a switcher, D-096), honest "not available yet" for screens without an API (D-097), tenant switcher
+(`/me/memberships`, `POST /auth/session/tenant`), support-session banner with end button and expiry for staff. 2.5:
+people basics (same tenant lock + D-095 predicate when deactivating members).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).

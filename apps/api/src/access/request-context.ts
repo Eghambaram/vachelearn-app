@@ -34,6 +34,8 @@ export type RequestContext = {
     /** Each permission's reach, from the role assignments; the guard derives `branchScope` from it. */
     grants?: ReadonlyMap<PermissionKey, GrantScope>;
   } | null;
+  /** Set while platform staff work inside a support session (D-037): the tenant part is read-only and audited. */
+  support?: { sessionId: string; tenantId: string };
   /** The active tenant is suspended or archived: tenant routes answer 403 (spec §4) and nothing tenant-owned is read. */
   tenantBlocked?: 'suspended' | 'archived';
   /** Set when the caller is authenticated by a browser session: its mutations must carry this CSRF token. */

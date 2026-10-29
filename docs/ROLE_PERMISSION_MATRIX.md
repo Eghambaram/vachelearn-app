@@ -123,6 +123,9 @@ notifications. These are not listed per role.
   Tenant Admin), D-093, D-094. Rule 4: the first Tenant Admin comes from `POST /platform/tenants/:id/first-admin`
   (`tenant.update`, D-092); platform roles are still granted only by the operator command (a `platform_user.manage`
   route comes with platform staff management).
+- Slice 2.4c: `SS` cells apply inside a platform support session only (`platform.support_access.start`, D-037,
+  D-098): read-only, whole tenant, 60 minutes, every request audited with the session id
+  (`/api/v1/platform/support-sessions/**`). A test checks the support set equals the `SS` cells and holds reads only.
 
 ## Notes and open points
 

@@ -94,6 +94,19 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   (D-090, Proposed) and tenant status apply on the next request (D-049). Platform roles reach platform routes only
   (D-037). Automatic selection is audited `auth.tenant_selected`; a switch records the previous membership.
 
+## Support sessions (Slice 2.4c)
+
+- `POST /platform/support-sessions` `{ tenantId, reason }` → 201 `SupportSessionView` (`platform.support_access.start`):
+  active or suspended tenants (D-098), archived → 409, unknown → 404. Opening another ends the previous one.
+  `GET /platform/support-sessions/current` → `{ data: SupportSessionView | null }`; `POST …/:id/end` → 204.
+- While live (60 minutes at most, D-037), the browser session that opened it works in that tenant with exactly the
+  matrix's `SS` permissions (all reads), never from a membership. Every state-changing tenant request → 403
+  `SUPPORT_READ_ONLY`; permissions outside `SS` → 403. Every allowed tenant request writes `support.accessed`
+  (tenant, support session id, method, handler and permission — no URL or query). Opening and ending are audited
+  (`support_session.started|ended|expired`) with the tenant, so the tenant's audit log shows them.
+- It ends when ended, after 60 minutes, on sign-out, when the tenant is archived or when the staff member loses the
+  platform role — checked on every request.
+
 ## Role assignments (Slice 2.4b)
 
 - `GET /role-assignments?membershipId=…`, `POST /role-assignments` `{ membershipId, role, branchId | null }` → 201,

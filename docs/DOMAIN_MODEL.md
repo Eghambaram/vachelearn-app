@@ -43,6 +43,8 @@ built and the guarantees the database itself enforces.
 | `role_assignments` | 2.4a | Tenant-owned | Fixed role enum (D-053); `branch_id` null = whole tenant; composite FKs; Branch Admin needs a branch (CHECK); revoked with reason, never deleted; one live assignment per member + role + scope (partial unique, NULLS NOT DISTINCT) |
 | `platform_role_assignments` | 2.4a | Global | One live per user + role; revoked with reason; grants platform routes only (D-037) |
 | `auth_sessions.active_membership_id` | 2.4a | — | Composite FK `(user_id, active_membership_id) → memberships(user_id, id)`: a session can only point at its own user's membership (D-089) |
+| `platform_support_sessions` | 2.4c | Global (names a tenant) | Reason ≥ 3 characters; at most 60 minutes (CHECK, D-037); ended ⇔ `end_reason` (`ended`, `expired`, `signed_out`, `tenant_archived`, `staff_role_revoked`); one live per staff member (partial unique); bound to the opening `auth_sessions` row (FK) |
+| `auth_sessions.support_session_id` | 2.4c | — | Composite FK `(user_id, support_session_id) → platform_support_sessions(staff_user_id, id)`: a browser session can only carry its own staff member's support session; `audit_events.support_session_id` now references it too |
 
 Not built yet: everything else in §2 (Department waits for D-047 in 2.5).
 

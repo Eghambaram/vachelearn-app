@@ -5,6 +5,7 @@ import type { AuthSessionView, LoginBody } from '@vachelearn/contracts';
 import type { z } from 'zod';
 import type { RequestContext } from '../access/request-context';
 import { MembershipsService } from '../access/memberships.service';
+import { SupportSessionsService } from '../access/support-sessions.service';
 import { AuditService } from '../audit/audit.service';
 import { ApiException } from '../common/errors/api-exception';
 import { APP_CONFIG, type AppConfig } from '../config/env';
@@ -40,6 +41,7 @@ export class AuthService implements OnModuleInit {
     private readonly sessions: SessionsService,
     private readonly rateLimits: RateLimitService,
     private readonly memberships: MembershipsService,
+    private readonly support: SupportSessionsService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly logger: PinoLogger,
   ) {
@@ -152,6 +154,8 @@ export class AuthService implements OnModuleInit {
 
   async logout(ctx: RequestContext) {
     const session = requireSession(ctx);
+    // A support session opened from this browser session ends with it (D-037).
+    await this.support.endForSignOut(ctx, session.id);
     await this.prisma.$transaction(async (tx) => {
       await tx.authSession.updateMany({
         where: { id: session.id, endedAt: null },

@@ -32,6 +32,12 @@ export const TENANT_PERMISSIONS = KEYS.filter((k) =>
   MATRIX_ROLES.some((r) => r !== 'PSA' && GRANTS[k][r] !== '—'),
 ) as TenantPermission[];
 
+/**
+ * What platform staff may do inside a support session (D-037): exactly the Platform Super Admin's `SS` cells — all reads.
+ * Every one reaches the whole tenant; none is a write (a test checks).
+ */
+export const SUPPORT_PERMISSIONS = KEYS.filter((k) => GRANTS[k].PSA === 'SS') as TenantPermission[];
+
 /** The fixed tenant roles (D-053) and their matrix columns. */
 export const TENANT_ROLES = {
   tenant_admin: 'TA',

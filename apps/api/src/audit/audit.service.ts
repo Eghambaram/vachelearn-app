@@ -14,6 +14,8 @@ export type AuditEntry = {
   entityId: string;
   requestId: string | null;
   reason?: string | null;
+  /** Set for actions taken inside a platform support session (D-037). */
+  supportSessionId?: string | null;
   /** Safe subset of changed fields only — never secrets or personal free text. */
   before?: Record<string, unknown> | null;
   after?: Record<string, unknown> | null;
@@ -36,6 +38,7 @@ export class AuditService {
         entityId: entry.entityId,
         requestId: entry.requestId,
         reason: entry.reason ?? null,
+        supportSessionId: entry.supportSessionId ?? null,
         before: (entry.before ?? undefined) as Prisma.InputJsonValue | undefined,
         after: (entry.after ?? undefined) as Prisma.InputJsonValue | undefined,
       },

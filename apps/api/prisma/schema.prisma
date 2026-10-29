@@ -58,11 +58,12 @@ model Tenant {
   createdById         String?      @map("created_by_id") @db.Uuid
   updatedAt           DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  settings    TenantSetting?
-  branches    Branch[]
-  auditEvents AuditEvent[]
-  jobs        Job[]
-  memberships Membership[]
+  settings        TenantSetting?
+  branches        Branch[]
+  auditEvents     AuditEvent[]
+  jobs            Job[]
+  memberships     Membership[]
+  supportSessions PlatformSupportSession[]
 
   @@index([status, createdAt])
   @@map("tenants")
@@ -145,9 +146,10 @@ model AuditEvent {
   before           Json?
   after            Json?
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  branch Branch? @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
-  actor  User?   @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  tenant         Tenant?                 @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branch         Branch?                 @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  actor          User?                   @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  supportSession PlatformSupportSession? @relation(fields: [supportSessionId], references: [id], onDelete: Restrict)
 
   @@index([tenantId, occurredAt])
   @@index([entityType, entityId])
@@ -244,12 +246,13 @@ model User {
   createdById       String?    @map("created_by_id") @db.Uuid
   updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  credential    UserCredential?
-  sessions      AuthSession[]
-  auditEvents   AuditEvent[]
-  passwordLinks PasswordLink[]
-  memberships   Membership[]
-  platformRoles PlatformRoleAssignment[]
+  credential      UserCredential?
+  sessions        AuthSession[]
+  auditEvents     AuditEvent[]
+  passwordLinks   PasswordLink[]
+  memberships     Membership[]
+  platformRoles   PlatformRoleAssignment[]
+  supportSessions PlatformSupportSession[]
 
   @@map("users")
 }
@@ -287,9 +290,13 @@ model AuthSession {
   endReason          SessionEndReason? @map("end_reason")
   /// The active tenant membership (D-089). Composite key: a session can only point at its own user's membership.
   activeMembershipId String?           @map("active_membership_id") @db.Uuid
+  /// A live platform support session opened from this browser session (D-037); while live it replaces the membership.
+  supportSessionId   String?           @map("support_session_id") @db.Uuid
 
-  user             User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  activeMembership Membership? @relation(fields: [userId, activeMembershipId], references: [userId, id], onDelete: Restrict)
+  user             User                     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  activeMembership Membership?              @relation(fields: [userId, activeMembershipId], references: [userId, id], onDelete: Restrict)
+  supportSession   PlatformSupportSession?  @relation("ActiveSupport", fields: [userId, supportSessionId], references: [staffUserId, id], onDelete: Restrict)
+  openedSupport    PlatformSupportSession[] @relation("OpenedFrom")
 
   @@index([userId, endedAt])
   @@map("auth_sessions")
@@ -437,4 +444,39 @@ model PlatformRoleAssignment {
 
   @@index([userId])
   @@map("platform_role_assignments")
+}
+
+// ── Platform support sessions (Slice 2.4c, D-037 / D-098) ────────────────────────────────────────────────────────
+
+enum SupportSessionEndReason {
+  ended
+  expired
+  signed_out
+  tenant_archived
+  staff_role_revoked
+}
+
+/// Platform staff's only way into a tenant (D-037): explicit, reason required, read-only (the matrix's SS permissions),
+/// 60 minutes at most, bound to the browser session that opened it. Every request inside it is audited with its id.
+model PlatformSupportSession {
+  id            String                   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  staffUserId   String                   @map("staff_user_id") @db.Uuid
+  tenantId      String                   @map("tenant_id") @db.Uuid
+  authSessionId String                   @map("auth_session_id") @db.Uuid
+  reason        String                   @db.VarChar(500)
+  startedAt     DateTime                 @map("started_at") @db.Timestamptz(3)
+  expiresAt     DateTime                 @map("expires_at") @db.Timestamptz(3)
+  endedAt       DateTime?                @map("ended_at") @db.Timestamptz(3)
+  endReason     SupportSessionEndReason? @map("end_reason")
+
+  staff       User          @relation(fields: [staffUserId], references: [id], onDelete: Restrict)
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  authSession AuthSession   @relation("OpenedFrom", fields: [authSessionId], references: [id], onDelete: Restrict)
+  activeIn    AuthSession[] @relation("ActiveSupport")
+  auditEvents AuditEvent[]
+
+  @@unique([staffUserId, id])
+  @@index([tenantId, startedAt])
+  @@index([staffUserId, endedAt])
+  @@map("platform_support_sessions")
 }

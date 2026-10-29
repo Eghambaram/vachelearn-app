@@ -4,6 +4,8 @@ import { PinoLogger } from 'nestjs-pino';
 import type { DestinationStream } from 'pino';
 import { AccessGuard } from './access/access.guard';
 import { MeController } from './access/me.controller';
+import { SupportSessionsController } from './access/support-sessions.controller';
+import { SupportSessionsService } from './access/support-sessions.service';
 import { RoleAssignmentsController } from './access/role-assignments.controller';
 import { RoleAssignmentsService } from './access/role-assignments.service';
 import { FirstAdminService } from './tenancy/first-admin.service';
@@ -54,6 +56,7 @@ export class AppModule {
         AuthController,
         MeController,
         RoleAssignmentsController,
+        SupportSessionsController,
         PlatformTenantsController,
         BranchesController,
       ],
@@ -63,6 +66,7 @@ export class AppModule {
         SessionsService,
         MembershipsService,
         RoleAssignmentsService,
+        SupportSessionsService,
         FirstAdminService,
         { provide: CONTEXT_RESOLVER, useClass: SessionResolver },
         RateLimitService,

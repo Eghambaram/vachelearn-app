@@ -13,3 +13,4 @@ export * from './health';
 export * from './tenancy';
 export * from './auth';
 export * from './roles';
+export * from './support';
