@@ -12,3 +12,4 @@ export * from './compliance';
 export * from './health';
 export * from './tenancy';
 export * from './auth';
+export * from './roles';

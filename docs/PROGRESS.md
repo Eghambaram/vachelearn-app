@@ -1,39 +1,38 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — Slice 2.4a done, awaiting commit approval** (memberships, fixed roles, real
-request context). 2.4 = 2.4a/b/c (owner, 2026-10-28). Slice 2.3 done (53135bf, CI success). Phase 1 approved (a51d042).
+**Phase 2 · Platform foundation (R1) — Slice 2.4b done, awaiting commit approval** (role-assignment API, first
+Tenant Admin). 2.4a 97ef679 (CI success); Slice 2.3 done (53135bf). Phase 1 approved (a51d042).
 
 ## Last verified
-2026-10-28, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.4a tree:
-- `pnpm verify` → exit 0 · contracts 53, web 574 (38 files), api 229 (19 files) · build OK
-- `pnpm --filter api test:isolation` → 114 passed · all migrations applied to a scratch DB, no drift
-- `pnpm test:e2e` → exit 0 · 244 passed (14.0 min — slower run on a loaded machine)
+2026-10-29, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.4b tree:
+- `pnpm verify` → exit 0 · contracts 53, web 574 (38 files), api 257 (20 files) · build OK
+- `pnpm --filter api test:isolation` → 142 passed
+- `pnpm test:e2e` not rerun (web unchanged; 244 passed on the 2.4a tree)
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
 - 2.1 API scaffold (cd9d922) · 2.2 tenancy + isolation suite (a2ae10b) · 2.3a jobs + email (353a2e2) · 2.3b sign-in +
   sessions (360f8f6) · 2.3c password links + `user:create` (68f5930) · 2.3d web sign-in + proxy + headers (53135bf).
-- 2.4a memberships + branches (D-026), role/platform-role assignments, registry generated from and tested against the
-  matrix (D-053), active membership on the session (D-089), grants per permission → guard narrows branch scope,
-  `TENANT_SUSPENDED`/`ARCHIVED`, `/me/memberships`, `POST /auth/session/tenant`, `user:grant` · isolation audit: no
-  Critical/High; Mediums fixed (one deferred to 4.1) (uncommitted).
+- 2.4a memberships, fixed roles, real request context, `user:grant` (97ef679).
+- 2.4b `/role-assignments` (TA any role, BA Learner/Instructor on own branches; no self-change; last usable TA kept,
+  D-091/D-095; per-tenant lock + actor re-check), `POST /platform/tenants/:id/first-admin` (D-092; never staff or
+  self) · D-091–D-094 Confirmed, D-095 Proposed · isolation audit: High + Mediums + Lows fixed (uncommitted).
 
 ## In progress / uncommitted
-- Slice 2.4a — awaiting the owner's go-ahead to commit and push.
+- Slice 2.4b — awaiting the owner's go-ahead to commit and push.
 
 ## Next step
-Commit 2.4a on approval, then 2.4b: role-assignment API with the granting rules (no self-grant; TA assigns any tenant
-role, BA only Learner/Instructor on its own branches — the `B (LRN, INS only)` qualifier is not in the grants; target
-branch inside the actor's `role.assign` grant and the member's branches; revoke with reason + actor; audited; never
-reuse `operatorGrantTenantRole`), platform route to make a tenant's first Tenant Admin, isolation tests for ID/list/
-reference attacks. Then 2.4c: support sessions (D-037: read-only SS keys, 60 min, reason, audited) + web switcher.
+Commit 2.4b on approval, then 2.4c: support sessions (D-037: separate resolver path, read-only `SS` keys only, 60 min,
+reason, audited with the session id and visible in the tenant's log; never `role.assign`/`tenant.update`) and the
+web: real session in the app shell, tenant switcher (`/me/memberships`, `POST /auth/session/tenant`). 2.5 people
+work must take the same tenant lock and the D-095 predicate when deactivating members (never the last usable TA).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
 - Review D-070 (resume = first unfinished lesson vs last opened); decide D-076 (verifying suspended tenants'
   certificates).
-- Phase 2: D-047 (2.5) · review D-080, D-086, D-088, D-090 and the matrix split note (PSA `saved_report.manage`) ·
+- Phase 2: D-047 (2.5) · review D-080, D-086, D-088, D-090, D-095 and the matrix split note (PSA `saved_report.manage`) ·
   D-082 production email provider (launch).
 
 ## Known issues

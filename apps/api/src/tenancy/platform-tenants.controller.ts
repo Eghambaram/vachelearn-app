@@ -2,6 +2,8 @@ import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query } from '@nes
 import { ApiTags } from '@nestjs/swagger';
 import {
   CreateTenantBody,
+  FirstAdminBody,
+  FirstAdminResult,
   LifecycleBody,
   TenantListPage,
   TenantListQuery,
@@ -14,13 +16,17 @@ import { Ctx, type RequestContext } from '../access/request-context';
 import { ApiZodBody, ApiZodResponse } from '../common/openapi/zod-openapi';
 import { UuidParamPipe } from '../common/validation/uuid-param.pipe';
 import { ZodValidationPipe } from '../common/validation/zod-validation.pipe';
+import { FirstAdminService } from './first-admin.service';
 import { TenantsService } from './tenants.service';
 
 /** Platform tenant management (spec §4, §17): platform staff only. Thin: rules live in TenantsService. */
 @ApiTags('platform · tenants')
 @Controller('platform/tenants')
 export class PlatformTenantsController {
-  constructor(private readonly tenants: TenantsService) {}
+  constructor(
+    private readonly tenants: TenantsService,
+    private readonly firstAdmin: FirstAdminService,
+  ) {}
 
   @Post()
   @RequirePlatformPermission('tenant.create')
@@ -96,5 +102,18 @@ export class PlatformTenantsController {
     @Body(new ZodValidationPipe(LifecycleBody)) body: LifecycleBody,
   ) {
     return this.tenants.transition(ctx, id, 'archive', body.reason);
+  }
+
+  /** A new tenant's first Tenant Admin (D-092); 409 once the tenant has one. Reads no tenant data. */
+  @Post(':id/first-admin')
+  @RequirePlatformPermission('tenant.update')
+  @ApiZodBody(FirstAdminBody)
+  @ApiZodResponse(201, FirstAdminResult)
+  createFirstAdmin(
+    @Ctx() ctx: RequestContext,
+    @Param('id', UuidParamPipe) id: string,
+    @Body(new ZodValidationPipe(FirstAdminBody)) body: z.output<typeof FirstAdminBody>,
+  ) {
+    return this.firstAdmin.create(ctx, id, body);
   }
 }

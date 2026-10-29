@@ -118,6 +118,11 @@ notifications. These are not listed per role.
   command `user:grant` until the role-assignment API with the granting rules (2.4b). Tenant Admin is whole-tenant
   only (database CHECK); a branch role must sit on one of the member's branches (foreign key); a role on a
   deactivated branch grants nothing (D-090, Proposed); a branch assignment never yields a whole-tenant (`T`) grant.
+- Slice 2.4b: `role.assign` on `/api/v1/role-assignments/**` enforces granting rules 2–3 and 6 (Branch Admin: Learner
+  and Instructor on its own branches for members already there; no self-changes; next-request effect), D-091 (last
+  Tenant Admin), D-093, D-094. Rule 4: the first Tenant Admin comes from `POST /platform/tenants/:id/first-admin`
+  (`tenant.update`, D-092); platform roles are still granted only by the operator command (a `platform_user.manage`
+  route comes with platform staff management).
 
 ## Notes and open points
 

@@ -94,6 +94,26 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   (D-090, Proposed) and tenant status apply on the next request (D-049). Platform roles reach platform routes only
   (D-037). Automatic selection is audited `auth.tenant_selected`; a switch records the previous membership.
 
+## Role assignments (Slice 2.4b)
+
+- `GET /role-assignments?membershipId=…`, `POST /role-assignments` `{ membershipId, role, branchId | null }` → 201,
+  `POST /role-assignments/:id/revoke` `{ reason }` → 200 — all need `role.assign`, all audited (`role.assigned`,
+  `role.revoked`, `membership.branch_added`, `membership.primary_branch_set`).
+- Tenant Admin: any tenant role, tenant-wide or on an active branch; a member not yet in that branch is added to it
+  (D-093); other Tenant Admins too (D-094). Branch Admin: Learner or Instructor only, on its own branches only, for
+  members already in one of them; it sees and revokes only assignments on its branches.
+- Nobody changes their own roles (403 `SELF_CHANGE`); the last usable Tenant Admin (D-095) cannot be revoked (409
+  `LAST_TENANT_ADMIN`, D-091). Every change runs under a per-tenant lock and re-reads the actor's own live roles, so an
+  actor revoked a moment ago gets 403. Deactivated or platform-staff accounts get no roles (409 `INVALID_STATE`,
+  D-095); duplicate (also when sent twice at once) → 409 `ALREADY_ASSIGNED`; Tenant
+  Admin on a branch / Branch Admin without one → 422; another tenant's or out-of-reach membership, branch or
+  assignment → 404. Changes apply to the holder on the next request.
+- `POST /platform/tenants/:id/first-admin` `{ email, displayName }` (platform, `tenant.update`) → 201
+  `{ userId, membershipId, assignmentId, accountCreated }` (D-092): creates the account if needed (set-password email),
+  the membership and a whole-tenant Tenant Admin; 409 `TENANT_HAS_ADMIN` once the tenant has a usable one (D-095: an
+  admin who never set a password does not count); never the caller's own or any platform staff account (one generic
+  409 `INVALID_STATE`); reusing an existing account is audited (`accountReused`).
+
 ## Password links (Slice 2.3c)
 
 - Accounts start without a password (D-083): `pnpm --filter api user:create --email … --name … --reason …` creates one and sends

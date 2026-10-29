@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
-import { AuditService } from '../audit/audit.service';
+import { AuditService, type Tx } from '../audit/audit.service';
 import { PasswordLinksService } from '../auth/password-links.service';
 import { ApiException } from '../common/errors/api-exception';
 import { isUniqueViolation } from '../prisma/errors';
@@ -49,24 +49,8 @@ export class UsersService {
     input: z.input<typeof NewUser>,
     actor: { userId: string | null; requestId: string | null; reason: string },
   ) {
-    const { email, displayName } = NewUser.parse(input);
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        const user = await tx.user.create({
-          data: { email, displayName, createdById: actor.userId },
-          select: { id: true, email: true, displayName: true },
-        });
-        await this.audit.record(tx, {
-          actorUserId: actor.userId,
-          action: 'user.created',
-          entityType: 'user',
-          entityId: user.id,
-          requestId: actor.requestId,
-          reason: actor.reason,
-        });
-        await this.passwordLinks.requestSetup(tx, user.id);
-        return user;
-      });
+      return await this.prisma.$transaction((tx) => this.createInTransaction(tx, input, actor));
     } catch (err) {
       if (isUniqueViolation(err, 'users_email_key')) {
         throw ApiException.validation([
@@ -75,5 +59,28 @@ export class UsersService {
       }
       throw err;
     }
+  }
+
+  /** The same, inside the caller's transaction (e.g. a tenant's first admin, D-092). */
+  async createInTransaction(
+    tx: Tx,
+    input: z.input<typeof NewUser>,
+    actor: { userId: string | null; requestId: string | null; reason: string },
+  ) {
+    const { email, displayName } = NewUser.parse(input);
+    const user = await tx.user.create({
+      data: { email, displayName, createdById: actor.userId },
+      select: { id: true, email: true, displayName: true },
+    });
+    await this.audit.record(tx, {
+      actorUserId: actor.userId,
+      action: 'user.created',
+      entityType: 'user',
+      entityId: user.id,
+      requestId: actor.requestId,
+      reason: actor.reason,
+    });
+    await this.passwordLinks.requestSetup(tx, user.id);
+    return user;
   }
 }

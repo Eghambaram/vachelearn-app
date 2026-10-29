@@ -92,3 +92,4 @@ seed is idempotent and refuses production.
 - Phase 0 (2026-10-20) — added slice 2.3a: 2.3 needs email delivery, and the outbox runner (D-040) was not scheduled anywhere before Phase 3.
 - 2026-10-28 — Slice 2.3 split into 2.3b (API sign-in), 2.3c (verification + reset), 2.3d (web), approved by the owner: one reviewable change set each.
 - 2026-10-28 — Slice 2.4 split into 2.4a (context + registry), 2.4b (role assignment), 2.4c (support sessions + web), approved by the owner.
+- 2026-10-29 — 2.4c split into 2.4c (support sessions, API) and 2.4d (web: real session in the app shell, tenant/workspace switcher, support banner), approved by the owner.

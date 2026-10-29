@@ -4,6 +4,9 @@ import { PinoLogger } from 'nestjs-pino';
 import type { DestinationStream } from 'pino';
 import { AccessGuard } from './access/access.guard';
 import { MeController } from './access/me.controller';
+import { RoleAssignmentsController } from './access/role-assignments.controller';
+import { RoleAssignmentsService } from './access/role-assignments.service';
+import { FirstAdminService } from './tenancy/first-admin.service';
 import { MembershipsService } from './access/memberships.service';
 import { CONTEXT_RESOLVER } from './access/request-context';
 import { AuthController } from './auth/auth.controller';
@@ -50,6 +53,7 @@ export class AppModule {
         HealthController,
         AuthController,
         MeController,
+        RoleAssignmentsController,
         PlatformTenantsController,
         BranchesController,
       ],
@@ -58,6 +62,8 @@ export class AppModule {
         // Who is calling: the session cookie (D-010). Tests replace this with `overrideProvider`.
         SessionsService,
         MembershipsService,
+        RoleAssignmentsService,
+        FirstAdminService,
         { provide: CONTEXT_RESOLVER, useClass: SessionResolver },
         RateLimitService,
         AuthService,
