@@ -8,6 +8,7 @@ import { PermissionDenied } from '@/components/permission-denied';
 import { Card } from '@/components/ui/card';
 import { getSession } from '@/lib/api/session';
 import { getMessages } from '@/lib/i18n';
+import { notAvailableForRealSession } from '@/components/shell/workspace';
 
 // English only for now (D-028); becomes per-request when a second language is added.
 const t = getMessages();
@@ -20,6 +21,9 @@ export const metadata: Metadata = { title: r.title };
  * More reports (progress, completion, expiring certificates, branch comparison) are added when built, not before.
  */
 export default async function ReportsPage() {
+  // Real sessions never see the Phase 1 demo data on this screen (D-097).
+  const notAvailable = await notAvailableForRealSession('/admin/reports');
+  if (notAvailable) return notAvailable;
   const session = await getSession();
   if (!session.permissions.includes('report.read')) return <PermissionDenied headingLevel="h1" />;
   const canCompliance = session.permissions.includes('compliance.read');

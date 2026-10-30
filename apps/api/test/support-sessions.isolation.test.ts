@@ -1,5 +1,9 @@
 import type { INestApplication } from '@nestjs/common';
-import { CurrentSupportSession, SupportSessionView } from '@vachelearn/contracts';
+import {
+  CurrentSupportSession,
+  SessionContextView,
+  SupportSessionView,
+} from '@vachelearn/contracts';
 import type { PrismaClient } from '../generated/prisma/client';
 import { SUPPORT_PERMISSIONS } from '../src/access/permissions';
 import { GRANTS } from '../src/access/role-grants';
@@ -445,5 +449,33 @@ describe('isolation audit 2.4c fixes', () => {
         where: { action: 'support_session.expired', supportSessionId: view.id },
       }),
     ).toBe(1);
+  });
+});
+
+describe('GET /auth/session (2.4d)', () => {
+  it('a member sees the active tenant’s roles and permissions only; staff in support see SS permissions and no roles', async () => {
+    const member = await actors.user('both@example.test');
+    const a = await actors.grant(member, tenantA, 'tenant_admin');
+    await actors.grant(member, tenantB, 'learner');
+    const m = await actors.signIn('both@example.test');
+    await m.post('/api/v1/auth/session/tenant', { membershipId: a.membershipId });
+    const ctx = SessionContextView.parse((await m.get('/api/v1/auth/session')).body);
+    expect(ctx.activeTenant?.tenantId).toBe(tenantA);
+    expect(ctx.memberships.map((x) => [x.tenantId, x.active])).toEqual([
+      [tenantA, true],
+      [tenantB, false],
+    ]);
+    expect(ctx.roles).toEqual([{ role: 'tenant_admin', branch: null }]);
+    expect(ctx.tenantPermissions).toContain('role.assign');
+    expect(ctx.platformRoles).toEqual([]);
+    expect(ctx.platformPermissions).toEqual([]);
+
+    const { s } = await staffInSupport();
+    const staff = SessionContextView.parse((await s.get('/api/v1/auth/session')).body);
+    expect(staff.support?.tenant.id).toBe(tenantA);
+    expect(staff.roles).toEqual([]);
+    expect(staff.tenantPermissions).toEqual([...SUPPORT_PERMISSIONS].sort());
+    expect(staff.platformRoles).toEqual(['platform_super_admin']);
+    expect(staff.platformPermissions).toContain('platform.support_access.start');
   });
 });

@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { UserRound } from 'lucide-react';
-import { DemoBadge } from '@/components/demo-badge';
 import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { getMessages } from '@/lib/i18n';
@@ -14,7 +13,7 @@ export const metadata: Metadata = { title: t.shell.profile };
 export default function AccountPage() {
   return (
     <>
-      <PageHeader title={t.shell.profile} meta={<DemoBadge />} />
+      <PageHeader title={t.shell.profile} />
       <EmptyState
         icon={<UserRound />}
         title={t.placeholder.title(t.shell.profile)}

@@ -8,8 +8,10 @@ import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/page-header';
 import { PermissionDenied } from '@/components/permission-denied';
 import { AppShell } from '@/components/shell/app-shell';
+import { SessionUnavailableState } from '@/components/shell/session-unavailable';
 import { Button } from '@/components/ui/button';
-import { getSession } from '@/lib/api/session';
+import { getSession, SessionUnavailableError } from '@/lib/api/session';
+import { navItemFor, phaseFor } from '@/lib/auth/session-view';
 import { ROLE_WORKSPACE, WORKSPACE_HOME, type Workspace } from '@/lib/api/session-types';
 import { isDemoWorkspacesEnabled } from '@/lib/dev-tools';
 import { findNavItem } from '@/lib/nav';
@@ -19,9 +21,11 @@ import { getMessages } from '@/lib/i18n';
 const t = getMessages();
 
 /**
- * Layout for one workspace route group. 404 when demo workspaces are off (D-063). A role that does not work in this
- * workspace gets its own shell with a permission-denied page — the route's existence is not secret, so 403 is
- * honest here; resources hidden by tenant/branch scope return 404 instead.
+ * Layout for one workspace route group (Slice 2.4d). Real sessions (API, D-096): the user's chosen or most capable
+ * role decides the workspace; routes not yet built against the API show "not available yet" (D-097) and the demo page
+ * is never rendered. Demo sessions (development, D-063): as in Phase 1. A role that does not work in this workspace
+ * gets its own shell with a permission-denied page — the route's existence is not secret, so 403 is honest here;
+ * resources hidden by tenant/branch scope return 404 instead.
  */
 export async function WorkspaceLayout({
   workspace,
@@ -30,8 +34,14 @@ export async function WorkspaceLayout({
   workspace: Workspace;
   children: React.ReactNode;
 }) {
-  if (!isDemoWorkspacesEnabled()) notFound();
-  const session = await getSession();
+  let session: Awaited<ReturnType<typeof getSession>>;
+  try {
+    session = await getSession();
+  } catch (err) {
+    if (!(err instanceof SessionUnavailableError)) throw err;
+    return <SessionUnavailable />;
+  }
+  if (session.demo && !isDemoWorkspacesEnabled()) notFound();
   const own = ROLE_WORKSPACE[session.role];
   if (own !== workspace) {
     return (
@@ -51,6 +61,57 @@ export async function WorkspaceLayout({
     <AppShell session={session} workspace={workspace}>
       {children}
     </AppShell>
+  );
+}
+
+/**
+ * For pages that still render Phase 1 demo data: a real session gets "not available yet" with the phase that brings
+ * the screen (D-097), and the demo page is never rendered. Called at the top of each such page — pages run on every
+ * navigation, layouts do not. Returns null for demo sessions.
+ */
+export async function notAvailableForRealSession(pathname: string) {
+  try {
+    const session = await getSession();
+    return session.demo ? null : <NotAvailableYet pathname={pathname} />;
+  } catch (err) {
+    if (err instanceof SessionUnavailableError) return <SessionUnavailable />;
+    throw err;
+  }
+}
+
+/**
+ * The same rule for a demo page's `generateMetadata`: a real session never runs its demo fetchers, even for the tab
+ * title (security review 2.4d). Returns the screen's own name for real sessions, null for demo sessions.
+ */
+export async function notAvailableMetadata(pathname: string): Promise<Metadata | null> {
+  const session = await getSession().catch(() => null);
+  if (session?.demo) return null;
+  return { title: navItemFor(pathname)?.label ?? t.shell.notAvailableTitle };
+}
+
+/**
+ * A real session on a screen that still shows Phase 1 demo data elsewhere (D-097): the screen keeps its own name as the
+ * heading; the state says it is not available yet and which phase brings it.
+ */
+export function NotAvailableYet({ pathname }: { pathname: string }) {
+  const phase = phaseFor(pathname);
+  return (
+    <>
+      <PageHeader title={navItemFor(pathname)?.label ?? t.shell.notAvailableTitle} />
+      <EmptyState
+        icon={<Construction />}
+        title={t.shell.notAvailableTitle}
+        description={t.shell.notAvailableBody(phase)}
+      />
+    </>
+  );
+}
+
+export function SessionUnavailable() {
+  return (
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 px-4">
+      <SessionUnavailableState />
+    </main>
   );
 }
 
@@ -83,6 +144,8 @@ export async function WorkspacePlaceholder({
   if (!session.permissions.includes(item.permission)) {
     return <PermissionDenied headingLevel="h1" />;
   }
+  // Real sessions: the phase that brings the screen, not the internal slice (D-097).
+  if (!session.demo) return <NotAvailableYet pathname={item.href} />;
   const home = WORKSPACE_HOME[workspace];
   return (
     <>

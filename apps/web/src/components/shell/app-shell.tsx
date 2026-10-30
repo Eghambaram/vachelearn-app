@@ -5,6 +5,7 @@ import { DemoBar } from '@/components/shell/demo-bar';
 import { MobileNav } from '@/components/shell/mobile-nav';
 import { SidebarBody } from '@/components/shell/sidebar';
 import { MAIN_ID, SkipLink } from '@/components/shell/skip-link';
+import { SupportBanner } from '@/components/shell/support-banner';
 import { UserMenu } from '@/components/shell/user-menu';
 import type { SessionView, Workspace } from '@/lib/api/session-types';
 import { navFor } from '@/lib/nav';
@@ -39,19 +40,23 @@ export function AppShell({
       </aside>
       <div className="flex min-w-0 flex-col">
         {session.demo ? <DemoBar role={session.role} /> : null}
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-card px-2 sm:px-4 lg:px-6">
-          <MobileNav session={session} workspace={workspace} items={items} />
-          <div className="flex-1" />
-          <Link
-            href="/help"
-            className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <CircleHelp aria-hidden="true" className="size-5" />
-            <span className="hidden sm:inline">{t.shell.help}</span>
-            <span className="sr-only sm:hidden">{t.shell.help}</span>
-          </Link>
-          <UserMenu session={session} />
-        </header>
+        {/* The support banner stays in view with the top bar: support mode is never scrolled out of sight (D-037). */}
+        <div className="sticky top-0 z-10">
+          {session.support ? <SupportBanner support={session.support} /> : null}
+          <header className="relative flex h-14 items-center gap-2 border-b bg-card px-2 sm:px-4 lg:px-6">
+            <MobileNav session={session} workspace={workspace} items={items} />
+            <div className="flex-1" />
+            <Link
+              href="/help"
+              className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <CircleHelp aria-hidden="true" className="size-5" />
+              <span className="hidden sm:inline">{t.shell.help}</span>
+              <span className="sr-only sm:hidden">{t.shell.help}</span>
+            </Link>
+            <UserMenu session={session} />
+          </header>
+        </div>
         <main
           id={MAIN_ID}
           tabIndex={-1}

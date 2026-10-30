@@ -105,3 +105,34 @@ export type MembershipList = z.infer<typeof MembershipList>;
 
 /** `POST /auth/session/tenant`: choose the active tenant by one of the caller's own memberships (never a tenant id). */
 export const SwitchTenantBody = z.object({ membershipId: z.uuid() }).strict();
+
+/**
+ * `GET /auth/session` (Slice 2.4d): everything the web shell renders, computed by the API from the session — the web
+ * never derives roles, scope or permissions itself. Permission keys shape navigation only; the API re-checks every call.
+ */
+export const SessionContextView = z.object({
+  user: SessionUser,
+  activeTenant: ActiveTenant.nullable(),
+  support: AuthSessionView.shape.support,
+  memberships: z.array(
+    z.object({
+      membershipId: z.uuid(),
+      tenantId: z.uuid(),
+      displayName: z.string(),
+      status: z.enum(['active', 'suspended']),
+      active: z.boolean(),
+    }),
+  ),
+  /** Live roles in the active tenant (empty without one, and inside a support session). */
+  roles: z.array(
+    z.object({
+      role: TenantRoleKey,
+      branch: z.object({ id: z.uuid(), code: z.string(), name: z.string() }).nullable(),
+    }),
+  ),
+  platformRoles: z.array(z.literal('platform_super_admin')),
+  /** Tenant permission keys in the active tenant (or the support tenant), and platform permission keys. */
+  tenantPermissions: z.array(z.string()),
+  platformPermissions: z.array(z.string()),
+});
+export type SessionContextView = z.infer<typeof SessionContextView>;

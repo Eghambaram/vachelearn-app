@@ -14,6 +14,7 @@ import { parseDemoState } from '@/lib/api/client';
 import { getCoursePlayer, getLessonView } from '@/lib/api/learner';
 import { getSession } from '@/lib/api/session';
 import { getMessages } from '@/lib/i18n';
+import { notAvailableForRealSession, notAvailableMetadata } from '@/components/shell/workspace';
 
 // English only for now (D-028); becomes per-request when a second language is added.
 const t = getMessages();
@@ -33,6 +34,8 @@ function titleFor(result: { ok: boolean; status?: number }, title: string) {
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const notAvailable = await notAvailableMetadata('/learn');
+  if (notAvailable) return notAvailable;
   const { enrollmentId, lessonId } = await params;
   const session = await getSession();
   const demoState = session.demo ? parseDemoState((await searchParams).demoState) : 'ready';
@@ -57,6 +60,9 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
  * has lessons) and shows the ready state.
  */
 export default async function LessonPage({ params, searchParams }: Props) {
+  // Real sessions never see the Phase 1 demo data on this screen (D-097).
+  const notAvailable = await notAvailableForRealSession('/learn');
+  if (notAvailable) return notAvailable;
   const session = await getSession();
   const demoState = session.demo ? parseDemoState((await searchParams).demoState) : 'ready';
   const { enrollmentId, lessonId } = await params;

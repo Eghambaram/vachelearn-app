@@ -152,5 +152,7 @@ export function buildDemoSession(role: RoleKey, tenantId: string | null): Sessio
     activeTenantId,
     permissions: DEMO_ROLE_PERMISSIONS[role],
     demo: true,
+    availableRoles: [role],
+    support: null,
   };
 }

@@ -18,7 +18,8 @@ export type RoleKey = (typeof ROLE_KEYS)[number];
 /** The four authenticated workspaces (route groups in `app/`). */
 export type Workspace = 'platform' | 'admin' | 'instructor' | 'learn';
 
-export type TenantMembership = { tenantId: string; tenantName: string };
+/** A tenant the user belongs to; `membershipId` is set for real sessions (switching uses it, D-089). */
+export type TenantMembership = { tenantId: string; tenantName: string; membershipId?: string };
 
 export type SessionView = {
   user: { id: string; displayName: string; email: string };
@@ -38,6 +39,10 @@ export type SessionView = {
   permissions: readonly string[];
   /** True while the session comes from demo fixtures (Phase 1). */
   demo: boolean;
+  /** The roles this user may switch between (D-096): real roles only; the demo uses its own role switcher. */
+  availableRoles: readonly RoleKey[];
+  /** Platform staff inside a support session (D-037): the tenant shown in the banner, until `expiresAt`. */
+  support: { sessionId: string; tenantName: string; expiresAt: string } | null;
 };
 
 /** Which workspace a role works in. Demo simplification: one workspace per role until Phase 2 (D-026, D-053). */

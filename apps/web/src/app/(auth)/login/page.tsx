@@ -23,11 +23,14 @@ export default async function LoginPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   if ((await getAuthState()).status === 'signed-in') redirect('/welcome');
-  const signedOut = (await searchParams).signedOut === '1';
+  const params = await searchParams;
+  const signedOut = params.signedOut === '1';
+  const expired = params.expired === '1';
   return (
     <>
       <h1 className="text-2xl font-semibold">{t.auth.signInTitle}</h1>
       {signedOut ? <InlineAlert tone="success">{t.auth.signedOut}</InlineAlert> : null}
+      {expired ? <InlineAlert tone="danger">{t.auth.sessionEnded}</InlineAlert> : null}
       <LoginForm />
       {isDemoWorkspacesEnabled() ? (
         <Button asChild variant="outline" className="self-start">

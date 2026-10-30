@@ -16,6 +16,7 @@ import { getComplianceReport } from '@/lib/api/reports';
 import { getTenantDashboard } from '@/lib/api/tenant';
 import { formatDateTime } from '@/lib/format';
 import { getMessages } from '@/lib/i18n';
+import { notAvailableForRealSession } from '@/components/shell/workspace';
 
 // English only for now (D-028); becomes per-request when a second language is added.
 const t = getMessages();
@@ -26,6 +27,9 @@ type Props = { searchParams: Promise<{ period?: string; demoState?: string }> };
 
 /** Tenant workspace dashboard (UI spec #15, #31). Scope comes from the session; the page only shows it. */
 export default async function TenantDashboardPage({ searchParams }: Props) {
+  // Real sessions never see the Phase 1 demo data on this screen (D-097).
+  const notAvailable = await notAvailableForRealSession('/admin');
+  if (notAvailable) return notAvailable;
   const params = await searchParams;
   const session = await getSession();
   const period = DashboardPeriod.catch('30d').parse(params.period);

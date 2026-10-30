@@ -12,6 +12,7 @@ import { getCourseDraft } from '@/lib/api/course-draft';
 import { listCategories } from '@/lib/api/courses';
 import { getSession } from '@/lib/api/session';
 import { getMessages } from '@/lib/i18n';
+import { notAvailableForRealSession, notAvailableMetadata } from '@/components/shell/workspace';
 
 // English only for now (D-028); becomes per-request when a second language is added.
 const t = getMessages();
@@ -23,6 +24,8 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const notAvailable = await notAvailableMetadata('/admin/courses');
+  if (notAvailable) return notAvailable;
   const { courseId } = await params;
   if (courseId === 'new') return { title: b.newCourse };
   const result = await getCourseDraft(courseId);
@@ -31,6 +34,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 /** Course builder (UI spec #22) for `course.create` (new) / `course.update` (existing). Edits are local (D-067). */
 export default async function CourseBuilderPage({ params, searchParams }: Props) {
+  // Real sessions never see the Phase 1 demo data on this screen (D-097).
+  const notAvailable = await notAvailableForRealSession('/admin/courses');
+  if (notAvailable) return notAvailable;
   const { courseId } = await params;
   const session = await getSession();
   const demoState = session.demo ? parseDemoState((await searchParams).demoState) : 'ready';

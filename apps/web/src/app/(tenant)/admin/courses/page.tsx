@@ -10,6 +10,7 @@ import { parseDemoState } from '@/lib/api/client';
 import { listCategories, listCourses } from '@/lib/api/courses';
 import { getSession } from '@/lib/api/session';
 import { getMessages } from '@/lib/i18n';
+import { notAvailableForRealSession } from '@/components/shell/workspace';
 
 // English only for now (D-028); becomes per-request when a second language is added.
 const t = getMessages();
@@ -20,6 +21,9 @@ type Props = { searchParams: Promise<{ demoState?: string }> };
 
 /** Course management list (UI spec #21). First page rendered on the server; later pages via a server action. */
 export default async function CoursesPage({ searchParams }: Props) {
+  // Real sessions never see the Phase 1 demo data on this screen (D-097).
+  const notAvailable = await notAvailableForRealSession('/admin/courses');
+  if (notAvailable) return notAvailable;
   const session = await getSession();
   const demoState = session.demo ? parseDemoState((await searchParams).demoState) : 'ready';
   if (!session.permissions.includes('course.read') || demoState === 'forbidden') {

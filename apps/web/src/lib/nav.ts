@@ -66,6 +66,14 @@ export const NAV: Record<Workspace, readonly NavItem[]> = {
       slice: '2.2',
     },
     {
+      id: 'support',
+      label: t.nav.platformSupport,
+      href: '/platform/support',
+      icon: 'shield',
+      permission: 'platform.support_access.start',
+      slice: '2.4',
+    },
+    {
       id: 'platform-users',
       label: t.nav.platformUsers,
       href: '/platform/users',

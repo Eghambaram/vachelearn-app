@@ -4,6 +4,7 @@ import {
   AuthSessionView,
   ForgotPasswordBody,
   LoginBody,
+  SessionContextView,
   SetPasswordBody,
   SwitchTenantBody,
 } from '@vachelearn/contracts';
@@ -48,6 +49,14 @@ export class AuthController {
     );
     res.cookie(SESSION_COOKIE, token, sessionCookieOptions(expiresAt));
     return view;
+  }
+
+  /** Everything the web shell renders for this session (2.4d). */
+  @Get('session')
+  @Authenticated()
+  @ApiZodResponse(200, SessionContextView)
+  session(@Ctx() ctx: RequestContext) {
+    return this.auth.sessionContext(ctx);
   }
 
   @Get('me')

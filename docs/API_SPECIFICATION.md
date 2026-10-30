@@ -94,6 +94,14 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   (D-090, Proposed) and tenant status apply on the next request (D-049). Platform roles reach platform routes only
   (D-037). Automatic selection is audited `auth.tenant_selected`; a switch records the previous membership.
 
+## Session context for the web shell (Slice 2.4d)
+
+- `GET /auth/session` (`@Authenticated`) → `SessionContextView`: user, active tenant, support session, the caller's
+  memberships (active/suspended tenants, which one is active), live roles in the active tenant (with branch), platform
+  roles, and the tenant and platform permission keys this request resolved. Inside a support session the roles are
+  empty and the tenant permissions are the SS set. Computed by the API only; the web shows it and the API re-checks
+  every call.
+
 ## Support sessions (Slice 2.4c)
 
 - `POST /platform/support-sessions` `{ tenantId, reason }` → 201 `SupportSessionView` (`platform.support_access.start`):

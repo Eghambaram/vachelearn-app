@@ -1,4 +1,9 @@
-import { ApiErrorBody, AuthSessionView, CSRF_HEADER } from '@vachelearn/contracts';
+import {
+  ApiErrorBody,
+  AuthSessionView,
+  CSRF_HEADER,
+  SupportSessionView,
+} from '@vachelearn/contracts';
 import type { ApiResult } from './client';
 
 /*
@@ -64,3 +69,25 @@ export const forgotPassword = (input: { email: string }) =>
 
 export const setPassword = (input: { token: string; password: string }) =>
   call('/auth/password/set', { method: 'POST', body: input }, noBody);
+
+/** Switch the session's active tenant to one of the caller's own memberships (D-089). */
+export const switchTenant = (membershipId: string, csrfToken: string) =>
+  call('/auth/session/tenant', { method: 'POST', body: { membershipId }, csrfToken }, (d) =>
+    AuthSessionView.parse(d),
+  );
+
+/** Platform staff: open a read-only support session into a tenant (D-037). */
+export const startSupportSession = (
+  input: { tenantId: string; reason: string },
+  csrfToken: string,
+) =>
+  call('/platform/support-sessions', { method: 'POST', body: input, csrfToken }, (d) =>
+    SupportSessionView.parse(d),
+  );
+
+export const endSupportSession = (sessionId: string, csrfToken: string) =>
+  call(
+    `/platform/support-sessions/${encodeURIComponent(sessionId)}/end`,
+    { method: 'POST', csrfToken },
+    noBody,
+  );

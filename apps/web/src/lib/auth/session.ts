@@ -1,4 +1,4 @@
-import { AuthSessionView } from '@vachelearn/contracts';
+import { AuthSessionView, SessionContextView } from '@vachelearn/contracts';
 import { cookies } from 'next/headers';
 import { resolveApiInternalUrl } from './api-internal-url';
 
@@ -36,6 +36,40 @@ export async function getAuthState(): Promise<AuthState> {
     const parsed = AuthSessionView.safeParse(await res.json());
     return parsed.success
       ? { status: 'signed-in', session: parsed.data }
+      : { status: 'unavailable' };
+  } catch {
+    return { status: 'unavailable' };
+  }
+}
+
+export type SessionContextState =
+  | { status: 'signed-in'; context: SessionContextView }
+  | { status: 'signed-out' }
+  /** A session cookie was sent but the API refused it (expired, revoked, signed out elsewhere). */
+  | { status: 'rejected' }
+  | { status: 'unavailable' };
+
+/** Server-side GET on the API with the browser's session cookie (only a well-formed one is forwarded). */
+export async function serverApiGet(path: string): Promise<Response | null> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token || !TOKEN.test(token)) return null;
+  return fetch(`${resolveApiInternalUrl(process.env.VL_API_INTERNAL_URL)}/api/v1${path}`, {
+    headers: { cookie: `${SESSION_COOKIE}=${token}` },
+    cache: 'no-store',
+    signal: AbortSignal.timeout(3_000),
+  });
+}
+
+/** What the shell renders for this session (2.4d): roles, memberships, permissions, support — from the API only. */
+export async function getSessionContext(): Promise<SessionContextState> {
+  try {
+    const res = await serverApiGet('/auth/session');
+    if (!res) return { status: 'signed-out' };
+    if (res.status === 401) return { status: 'rejected' };
+    if (!res.ok) return { status: 'unavailable' };
+    const parsed = SessionContextView.safeParse(await res.json());
+    return parsed.success
+      ? { status: 'signed-in', context: parsed.data }
       : { status: 'unavailable' };
   } catch {
     return { status: 'unavailable' };

@@ -164,6 +164,27 @@ update `status.ts` and this table together).
   tenant/branch scope, so a filter can never widen access.
 - Tables scroll inside a focusable container, so the page itself never scrolls sideways at 360 px (E2E-checked).
 
+### Real sessions in the shell (Slice 2.4d)
+
+- The shell renders the API's session (`GET /api/v1/auth/session`) for signed-in users; the demo fixtures (D-063) only
+  when nobody is signed in and demo workspaces are on. A signed-in user lands in the workspace of their most capable
+  role, or the one they chose among their real roles (D-096); `/select-workspace` lists their organisations (switching
+  is an API call, D-089) and roles. Members of several active organisations who have not chosen one land there; anyone
+  else without a role stays on `/welcome` (who is signed in, sign out). With nothing to choose the picker shows an
+  empty state and sign-out; otherwise it links back to the current workspace and marks the current organisation and
+  role with a visible "Current" label. An ended session (expired, revoked) goes to `/login?expired=1`, never to demo
+  data; an unreachable API shows "We could not check your session" with "Try again" and "Sign in again".
+- Screens that still render Phase 1 demo data keep their own name as the `h1` and show "Not available yet — arrives in
+  Phase N" (N = the phase of the screen's nav slice) to real sessions (D-097); the demo page is never rendered for them
+  (the check runs in each page, because layouts persist across navigation).
+- Sign-out (user menu and `/welcome`) is shared (`useSignOut`): only a 401 counts as already signed out, other failures
+  show an alert below the top bar; repeat clicks are ignored; the workspace choice cookie is cleared. Platform staff
+  in a support session see a banner, sticky with the top bar, on every page: the tenant, "read-only, every request
+  recorded", the end time and "End support session" (D-037). It takes focus once when the session starts; ending it
+  returns to `/platform/support` with a focused "Support session ended" status. `/platform/support` opens one: an
+  organisation (none preselected) and a reason (≥ 3 characters), errors on their fields, archived/conflict refusals
+  in plain words; permission-denied, load-failure (with retry) and empty states.
+
 ### App shells (Slice 1.4)
 
 - **Route groups:** `(public)` (`/`, `/help`: marketing header + footer, placeholder copy per D-038), `(auth)` (`/login`,

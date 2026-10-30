@@ -15,6 +15,7 @@ import { getPlatformDashboard } from '@/lib/api/platform';
 import { getSession } from '@/lib/api/session';
 import { formatDateTime } from '@/lib/format';
 import { getMessages } from '@/lib/i18n';
+import { notAvailableForRealSession } from '@/components/shell/workspace';
 
 // English only for now (D-028); becomes per-request when a second language is added.
 const t = getMessages();
@@ -25,6 +26,9 @@ type Props = { searchParams: Promise<{ period?: string; demoState?: string }> };
 
 /** Platform Admin dashboard (UI spec #7). Demo data until slices 2.2 / 6.4 serve the same contract. */
 export default async function PlatformDashboardPage({ searchParams }: Props) {
+  // Real sessions never see the Phase 1 demo data on this screen (D-097).
+  const notAvailable = await notAvailableForRealSession('/platform');
+  if (notAvailable) return notAvailable;
   const params = await searchParams;
   const session = await getSession();
   // A junk ?period= in the URL falls back to the default instead of an error page.

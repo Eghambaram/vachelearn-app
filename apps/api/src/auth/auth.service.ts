@@ -1,10 +1,11 @@
 import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
 import { createHmac } from 'node:crypto';
 import { PinoLogger } from 'nestjs-pino';
-import type { AuthSessionView, LoginBody } from '@vachelearn/contracts';
+import type { AuthSessionView, LoginBody, SessionContextView } from '@vachelearn/contracts';
 import type { z } from 'zod';
 import type { RequestContext } from '../access/request-context';
 import { MembershipsService } from '../access/memberships.service';
+import { SUPPORT_PERMISSIONS } from '../access/permissions';
 import { SupportSessionsService } from '../access/support-sessions.service';
 import { AuditService } from '../audit/audit.service';
 import { ApiException } from '../common/errors/api-exception';
@@ -154,6 +155,43 @@ export class AuthService implements OnModuleInit {
         : null,
       csrfToken: session.csrfToken,
       expiresAt: session.expiresAt.toISOString(),
+    };
+  }
+
+  /**
+   * What the web shell renders (2.4d): memberships, live roles in the active tenant, platform roles and the permission
+   * keys this request resolved — all from the session, never from the client. Inside a support session the roles are
+   * empty and the tenant permissions are the support (SS) set.
+   */
+  async sessionContext(ctx: RequestContext): Promise<SessionContextView> {
+    const view = await this.me(ctx);
+    const memberships = await this.memberships.listOwn(
+      ctx.userId,
+      ctx.session?.activeMembershipId ?? null,
+    );
+    const active = ctx.support ? undefined : memberships.find((m) => m.active);
+    const platformRoles = await this.prisma.platformRoleAssignment.findMany({
+      where: { userId: ctx.userId, revokedAt: null },
+      select: { role: true },
+    });
+    return {
+      user: view.user,
+      activeTenant: view.activeTenant,
+      support: view.support,
+      memberships: memberships.map((m) => ({
+        membershipId: m.membershipId,
+        tenantId: m.tenant.id,
+        displayName: m.tenant.displayName,
+        status: m.tenant.status,
+        active: m.active,
+      })),
+      roles: active?.roles ?? [],
+      platformRoles: platformRoles.map((r) => r.role),
+      // Non-tenant routes never carry the support tenant (guard): report the support set from its definition.
+      tenantPermissions: [
+        ...(ctx.support ? SUPPORT_PERMISSIONS : (ctx.tenant?.permissions ?? [])),
+      ].sort(),
+      platformPermissions: [...(ctx.platform?.permissions ?? [])].sort(),
     };
   }
 

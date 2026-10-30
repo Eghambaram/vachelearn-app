@@ -10,6 +10,7 @@ import { parseDemoState } from '@/lib/api/client';
 import { getLearnerDashboard } from '@/lib/api/learner';
 import { getSession } from '@/lib/api/session';
 import { getMessages } from '@/lib/i18n';
+import { notAvailableForRealSession } from '@/components/shell/workspace';
 
 // English only for now (D-028); becomes per-request when a second language is added.
 const t = getMessages();
@@ -21,6 +22,9 @@ type Props = { searchParams: Promise<{ demoState?: string }> };
 
 /** Learner dashboard (UI spec #39). The learner's own enrollments only; the session decides whose. */
 export default async function LearnerDashboardPage({ searchParams }: Props) {
+  // Real sessions never see the Phase 1 demo data on this screen (D-097).
+  const notAvailable = await notAvailableForRealSession('/learn');
+  if (notAvailable) return notAvailable;
   const session = await getSession();
   const demoState = session.demo ? parseDemoState((await searchParams).demoState) : 'ready';
   const header = (

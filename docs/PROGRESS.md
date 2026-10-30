@@ -1,14 +1,14 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — Slice 2.4c done** (platform support sessions, API: b6ecdfd). 2.4b 37e9a3b (CI
-success); 2.4a 97ef679; Slice 2.3 done (53135bf). Phase 1 approved (a51d042). Next: 2.4d web.
+**Phase 2 · Platform foundation (R1) — Slice 2.4d done** (real sessions in the web shell). 2.4c
+b6ecdfd + c5893db; 2.4b 37e9a3b; 2.4a 97ef679; Slice 2.3 done (53135bf). Phase 1 approved (a51d042). Next: 2.5.
 
 ## Last verified
-2026-10-29, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the 2.4c audit-fix tree:
-- `pnpm verify` → exit 0 · contracts 53, web 574 (38 files), api 285 (21 files) · build OK
-- `pnpm --filter api test:isolation` → 170 passed
-- `pnpm test:e2e` not rerun (web unchanged; 244 passed on the 2.4a tree)
+2026-10-30, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.4d tree:
+- `pnpm verify` → exit 0 · contracts 53, web 587, api 289 · build OK
+- `pnpm --filter api test:isolation` → 174 passed (3 runs; one earlier run had 5 uncaptured failures, not reproduced)
+- `pnpm test:e2e` → 250 passed
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
@@ -20,15 +20,15 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
   opening browser session, every request audited with the session id; ends on end/expiry/sign-out/archive/role loss
   (D-037, D-098). Audit fixes (follow-up commit): denied attempts audited, read-only on every route, composite FKs
   for support audit rows, ended on every browser-session end + archive + sweep, D-099 Needs decision.
+- 2.4d web: real session in the shell (`GET /auth/session`), workspace by most capable role + picker (D-096, D-089),
+  "Not available yet" on demo screens for real sessions (D-097), real sign-out, `/platform/support` + banner (D-037).
 
 ## In progress / uncommitted
 - Nothing.
 
 ## Next step
-2.4d web: real session in the app shell (workspace by most capable role
-with a switcher, D-096), honest "not available yet" for screens without an API (D-097), tenant switcher
-(`/me/memberships`, `POST /auth/session/tenant`), support-session banner with end button and expiry for staff. 2.5:
-people basics (same tenant lock + D-095 predicate when deactivating members).
+Plan 2.5: people basics (invite/create members in a tenant, deactivate with the same tenant lock +
+D-095 predicate; D-047 first). Use the tenant-isolation-auditor on 2.5.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
