@@ -15,6 +15,7 @@ describe('status vocabulary', () => {
       'course',
       'enrollment',
       'job',
+      'member',
       'order',
       'tenant',
     ]);

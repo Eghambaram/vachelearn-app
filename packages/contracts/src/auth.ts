@@ -81,6 +81,7 @@ export const TenantRoleKey = z.enum([
   'learner',
   'compliance_viewer',
 ]);
+export type TenantRoleKey = z.infer<typeof TenantRoleKey>;
 
 /** `GET /me/memberships`: the caller's active memberships in active or suspended tenants (D-089). */
 export const MembershipSummary = z.object({

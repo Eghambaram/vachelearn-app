@@ -33,13 +33,14 @@ export function createAccount(email = uniqueEmail(), name = 'E2E Person (Demo)')
   return email;
 }
 
-export function grantRole(email: string, role: string, tenantSlug?: string) {
+export function grantRole(email: string, role: string, tenantSlug?: string, branchCode?: string) {
   cli('grant-role', [
     '--email',
     email,
     '--role',
     role,
     ...(tenantSlug ? ['--tenant', tenantSlug] : []),
+    ...(branchCode ? ['--branch', branchCode] : []),
     '--reason',
     'Playwright end-to-end test',
   ]);
@@ -83,6 +84,30 @@ export async function signIn(page: Page, email: string) {
   await page.getByLabel(/^Email address/).fill(email);
   await page.getByLabel(/^Password/).fill(PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
+}
+
+/** Platform staff create a tenant and its first Tenant Admin (D-092), then sign out; returns the tenant and admin. */
+export async function tenantWithAdmin(page: Page, label: string) {
+  const staff = createAccount(uniqueEmail('staff'), 'E2E Staff (Demo)');
+  grantRole(staff, 'platform_super_admin');
+  await activate(page, staff);
+  await signIn(page, staff);
+  await expect(page).toHaveURL(/\/platform$/);
+  const slug = `e2e-${label}-${randomUUID().slice(0, 6)}`;
+  const tenant = await apiPost(page, '/platform/tenants', {
+    slug,
+    displayName: `E2E ${label} (Demo)`,
+    defaultTimezone: 'Asia/Kolkata',
+  });
+  expect(tenant.status).toBe(201);
+  const admin = uniqueEmail('admin');
+  const first = await apiPost(page, `/platform/tenants/${String(tenant.body!.id)}/first-admin`, {
+    email: admin,
+    displayName: 'E2E Admin (Demo)',
+  });
+  expect(first.status).toBe(201);
+  await page.context().clearCookies();
+  return { slug, admin };
 }
 
 /** A state-changing API call from inside the signed-in page (same origin, the session's CSRF token). */

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SetPasswordForm } from './set-password-form';
 
@@ -92,7 +92,8 @@ describe('SetPasswordForm', () => {
     await user.click(screen.getByRole('button', { name: 'Save the password' }));
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/expired or was already used/);
-    expect(alert).toHaveFocus();
+    // Focus moves in an effect after the alert renders: wait for it (it raced under parallel load in verify).
+    await waitFor(() => expect(alert).toHaveFocus());
     expect(screen.getByRole('link', { name: 'Ask for a new link' })).toBeVisible();
   });
 });

@@ -114,7 +114,7 @@ update `status.ts` and this table together).
 | Warning (amber text on amber tint) | clock | Due Soon, Under Review, Trial | web rule |
 | Warning | clock | Late, Retrying, Partially Refunded | **Proposed** |
 | Danger (red) | alert circle | Overdue, Suspended, Failed, Revoked | web rule |
-| Danger (red) | alert circle | Expired, Absent | **Proposed** |
+| Danger (red) | alert circle | Expired, Absent, Deactivated (member, 2.5b) | **Proposed** |
 | Neutral | dashed circle | Draft, Not Started | web rule |
 | Muted (grey) | archive | Archived, Cancelled | web rule |
 | Muted (grey) | archive | Superseded, Excused, Refunded, Not Applicable, Pending | **Proposed** |
@@ -184,6 +184,31 @@ update `status.ts` and this table together).
   returns to `/platform/support` with a focused "Support session ended" status. `/platform/support` opens one: an
   organisation (none preselected) and a reason (≥ 3 characters), errors on their fields, archived/conflict refusals
   in plain words; permission-denied, load-failure (with retry) and empty states.
+
+### Users and roles (Slice 2.5b, real API)
+
+- `/admin/users` (#17, #31): server-rendered first page, then search (name, email, employee ID), status, branch and
+  job-role filters, sorting by name or date added, and cursor paging — all asked of the API through the `/api/v1`
+  proxy; the API scopes everything (D-026), so the branch filter lists only branches the viewer sees. Columns: name +
+  email (link), status, branches ("(primary)" only for tenant-wide viewers), roles with scope, job role, added.
+- `/admin/users/[membershipId]`: header (name, email, status), a note when the viewer can only read (self, D-101, or
+  no change permissions), then four sections, each with its own focused success/error message:
+  **Organisation details** (employee ID, department, job role — D-047; the person's name is theirs, D-105),
+  **Status** (deactivate/reactivate in a dialog that states the impact and requires a reason; the reason is shown
+  only to those who can deactivate, D-106), **Branches** (add, make primary, remove with confirmation; refusals such
+  as "Revoke their roles on this branch first" shown in plain words, D-104), **Roles** (list, revoke with reason,
+  assign role + where — roles and scopes offered follow the viewer's rights; the API applies the granting rules).
+  Only actions the viewer can take are offered (a Branch Admin: revoke/assign Learner and Instructor, on the member's
+  own branches it manages). Row actions show a short verb ("Make primary", "Remove", "Revoke") with the branch or
+  role appended for screen readers, so rows fit at 360 px. After a dialog action focus moves to the section's
+  result message; a refusal inside a reason dialog keeps it open with the error; cancelling an edit returns focus to
+  "Edit details"; validation refusals sit on their field. Every change re-renders the page from the API. Unknown or
+  out-of-scope members show "User not found" (never "forbidden"); a Branch Admin who removes a member from its last
+  shared branch returns to the list with a notice. Both routes have loading skeletons. Demo workspaces show "Sign in
+  to manage users" instead of fixtures.
+- `/admin/roles`: read-only reference of the fixed roles (D-053, D-107) and where they apply; roles are managed on each
+  user's page.
+- Branches, general settings and job roles screens: Slice 2.5c.
 
 ### App shells (Slice 1.4)
 

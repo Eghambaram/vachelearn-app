@@ -1,14 +1,13 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — Slice 2.5a done** (people basics API). 2.4d b66e997 (CI
-success); 2.4c b6ecdfd + c5893db; Slice 2.3 done (53135bf). Phase 1 approved (a51d042). Next: 2.5b web.
+**Phase 2 · Platform foundation (R1) — Slice 2.5b done** (Users and roles screens). 2.5a e3e53e7; 2.4d
+b66e997; Slice 2.3 done (53135bf). Phase 1 approved (a51d042). Next: 2.5c (Branches, Settings, Job roles).
 
 ## Last verified
-2026-11-02, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.5a tree:
-- `pnpm verify` → exit 0 · contracts 56, web 587, api 346 · build OK (one earlier run: a web test timed out at 15 s,
-  rerun green — see Known issues)
-- `pnpm --filter api test:isolation` → 231 passed · `pnpm test:e2e` not rerun (no web change; 250 on 2.4d)
+2026-11-02, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.5b tree:
+- `pnpm verify` → exit 0 · contracts 56, web 616, api 346 · build OK
+- `pnpm --filter api test:isolation` → 231 passed · `pnpm test:e2e` → 252 passed
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
@@ -20,6 +19,7 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
   opening browser session, every request audited with the session id; ends on end/expiry/sign-out/archive/role loss
   (D-037, D-098). Audit fixes (follow-up commit): denied attempts audited, read-only on every route, composite FKs
   for support audit rows, ended on every browser-session end + archive + sweep, D-099 Needs decision.
+- 2.5b web: `/admin/users` list + detail (details, status, branches, roles), `/admin/roles` reference (D-107).
 - 2.5a people API: `/people`, `/job-roles`, `/tenant-settings`; D-047 fields, D-101–D-106 (log 2026-11).
 - 2.4d web: real session in the shell (`GET /auth/session`), workspace by most capable role + picker (D-096, D-089),
   "Not available yet" on demo screens for real sessions (D-097), real sign-out, `/platform/support` + banner (D-037).
@@ -28,8 +28,8 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
 - Nothing.
 
 ## Next step
-2.5b web: Users (list/detail/edit/deactivate/branches), Branches, Roles and Settings screens on the
-real API, their demo screens removed (D-100). Use the ux-accessibility-reviewer on 2.5b.
+2.5c: Branches (#16, API from 2.2), general Settings (#30) and Job roles (#53) screens on the real
+API; reuse ReasonDialog, `serverRead`, `useMemberAction` pattern. Then 2.6 (isolation suite, seed, CI smoke).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).

@@ -150,6 +150,8 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   cursor is bound to tenant, scope and filters (422 elsewhere) and carries no name or email (for those sorts only the
   anchor id; the value is read back in the tenant). Instructors see nobody until Phase 4 assigns learners.
 - `GET /people/:membershipId` → `PersonView` with `canManage` (may this caller change the member; the API re-checks).
+  A branch-scoped caller who manages all the member's branches (D-101) also gets the primary marker here (nothing
+  outside its scope is revealed), so it can act on `PRIMARY_BRANCH`; the list never shows it to branch-scoped callers.
   `deactivatedReason` only for callers who may deactivate or reactivate members (D-106).
 - Changes — all under the tenant lock, the caller's live roles re-read, audited: `PATCH /people/:id`
   `{ version, employeeId?, department?, jobRoleId? }` (`user.update`; D-047; the account name is not editable here,

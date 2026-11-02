@@ -546,7 +546,7 @@ describe('review fixes 2.5a', () => {
     expect((await ins.get(`/api/v1/people/${m.memberA2}`)).status).toBe(404);
   });
 
-  it('a branch admin’s change answers without the primary marker or out-of-scope branches', async () => {
+  it('a branch admin who manages all of a member’s branches sees the primary marker in the detail only', async () => {
     const admin = await actors.signIn('admin-a@example.test');
     await admin.post(`/api/v1/people/${m.memberA1}/branches`, { branchId: A2 });
     // Branch Admin of A1 and A2 now reaches all of memberA1's branches.
@@ -560,7 +560,18 @@ describe('review fixes 2.5a', () => {
     const view = PersonView.parse(
       (await ba.patch(`/api/v1/people/${m.memberA1}`, { version: 2, department: 'Line 2' })).body,
     );
-    expect(view.branches.every((b) => b.primary === undefined)).toBe(true);
+    // memberA1 lies wholly within the admin's branches (D-101): the primary marker reveals nothing outside its scope.
+    expect(view.branches.map((b) => [b.code, b.primary])).toEqual([
+      ['A1', true],
+      ['A2', false],
+    ]);
+    // In the list, branch-scoped readers still get no marker (D-026).
+    const page = await listPeople(ba, '?limit=100');
+    expect(
+      page.data
+        .find((p) => p.membershipId === m.memberA1)!
+        .branches.every((b) => b.primary === undefined),
+    ).toBe(true);
   });
 
   it('another tenant cannot reactivate, remove or re-prime branches of A’s members (404, nothing changed)', async () => {

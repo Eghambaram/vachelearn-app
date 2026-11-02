@@ -20,6 +20,11 @@ type ConfirmDialogProps = {
   /** Destructive actions use the danger style. */
   destructive?: boolean;
   /** May be async; the dialog stays open, disables its buttons while pending, and closes only on success. */
+  /**
+   * Where focus goes when the dialog closes; default: back to the trigger. Call `event.preventDefault()` to send it
+   * elsewhere, e.g. to the result message when the action removed the trigger (WCAG 2.4.3).
+   */
+  onCloseAutoFocus?: (event: Event) => void;
   onConfirm: () => void | Promise<void>;
 };
 
@@ -34,6 +39,7 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel = t.common.cancel,
   destructive = false,
+  onCloseAutoFocus,
   onConfirm,
 }: ConfirmDialogProps) {
   const [open, setOpen] = React.useState(false);
@@ -55,7 +61,10 @@ export function ConfirmDialog({
       <AlertDialog.Trigger asChild>{trigger}</AlertDialog.Trigger>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 z-50 bg-scrim/60" />
-        <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-6 text-popover-foreground shadow-overlay">
+        <AlertDialog.Content
+          onCloseAutoFocus={onCloseAutoFocus}
+          className="fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-6 text-popover-foreground shadow-overlay"
+        >
           <AlertDialog.Title className="text-lg font-semibold">{title}</AlertDialog.Title>
           <AlertDialog.Description asChild>
             <div className="text-sm text-muted-foreground">{impact}</div>

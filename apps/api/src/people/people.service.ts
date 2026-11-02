@@ -608,8 +608,24 @@ export class PeopleService {
   /** The detail view; `canManage` answers "may this caller change this member" for the screen (D-101). */
   private toView(ctx: RequestContext, row: PersonRow, readReach: Reach): PersonView {
     const manage = ctx.support ? null : reachFor(ctx, 'user.update');
+    const summary = toSummary(row, readReach);
+    // A branch-scoped caller who manages this member's branches sees the primary marker too: under D-101 all the
+    // member's branches lie within its own, so the marker reveals nothing outside its scope (UX review 2.5b) — and it
+    // can then act on "make another branch primary first".
+    const branchManage = ctx.support ? null : reachFor(ctx, 'membership.branch.manage');
+    if (
+      readReach.kind === 'branches' &&
+      branchManage !== null &&
+      row.userId !== ctx.userId &&
+      withinReach(branchManage, row)
+    ) {
+      summary.branches = row.branches.map((b) => ({
+        ...b.branch,
+        primary: b.branch.id === row.primaryBranchId,
+      }));
+    }
     return {
-      ...toSummary(row, readReach),
+      ...summary,
       accountStatus: row.user.status,
       accountVerified: row.user.emailVerifiedAt !== null,
       deactivatedAt: row.deactivatedAt?.toISOString() ?? null,
