@@ -1,0 +1,121 @@
+import { Injectable } from '@nestjs/common';
+import type { TenantSettingsView, UpdateTenantSettingsBody } from '@vachelearn/contracts';
+import type { z } from 'zod';
+import type { RequestContext } from '../access/request-context';
+import { AuditService, changedFields } from '../audit/audit.service';
+import { ApiException } from '../common/errors/api-exception';
+import { PrismaService } from '../prisma/prisma.service';
+import { conflict } from '../tenancy/tenants.service';
+
+/*
+ * The caller's own tenant settings (Slice 2.5a): name, default time zone and locale, edited by a Tenant Admin
+ * (`tenant_settings.update`) with the same version as platform edits of the tenant; feature switches are read-only
+ * here (platform staff set them, D-031). The tenant is the session's, never a parameter. Changes are audited.
+ */
+
+const SELECT = {
+  displayName: true,
+  slug: true,
+  defaultTimezone: true,
+  defaultLocale: true,
+  version: true,
+  updatedAt: true,
+  settings: {
+    select: {
+      classroomEnabled: true,
+      surveysEnabled: true,
+      commerceEnabled: true,
+      publicCatalogEnabled: true,
+      analyticsEnabled: true,
+    },
+  },
+} as const;
+
+type Row = {
+  displayName: string;
+  slug: string;
+  defaultTimezone: string;
+  defaultLocale: string;
+  version: number;
+  updatedAt: Date;
+  settings: {
+    classroomEnabled: boolean;
+    surveysEnabled: boolean;
+    commerceEnabled: boolean;
+    publicCatalogEnabled: boolean;
+    analyticsEnabled: boolean;
+  } | null;
+};
+
+function toView(t: Row): TenantSettingsView {
+  return {
+    displayName: t.displayName,
+    slug: t.slug,
+    defaultTimezone: t.defaultTimezone,
+    defaultLocale: t.defaultLocale,
+    features: {
+      classroom: t.settings?.classroomEnabled ?? false,
+      surveys: t.settings?.surveysEnabled ?? false,
+      commerce: t.settings?.commerceEnabled ?? false,
+      publicCatalog: t.settings?.publicCatalogEnabled ?? false,
+      analytics: t.settings?.analyticsEnabled ?? false,
+    },
+    version: t.version,
+    updatedAt: t.updatedAt.toISOString(),
+  };
+}
+
+function tenantOf(ctx: RequestContext) {
+  if (!ctx.tenant) throw ApiException.notFound();
+  return ctx.tenant.tenantId;
+}
+
+@Injectable()
+export class TenantSettingsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
+
+  async get(ctx: RequestContext): Promise<TenantSettingsView> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantOf(ctx) },
+      select: SELECT,
+    });
+    if (!tenant) throw ApiException.notFound();
+    return toView(tenant);
+  }
+
+  async update(
+    ctx: RequestContext,
+    input: z.output<typeof UpdateTenantSettingsBody>,
+  ): Promise<TenantSettingsView> {
+    const tenantId = tenantOf(ctx);
+    const { version, ...patch } = input;
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const current = await tx.tenant.findUnique({ where: { id: tenantId }, select: SELECT });
+      if (!current) throw ApiException.notFound();
+      if (current.version !== version) throw conflict();
+      const diff = changedFields(current, patch);
+      const result = await tx.tenant.updateMany({
+        where: { id: tenantId, version, status: 'active' },
+        data: { ...patch, version: { increment: 1 } },
+      });
+      if (result.count === 0) throw conflict();
+      if (diff.changed) {
+        await this.audit.record(tx, {
+          actorUserId: ctx.userId,
+          tenantId,
+          action: 'tenant_settings.updated',
+          entityType: 'tenant',
+          entityId: tenantId,
+          requestId: ctx.requestId,
+          before: diff.before,
+          after: diff.after,
+        });
+      }
+      return tx.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: SELECT });
+    });
+    return toView(updated);
+  }
+}

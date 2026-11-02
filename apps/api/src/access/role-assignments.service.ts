@@ -5,7 +5,13 @@ import { AuditService, type Tx } from '../audit/audit.service';
 import { ApiException } from '../common/errors/api-exception';
 import { isUniqueViolation } from '../prisma/errors';
 import { PrismaService } from '../prisma/prisma.service';
-import { BRANCH_ONLY_ROLES, TENANT_ONLY_ROLES, tenantGrants, type TenantRole } from './permissions';
+import {
+  BRANCH_ADMIN_ASSIGNABLE,
+  BRANCH_ONLY_ROLES,
+  TENANT_ONLY_ROLES,
+  type TenantRole,
+} from './permissions';
+import { liveReach, reachFromContext, type Reach } from './reach';
 import type { RequestContext } from './request-context';
 import { isPlatformStaff, lockTenant, usableTenantAdmin } from './tenant-admins';
 
@@ -22,10 +28,7 @@ import { isPlatformStaff, lockTenant, usableTenantAdmin } from './tenant-admins'
  * Out-of-reach memberships, branches and assignments are 404, never 403. Every change is audited.
  */
 
-const BRANCH_ADMIN_ASSIGNABLE: readonly TenantRole[] = ['learner', 'instructor'];
 const LIVE = { revokedAt: null } as const;
-
-type Reach = { kind: 'tenant' } | { kind: 'branches'; branchIds: ReadonlySet<string> };
 
 const VIEW_SELECT = {
   id: true,
@@ -103,7 +106,7 @@ export class RoleAssignmentsService {
     try {
       return await this.prisma.$transaction(async (tx) => {
         await lockTenant(tx, tenantId);
-        const reach = await this.currentReach(tx, ctx, tenantId);
+        const reach = await liveReach(tx, ctx, tenantId, 'role.assign');
         if (reach.kind === 'branches') {
           if (!BRANCH_ADMIN_ASSIGNABLE.includes(input.role)) {
             throw forbidden('A Branch Admin can assign only Learner or Instructor');
@@ -181,7 +184,7 @@ export class RoleAssignmentsService {
     return this.prisma.$transaction(async (tx) => {
       // Serialise role changes per tenant, so two concurrent revocations cannot both pass the last-admin check.
       await lockTenant(tx, tenantId);
-      const reach = await this.currentReach(tx, ctx, tenantId);
+      const reach = await liveReach(tx, ctx, tenantId, 'role.assign');
       const assignment = await tx.roleAssignment.findFirst({
         where: {
           id,
@@ -226,40 +229,6 @@ export class RoleAssignmentsService {
       });
       return toView(assignment);
     });
-  }
-
-  /**
-   * The actor's `role.assign` reach as it is now, read under the tenant lock: their own live roles (active membership
-   * and account, active branches). Revoked a moment ago → 403. Test callers (no membership) keep their fixture scope.
-   */
-  private async currentReach(tx: Tx, ctx: RequestContext, tenantId: string): Promise<Reach> {
-    const membershipId = ctx.tenant?.membershipId;
-    if (!membershipId) return reachFromContext(ctx);
-    const actor = await tx.membership.findFirst({
-      where: {
-        id: membershipId,
-        tenantId,
-        userId: ctx.userId,
-        status: 'active',
-        user: { status: 'active' },
-      },
-      select: {
-        roleAssignments: {
-          where: { ...LIVE, OR: [{ branchId: null }, { branch: { status: 'active' } }] },
-          select: { role: true, branchId: true },
-        },
-      },
-    });
-    const grant = actor
-      ? tenantGrants(
-          actor.roleAssignments.map((a) => ({ role: a.role as TenantRole, branchId: a.branchId })),
-        ).get('role.assign')
-      : undefined;
-    if (grant?.kind === 'all') return { kind: 'tenant' };
-    if (grant?.kind === 'branches' && grant.branchIds.size > 0) {
-      return { kind: 'branches', branchIds: grant.branchIds };
-    }
-    throw forbidden();
   }
 
   /** An active membership of the tenant that the actor may manage: any (tenant reach) or one in its branches. */
@@ -323,10 +292,4 @@ export class RoleAssignmentsService {
 function tenantOf(ctx: RequestContext) {
   if (!ctx.tenant) throw ApiException.notFound();
   return ctx.tenant.tenantId;
-}
-
-/** Reach from the context: the access guard already narrowed the branch scope to `role.assign`. */
-function reachFromContext(ctx: RequestContext): Reach {
-  const scope = ctx.tenant?.branchScope ?? [];
-  return scope === 'ALL' ? { kind: 'tenant' } : { kind: 'branches', branchIds: new Set(scope) };
 }

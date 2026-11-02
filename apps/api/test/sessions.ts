@@ -56,6 +56,13 @@ export function realActors(app: INestApplication, db: PrismaClient, passwordHash
           .set('cookie', cookie)
           .set(CSRF_HEADER, view.csrfToken)
           .send(body),
+      patch: (path: string, body?: object) =>
+        request(app.getHttpServer())
+          .patch(path)
+          .set('origin', WEB)
+          .set('cookie', cookie)
+          .set(CSRF_HEADER, view.csrfToken)
+          .send(body),
     };
   }
 

@@ -141,6 +141,39 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   admin who never set a password does not count); never the caller's own or any platform staff account (one generic
   409 `INVALID_STATE`); reusing an existing account is audited (`accountReused`).
 
+## People, job roles and tenant settings (Slice 2.5a)
+
+- `GET /people` (`user.read`): `status`, `branchId`, `jobRoleId`, `search` (name, email, employee id), `sort`
+  `name|email|createdAt`, keyset cursor. Tenant-wide callers see every member, all their branches and the primary
+  marker; branch-scoped callers see members sharing one of their branches, only those branches, the roles on them and
+  whole-organisation roles, no primary marker (D-026). A `branchId` outside the caller's scope lists nobody (it never widens the scope); a
+  cursor is bound to tenant, scope and filters (422 elsewhere) and carries no name or email (for those sorts only the
+  anchor id; the value is read back in the tenant). Instructors see nobody until Phase 4 assigns learners.
+- `GET /people/:membershipId` → `PersonView` with `canManage` (may this caller change the member; the API re-checks).
+  `deactivatedReason` only for callers who may deactivate or reactivate members (D-106).
+- Changes — all under the tenant lock, the caller's live roles re-read, audited: `PATCH /people/:id`
+  `{ version, employeeId?, department?, jobRoleId? }` (`user.update`; D-047; the account name is not editable here,
+  D-105) · `POST /people/:id/deactivate|reactivate` `{ reason }` (`user.deactivate`/`user.reactivate`; D-102: the
+  member's sessions in this tenant end, roles kept) · `POST /people/:id/branches` `{ branchId }` → 200 ·
+  `POST /people/:id/branches/:branchId/remove` → 204 · `POST /people/:id/primary-branch` `{ branchId }` → 200
+  (`membership.branch.manage`).
+- Refusals: own membership → 403 `SELF_CHANGE`; a Branch Admin acting on a member who also belongs to a branch it does
+  not manage, or holds any role it may not grant (anything but Learner/Instructor on a branch) → 403
+  `OUTSIDE_BRANCH_SCOPE` (D-101 + amendment); out-of-reach member or branch,
+  or another tenant's → 404; stale `version` → 409 `CONFLICT`; already in that state → 409 `INVALID_STATE`; last
+  usable Tenant Admin → 409 `LAST_TENANT_ADMIN`; removing a branch with a live role on it → 409 `BRANCH_HAS_ROLE`, the
+  primary branch while others remain → 409 `PRIMARY_BRANCH` (D-104); duplicate employee id → 422 `employeeId`
+  `taken` (checked across the tenant, so a Branch Admin learns that an id is in use elsewhere — accepted); a job role
+  that is not an active one of this tenant → 422 `jobRoleId` `unknown` (same answer for another tenant's role). The
+  `PRIMARY_BRANCH` refusal can reach a Branch Admin only for members wholly inside its branches (D-101), so it reveals
+  nothing outside its scope. Deactivation also ends any support session bound to the ended browser sessions.
+- `GET /job-roles` (`tenant_settings.read`), `POST /job-roles` `{ name }`, `PATCH /job-roles/:id` `{ version, name }`,
+  `POST /job-roles/:id/deactivate|reactivate` `{ reason }` (`reference_data.manage`, matrix "Departments, job roles"): names unique per tenant
+  ignoring case (422 `name` `taken`); audited `job_role.*`.
+- `GET /tenant-settings` (`tenant_settings.read`), `PATCH /tenant-settings` `{ version, displayName?,
+  defaultTimezone?, defaultLocale? }` (`tenant_settings.update`): the caller's own tenant; feature switches read-only
+  (D-031); audited `tenant_settings.updated`.
+
 ## Password links (Slice 2.3c)
 
 - Accounts start without a password (D-083): `pnpm --filter api user:create --email … --name … --reason …` creates one and sends

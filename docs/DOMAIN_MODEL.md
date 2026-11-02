@@ -39,14 +39,17 @@ built and the guarantees the database itself enforces.
 | `rate_limit_buckets` | 2.3b | Global (operational) | Fixed-window counters keyed by a hash of the subject (no address or IP in clear); `count ≥ 1` |
 | `password_links` | 2.3c | Global (per user) | `token_hash` SHA-256 hex unique; `expires_at > created_at`; never both used and revoked (CHECK); **at most one live link per user and purpose** (partial unique index); purpose `set_password` / `reset_password` |
 | `memberships` | 2.4a | Tenant-owned | `(tenant_id, user_id)` unique; `(tenant_id, id)` and `(user_id, id)` unique (composite FK targets); deactivated ⇔ `deactivated_at`; primary branch must be one of the member's branches (deferred constraint trigger, D-026) |
-| `membership_branches` | 2.4a | Tenant-owned | Composite FKs to the membership and the branch in the same tenant; PK `(membership_id, branch_id)` |
-| `role_assignments` | 2.4a | Tenant-owned | Fixed role enum (D-053); `branch_id` null = whole tenant; composite FKs; Branch Admin needs a branch (CHECK); revoked with reason, never deleted; one live assignment per member + role + scope (partial unique, NULLS NOT DISTINCT) |
+| `membership_branches` | 2.4a | Tenant-owned | Composite FKs to the membership and the branch in the same tenant; PK `(membership_id, branch_id)`; insert/delete only; deleting one is refused while the member holds a live role on that branch (trigger, D-104) |
+| `role_assignments` | 2.4a | Tenant-owned | Fixed role enum (D-053); `branch_id` null = whole tenant; composite FKs; Branch Admin needs a branch (CHECK); revoked with reason, never deleted; one live assignment per member + role + scope (partial unique, NULLS NOT DISTINCT); a live branch role needs the member to belong to that branch (deferred constraint trigger since 2.5a, replacing the 2.4a FK so revoked roles do not pin a member to a branch, D-104) |
+| `memberships` (2.5a fields) | 2.5a | Tenant-owned | D-047: `employee_id` CITEXT, 1–40 characters (CHECK), unique per tenant ignoring case; `department` free text ≤ 100 (D-103); `job_role_id` composite FK `(tenant_id, job_role_id) → job_roles(tenant_id, id)` |
+| `job_roles` | 2.5a | Tenant-owned | Name CITEXT 2–80 characters (CHECK), unique per tenant ignoring case; `(tenant_id, id)` unique (FK target); inactive ⇔ `deactivated_at` (CHECK); never deleted |
+| `auth_sessions.end_reason` | 2.5a | — | Adds `membership_deactivated` (D-102: a member's sessions in that tenant end when the membership is deactivated) |
 | `platform_role_assignments` | 2.4a | Global | One live per user + role; revoked with reason; grants platform routes only (D-037) |
 | `auth_sessions.active_membership_id` | 2.4a | — | Composite FK `(user_id, active_membership_id) → memberships(user_id, id)`: a session can only point at its own user's membership (D-089) |
 | `platform_support_sessions` | 2.4c | Global (names a tenant) | Reason ≥ 3 characters; at most 60 minutes (CHECK, D-037); ended ⇔ `end_reason` (`ended`, `expired`, `signed_out`, `tenant_archived`, `staff_role_revoked`); one live per staff member (partial unique); bound to the opening `auth_sessions` row (FK) |
 | `auth_sessions.support_session_id` | 2.4c | — | Composite FK `(user_id, support_session_id) → platform_support_sessions(staff_user_id, id)`: a browser session can only carry its own staff member's support session; `audit_events.support_session_id` now references it too |
 
-Not built yet: everything else in §2 (Department waits for D-047 in 2.5).
+Not built yet: everything else in §2. Department is a free-text membership field for now (D-103), not a table.
 
 ## 2. Entity inventory
 
@@ -61,12 +64,12 @@ Release: R1 = Phase 2 · R2 = Phases 3–4 · R3 = Phase 5 · R4 = Phase 6.
 | TenantBranding | Tenant-owned | logo asset, primary colour (contrast-checked), certificate defaults, `version` | One row per tenant; R2 (needs storage) |
 | TenantDomain | Tenant-owned | hostname, verifiedAt | Only if D-021 enables custom domains; not R1 |
 | Branch | Tenant-owned, direct (itself) | code, name, address, timezone, status, deactivatedAt | `(tenant_id, code)` unique |
-| Department | Tenant-owned | name, code?, status | `(tenant_id, name)` unique; D-047 |
+| Department | Tenant-owned | name, code?, status | `(tenant_id, name)` unique; candidate for Phase 5 (D-103: free text on the membership until then) |
 | JobRole | Tenant-owned | name, status | `(tenant_id, name)` unique; for compliance applicability (D-047) |
 | User | Global | email (citext), displayName, passwordHash, emailVerifiedAt, locale, timezone, status, deactivatedAt | `email` unique globally; never deleted if it has learning history |
 | AuthSession | Global | userId, tokenHash, activeTenantId?, activeMembershipId?, createdAt, lastSeenAt, expiresAt, revokedAt, reason | Opaque token; only the hash is stored (D-010) |
 | EmailVerificationToken, PasswordResetToken | Global | userId, tokenHash, expiresAt, usedAt | Single-use, hashed |
-| Membership | Tenant-owned | userId (global FK), status (`invited`→`active`→`deactivated`), employeeId?, departmentId?, jobRoleId? | `(tenant_id, user_id)` unique; `(tenant_id, employee_id)` unique where not null |
+| Membership | Tenant-owned | userId (global FK), status (`invited`→`active`→`deactivated`), employeeId?, department? (free text, D-103), jobRoleId? | `(tenant_id, user_id)` unique; `(tenant_id, employee_id)` unique where not null |
 | BranchMembership | Tenant-owned, direct | membershipId, branchId, isPrimary | `(tenant_id, membership_id, branch_id)` unique; exactly one primary per membership (partial unique) — D-026 |
 | Role | Global | key (`tenant_admin`, …), name, scopeLevel | 7 fixed system roles (D-053) |
 | Permission | Global | key (`course.publish`) | Code registry mirrored in `ROLE_PERMISSION_MATRIX.md` |
@@ -208,7 +211,10 @@ Derived: **Expired** when `expiresAt` < now. Verification shows Valid · Expired
 ### Tenant, Branch, Membership
 
 Tenant: `active` ⇄ `suspended` (reason, audited) → `archived`. Branch: `active` ⇄ `inactive`. Membership:
-`invited` → `active` ⇄ `deactivated`. Suspension and deactivation revoke sessions on the next request (D-049).
+`invited` → `active` ⇄ `deactivated`. Suspension and deactivation revoke sessions on the next request (D-049);
+deactivating a membership ends the member's sessions in that tenant at once and keeps its role assignments, which
+grant nothing until reactivation (D-102). JobRole: `active` ⇄ `inactive` (an inactive role stays on members but
+cannot be newly chosen).
 
 ## 4. Idempotency keys
 

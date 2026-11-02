@@ -93,3 +93,4 @@ seed is idempotent and refuses production.
 - 2026-10-28 — Slice 2.3 split into 2.3b (API sign-in), 2.3c (verification + reset), 2.3d (web), approved by the owner: one reviewable change set each.
 - 2026-10-28 — Slice 2.4 split into 2.4a (context + registry), 2.4b (role assignment), 2.4c (support sessions + web), approved by the owner.
 - 2026-10-29 — 2.4c split into 2.4c (support sessions, API) and 2.4d (web: real session in the app shell, tenant/workspace switcher, support banner), approved by the owner.
+- 2026-11-02 — Slice 2.5 split into 2.5a (API: people, D-047 fields, job roles, branch memberships, tenant settings) and 2.5b (web screens), approved by the owner (D-100); D-101–D-105 decided first.

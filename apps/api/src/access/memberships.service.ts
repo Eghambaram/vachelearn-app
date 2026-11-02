@@ -14,6 +14,7 @@ import {
   type TenantRole,
 } from './permissions';
 import type { RequestContext } from './request-context';
+import { lockTenant } from './tenant-admins';
 
 /*
  * Memberships and role assignments (Slice 2.4a; D-026, D-053, D-089). The tenant a session works in is the session's
@@ -160,7 +161,13 @@ export class MembershipsService {
     const previous = ctx.session.activeMembershipId;
     await this.prisma.$transaction(async (tx) => {
       const { count } = await tx.authSession.updateMany({
-        where: { id: sessionId, userId: ctx.userId, endedAt: null },
+        // Still active at write time: a deactivation that ended this user's sessions meanwhile wins (review 2.5a).
+        where: {
+          id: sessionId,
+          userId: ctx.userId,
+          endedAt: null,
+          user: { memberships: { some: { id: membership.id, status: 'active' } } },
+        },
         data: { activeMembershipId: membership.id },
       });
       // The session ended meanwhile (signed out in another tab): nothing switched, nothing to audit.
@@ -225,6 +232,8 @@ export class MembershipsService {
       ]);
     }
     return this.prisma.$transaction(async (tx) => {
+      // The same per-tenant lock as the API's member and role changes (removing a branch races a grant otherwise).
+      await lockTenant(tx, input.tenantId);
       const user = await tx.user.findUnique({
         where: { id: input.userId },
         select: { status: true },

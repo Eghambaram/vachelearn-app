@@ -56,6 +56,8 @@ export type PlatformRole = keyof typeof PLATFORM_ROLES;
 export const BRANCH_ONLY_ROLES: readonly TenantRole[] = ['branch_admin'];
 /** Roles that only make sense for the whole tenant: a Tenant Admin's grants (settings, roles…) have no branch. */
 export const TENANT_ONLY_ROLES: readonly TenantRole[] = ['tenant_admin'];
+/** The only roles a Branch Admin grants, revokes, or manages the holders of (matrix `B (LRN, INS only)`, D-101). */
+export const BRANCH_ADMIN_ASSIGNABLE: readonly TenantRole[] = ['learner', 'instructor'];
 
 /**
  * How far one grant reaches: every branch of the tenant, the listed branches, resources assigned to the user

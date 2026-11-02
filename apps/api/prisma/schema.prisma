@@ -64,6 +64,7 @@ model Tenant {
   jobs            Job[]
   memberships     Membership[]
   supportSessions PlatformSupportSession[]
+  jobRoles        JobRole[]
 
   @@index([status, createdAt])
   @@map("tenants")
@@ -275,6 +276,8 @@ enum SessionEndReason {
   expired
   user_deactivated
   password_changed
+  /// The member was deactivated in the session's active organisation (D-102).
+  membership_deactivated
 }
 
 /// Opaque server-side session (D-010). The cookie holds a random token; only its SHA-256 is stored. Checked on every
@@ -354,6 +357,11 @@ model Membership {
   status            MembershipStatus @default(active)
   /// Used for branch comparisons in reports (D-026); must be one of the member's branches (checked in the service).
   primaryBranchId   String?          @map("primary_branch_id") @db.Uuid
+  /// D-047 organisation fields. Employee id: optional, unique within the tenant ignoring case.
+  employeeId        String?          @map("employee_id") @db.Citext
+  /// D-103: free text for now.
+  department        String?          @db.VarChar(100)
+  jobRoleId         String?          @map("job_role_id") @db.Uuid
   deactivatedAt     DateTime?        @map("deactivated_at") @db.Timestamptz(3)
   deactivatedReason String?          @map("deactivated_reason") @db.VarChar(500)
   deactivatedById   String?          @map("deactivated_by_id") @db.Uuid
@@ -365,6 +373,7 @@ model Membership {
   tenant          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   user            User               @relation(fields: [userId], references: [id], onDelete: Restrict)
   primaryBranch   Branch?            @relation("PrimaryBranch", fields: [tenantId, primaryBranchId], references: [tenantId, id], onDelete: Restrict)
+  jobRole         JobRole?           @relation(fields: [tenantId, jobRoleId], references: [tenantId, id], onDelete: Restrict)
   branches        MembershipBranch[]
   roleAssignments RoleAssignment[]
   activeSessions  AuthSession[]
@@ -372,6 +381,8 @@ model Membership {
   @@unique([tenantId, userId])
   @@unique([tenantId, id])
   @@unique([userId, id])
+  @@unique([tenantId, employeeId])
+  @@index([tenantId, jobRoleId])
   @@index([userId, status])
   @@map("memberships")
 }
@@ -384,13 +395,44 @@ model MembershipBranch {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById  String?  @map("created_by_id") @db.Uuid
 
-  membership      Membership       @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
-  branch          Branch           @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
-  roleAssignments RoleAssignment[]
+  membership Membership @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
+  branch     Branch     @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
 
   @@id([membershipId, branchId])
   @@index([tenantId, branchId])
   @@map("membership_branches")
+}
+
+enum JobRoleStatus {
+  active
+  inactive
+
+  @@map("job_role_status")
+}
+
+/// Tenant-owned reference list (D-047): a member's job role, used for compliance applicability (Phase 5). Never
+/// deleted once used; deactivated roles stay on the members who have them but cannot be newly chosen.
+model JobRole {
+  id                String        @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId          String        @map("tenant_id") @db.Uuid
+  /// Unique within the tenant ignoring case.
+  name              String        @db.Citext
+  status            JobRoleStatus @default(active)
+  deactivatedAt     DateTime?     @map("deactivated_at") @db.Timestamptz(3)
+  deactivatedReason String?       @map("deactivated_reason") @db.VarChar(500)
+  deactivatedById   String?       @map("deactivated_by_id") @db.Uuid
+  version           Int           @default(1)
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       String?       @map("created_by_id") @db.Uuid
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  memberships Membership[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, name])
+  @@index([tenantId, status, name])
+  @@map("job_roles")
 }
 
 enum TenantRole {
@@ -417,9 +459,8 @@ model RoleAssignment {
 
   membership       Membership        @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
   branch           Branch?           @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
-  /// A branch role sits on one of the member's own branches: removing that branch is refused while the role is live
-  /// or revoked (history keeps it) — revoke and keep, or move members only through the membership service.
-  membershipBranch MembershipBranch? @relation(fields: [membershipId, branchId], references: [membershipId, branchId], onDelete: Restrict)
+  // A branch role is created only on one of the member's own branches, and a branch membership cannot be removed
+  // while a live role uses it (D-104) — database triggers (migration `people_basics`); revoked roles are history.
 
   @@unique([tenantId, id])
   @@index([tenantId, membershipId])

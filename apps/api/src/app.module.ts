@@ -29,6 +29,14 @@ import { JobRegistry } from './jobs/job-handlers';
 import { JobWorker } from './jobs/job-worker';
 import { JobsService } from './jobs/jobs.service';
 import { loggingModule } from './logging/logging.module';
+import {
+  JobRolesController,
+  PeopleController,
+  TenantSettingsController,
+} from './people/people.controller';
+import { JobRolesService } from './people/job-roles.service';
+import { PeopleService } from './people/people.service';
+import { TenantSettingsService } from './people/tenant-settings.service';
 import { PrismaService } from './prisma/prisma.service';
 import { BranchesController } from './tenancy/branches.controller';
 import { BranchesService } from './tenancy/branches.service';
@@ -60,6 +68,9 @@ export class AppModule {
         SupportSessionsController,
         PlatformTenantsController,
         BranchesController,
+        PeopleController,
+        JobRolesController,
+        TenantSettingsController,
       ],
       providers: [
         { provide: APP_CONFIG, useValue: config },
@@ -80,6 +91,9 @@ export class AppModule {
         AuditService,
         TenantsService,
         BranchesService,
+        PeopleService,
+        JobRolesService,
+        TenantSettingsService,
         // Background jobs and email (D-040, D-081).
         { provide: JobRegistry, useValue: new JobRegistry() },
         JobsService,
