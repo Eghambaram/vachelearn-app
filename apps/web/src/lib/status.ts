@@ -9,6 +9,9 @@ export const STATUS_VOCABULARY = {
   tenant: { active: 'success', suspended: 'danger', archived: 'muted', trial: 'warning' },
   // Deactivated members lose access, like a suspended tenant: red (web rules, status language).
   member: { active: 'success', deactivated: 'danger' },
+  // An inactive branch or job role is kept as history, like an archived record: grey.
+  branch: { active: 'success', inactive: 'muted' },
+  jobRole: { active: 'success', inactive: 'muted' },
   course: { draft: 'neutral', under_review: 'warning', published: 'success', archived: 'muted' },
   enrollment: {
     not_started: 'neutral',

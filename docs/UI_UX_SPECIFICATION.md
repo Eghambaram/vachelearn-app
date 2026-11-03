@@ -117,7 +117,7 @@ update `status.ts` and this table together).
 | Danger (red) | alert circle | Expired, Absent, Deactivated (member, 2.5b) | **Proposed** |
 | Neutral | dashed circle | Draft, Not Started | web rule |
 | Muted (grey) | archive | Archived, Cancelled | web rule |
-| Muted (grey) | archive | Superseded, Excused, Refunded, Not Applicable, Pending | **Proposed** |
+| Muted (grey) | archive | Superseded, Excused, Refunded, Not Applicable, Pending, Inactive (branch, job role; 2.5c) | **Proposed** |
 
 ### Component conventions (Slice 1.3a)
 
@@ -205,10 +205,31 @@ update `status.ts` and this table together).
   "Edit details"; validation refusals sit on their field. Every change re-renders the page from the API. Unknown or
   out-of-scope members show "User not found" (never "forbidden"); a Branch Admin who removes a member from its last
   shared branch returns to the list with a notice. Both routes have loading skeletons. Demo workspaces show "Sign in
-  to manage users" instead of fixtures.
+  to use this screen" instead of fixtures.
 - `/admin/roles`: read-only reference of the fixed roles (D-053, D-107) and where they apply; roles are managed on each
   user's page.
-- Branches, general settings and job roles screens: Slice 2.5c.
+
+### Branches, settings and job roles (Slice 2.5c, real API)
+
+- `/admin/branches` (#16): list (search name/code, status filter, sort by name or code, cursor paging; the API scopes
+  it — a Branch Admin sees its own branches), "Add branch" for Tenant Admins. `/admin/branches/new`: code (fixed once
+  created, unique — a clash is shown on the code field), name, time zone (searchable list, the organisation's default
+  preselected), address, city, region, country code. `/admin/branches/[branchId]`: details (edit for
+  `branch.update`) and status (deactivate/reactivate with reason; deactivation keeps members and history, roles on
+  it stop working — D-090, Proposed — so people whose only roles are there lose access; the dialog says so). After
+  adding, the new branch's page shows a focused "Branch added.". Branch member counts are not shown yet (no API).
+- `/admin/settings` (#30): section links General · Job roles (`aria-current`). General: organisation name, web
+  address name (read-only, D-079), default time zone, language tag; edit for `tenant_settings.update`. The time zone
+  and language tag are stored now; the help text says dates still show India time (Asia/Kolkata) in `en-IN` until a
+  later release wires them into formatting (`lib/format.ts`). Features:
+  read-only On/Off list (set by platform staff, D-031). Branding: 3.8.
+- `/admin/settings/people` (#53): job roles (D-047) — add (name unique ignoring case, shown on the field), rename
+  inline (Escape/Cancel return focus to Rename), deactivate/reactivate with reason; "Show more" pages through the
+  list (focus moves to the first new row; rows changed on later pages stay visible), and inactive roles show when
+  and why. Read by `tenant_settings.read`, changed by `reference_data.manage`; read-only viewers see a note, no
+  controls (tested with a Compliance Viewer).
+- All four routes: demo workspaces see "Sign in to use this screen" (no fixtures), permission-denied,
+  not-found (detail), error with retry, loading skeletons; results focused after each change.
 
 ### App shells (Slice 1.4)
 

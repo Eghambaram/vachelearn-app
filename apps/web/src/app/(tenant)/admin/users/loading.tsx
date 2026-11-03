@@ -1,5 +1,9 @@
-import { PeopleLoading } from '@/features/people/people-loading';
+import { PageLoading } from '@/components/page-loading';
+import { getMessages } from '@/lib/i18n';
+
+// English only for now (D-028); becomes per-request when a second language is added.
+const t = getMessages();
 
 export default function Loading() {
-  return <PeopleLoading />;
+  return <PageLoading label={t.people.loading} rows={6} />;
 }

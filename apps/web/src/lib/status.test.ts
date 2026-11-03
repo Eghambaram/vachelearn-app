@@ -10,11 +10,13 @@ describe('status vocabulary', () => {
     expect(Object.keys(STATUS_VOCABULARY).sort()).toEqual([
       'attempt',
       'attendance',
+      'branch',
       'certificate',
       'compliance',
       'course',
       'enrollment',
       'job',
+      'jobRole',
       'member',
       'order',
       'tenant',
