@@ -15,3 +15,4 @@ export * from './auth';
 export * from './roles';
 export * from './support';
 export * from './people';
+export * from './audit';

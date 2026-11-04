@@ -116,4 +116,13 @@ test('a Tenant Admin manages a member’s details, status, branches and roles', 
   await page.goto('/admin/roles');
   await expect(page.getByRole('heading', { level: 1, name: 'Roles' })).toBeVisible();
   await expectNoAxeViolations(page);
+
+  // Every change above is in the organisation's audit log (Slice 2.6a), newest first, with its reason.
+  await page.goto('/admin/audit');
+  await expect(page.getByRole('heading', { level: 1, name: 'Audit log' })).toBeVisible();
+  const log = page.getByRole('table', { name: 'Audit log' });
+  await expect(log.getByRole('row').nth(1)).toContainText('Revoked a role');
+  await expect(log).toContainText('Reason: Left the site');
+  await expect(log).toContainText('Deactivated a member');
+  await expectNoAxeViolations(page);
 });

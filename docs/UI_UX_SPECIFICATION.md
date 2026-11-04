@@ -231,6 +231,16 @@ update `status.ts` and this table together).
 - All four routes: demo workspaces see "Sign in to use this screen" (no fixtures), permission-denied,
   not-found (detail), error with retry, loading skeletons; results focused after each change.
 
+### Audit log (Slice 2.6a, real API)
+
+- `/admin/audit` (`audit.read`): table — when (date, time, zone), who ("VacheLearn support — name" with the support
+  reason, "VacheLearn staff — name", "VacheLearn (system)", or the member's name; never an email — D-099), what
+  (plain-language action + the record in words, e.g. "Member · Asha", + branch), details (reason; "Screen: Users" for
+  support reads; "Ended because: …" for support ends; expandable "Changes" with field labels and plain values — roles,
+  statuses, "changed (value not recorded)", "another branch"; technical keys hidden). The support reason shows once,
+  on the row that opened the session. The activity filter lists only actions that can occur in an organisation. Filters: activity (action) and "VacheLearn support only"; cursor paging, newest first.
+  Branch-scoped readers get a note that organisation-wide activity is visible to Tenant Admins (D-109). Read-only.
+
 ### App shells (Slice 1.4)
 
 - **Route groups:** `(public)` (`/`, `/help`: marketing header + footer, placeholder copy per D-038), `(auth)` (`/login`,

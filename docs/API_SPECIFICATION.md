@@ -176,6 +176,24 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   defaultTimezone?, defaultLocale? }` (`tenant_settings.update`): the caller's own tenant; feature switches read-only
   (D-031); audited `tenant_settings.updated`.
 
+## Tenant audit log (Slice 2.6a)
+
+- `GET /audit-events` (`audit.read`): the caller's tenant only, newest first by `(occurred_at, id)`, keyset cursor
+  bound to tenant, scope and filters; filters `action` (exact key) and `support=true|false`. Branch-scoped readers
+  see only events tagged with one of their branches; organisation-level events are for tenant-wide readers (D-109). Instructors, Learners and Learning Managers: 403.
+- Actor: `user` (display name), `support` ("VacheLearn support" + display name + the support session's reason),
+  `staff` (VacheLearn staff outside a support session), `system` (operator commands, jobs). Emails are never returned
+  (D-099). "support" only when the actor is the session's own staff member (anyone else ending a session reads as
+  `system`). `entityLabel`: the record in words, resolved in the tenant (member name, branch / job role name,
+  `role·member` for a role, organisation name), else null. `before`/`after` are the safe subsets recorded (personal
+  values as `[changed]`); for branch-scoped readers, branch ids outside their reach read `[other branch]`; tenant
+  switches carry no ids. Deactivation reasons (`membership.deactivated|reactivated`) only for readers who may
+  deactivate members, never in support sessions (D-106). Indexes `(tenant_id, occurred_at desc, id desc)` and
+  `(tenant_id, branch_id, occurred_at desc, id desc)` serve both scopes.
+- Support sessions: every request is audited by the guard (`support.accessed` / `support.denied`); detail reads marked
+  `@RecordSupportView` (`GET /people/:id`, `GET /branches/:id`) also record `support.viewed` with the record id taken
+  from the answer — which exists only because the scoped lookup found it — never from the URL (D-099).
+
 ## Password links (Slice 2.3c)
 
 - Accounts start without a password (D-083): `pnpm --filter api user:create --email … --name … --reason …` creates one and sends

@@ -10,6 +10,7 @@ import {
 } from '@vachelearn/contracts';
 import type { z } from 'zod';
 import { RequireTenantPermission } from '../access/access.guard';
+import { RecordSupportView } from '../audit/support-view.interceptor';
 import { Ctx, type RequestContext } from '../access/request-context';
 import { ApiZodBody, ApiZodResponse } from '../common/openapi/zod-openapi';
 import { UuidParamPipe } from '../common/validation/uuid-param.pipe';
@@ -34,6 +35,7 @@ export class BranchesController {
 
   @Get(':id')
   @RequireTenantPermission('branch.read')
+  @RecordSupportView('branch')
   @ApiZodResponse(200, BranchView)
   get(@Ctx() ctx: RequestContext, @Param('id', UuidParamPipe) id: string) {
     return this.branches.get(ctx, id);

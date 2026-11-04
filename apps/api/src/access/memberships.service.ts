@@ -179,8 +179,8 @@ export class MembershipsService {
         entityType: 'membership',
         entityId: membership.id,
         requestId: ctx.requestId,
-        before: { membershipId: previous },
-        after: { membershipId: membership.id },
+        // No ids from the organisation switched from: this row is read by the new organisation (isolation 2.6a).
+        after: { switched: previous !== null },
       });
     });
   }

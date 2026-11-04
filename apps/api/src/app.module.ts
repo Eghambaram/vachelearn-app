@@ -1,5 +1,5 @@
 import { Module, type DynamicModule } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { PinoLogger } from 'nestjs-pino';
 import type { DestinationStream } from 'pino';
 import { AccessGuard } from './access/access.guard';
@@ -18,7 +18,10 @@ import { PasswordLinksService } from './auth/password-links.service';
 import { RateLimitService } from './auth/rate-limit.service';
 import { SessionResolver } from './auth/session.resolver';
 import { SessionsService } from './auth/sessions.service';
+import { AuditLogController } from './audit/audit-log.controller';
+import { AuditLogService } from './audit/audit-log.service';
 import { AuditService } from './audit/audit.service';
+import { SupportViewInterceptor } from './audit/support-view.interceptor';
 import { CURSORS, Cursors } from './common/pagination/keyset';
 import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
 import { APP_CONFIG, type AppConfig } from './config/env';
@@ -71,6 +74,7 @@ export class AppModule {
         PeopleController,
         JobRolesController,
         TenantSettingsController,
+        AuditLogController,
       ],
       providers: [
         { provide: APP_CONFIG, useValue: config },
@@ -94,6 +98,7 @@ export class AppModule {
         PeopleService,
         JobRolesService,
         TenantSettingsService,
+        AuditLogService,
         // Background jobs and email (D-040, D-081).
         { provide: JobRegistry, useValue: new JobRegistry() },
         JobsService,
@@ -107,6 +112,8 @@ export class AppModule {
         // Deny by default: every route must be @Public() or name its permission.
         { provide: APP_GUARD, useClass: AccessGuard },
         { provide: APP_FILTER, useClass: AllExceptionsFilter },
+        // D-099: support sessions' reads of one record are audited with the record resolved in the tenant.
+        { provide: APP_INTERCEPTOR, useClass: SupportViewInterceptor },
       ],
       exports: [
         APP_CONFIG,

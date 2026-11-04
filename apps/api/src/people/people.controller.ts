@@ -17,6 +17,7 @@ import {
 } from '@vachelearn/contracts';
 import type { z } from 'zod';
 import { RequireTenantPermission } from '../access/access.guard';
+import { RecordSupportView } from '../audit/support-view.interceptor';
 import { Ctx, type RequestContext } from '../access/request-context';
 import { ApiZodBody, ApiZodResponse } from '../common/openapi/zod-openapi';
 import { UuidParamPipe } from '../common/validation/uuid-param.pipe';
@@ -43,6 +44,7 @@ export class PeopleController {
 
   @Get(':id')
   @RequireTenantPermission('user.read')
+  @RecordSupportView('membership', 'membershipId')
   @ApiZodResponse(200, PersonView)
   get(@Ctx() ctx: RequestContext, @Param('id', UuidParamPipe) id: string) {
     return this.people.get(ctx, id);

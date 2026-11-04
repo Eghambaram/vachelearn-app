@@ -152,7 +152,9 @@ model AuditEvent {
   actor          User?                   @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
   supportSession PlatformSupportSession? @relation(fields: [tenantId, supportSessionId], references: [tenantId, id], onDelete: Restrict)
 
-  @@index([tenantId, occurredAt])
+  /// The tenant audit log reads newest first (2.6a); branch-scoped readers filter by branch (D-109).
+  @@index([tenantId, occurredAt(sort: Desc), id(sort: Desc)])
+  @@index([tenantId, branchId, occurredAt(sort: Desc), id(sort: Desc)])
   @@index([entityType, entityId])
   @@map("audit_events")
 }

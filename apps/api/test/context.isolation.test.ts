@@ -404,7 +404,7 @@ describe('tenant-isolation audit 2.4a fixes', () => {
     expect((await s.get('/api/v1/platform/tenants')).status).toBe(403);
   });
 
-  it('switching needs the session’s CSRF token, and records the previous membership', async () => {
+  it('switching needs the session’s CSRF token, and is audited without the other organisation’s ids', async () => {
     const id = await user('both@example.test');
     const a = await grant(id, tenantA, 'tenant_admin');
     const b = await grant(id, tenantB, 'tenant_admin');
@@ -421,8 +421,11 @@ describe('tenant-isolation audit 2.4a fixes', () => {
       where: { action: 'auth.tenant_switched' },
       orderBy: { occurredAt: 'desc' },
     });
-    expect(last.before).toEqual({ membershipId: a.membershipId });
-    expect(last.after).toEqual({ membershipId: b.membershipId });
+    // The row is the new organisation's: it names the membership switched to (entity), never the one switched from,
+    // which belongs to another organisation (isolation review 2.6a).
+    expect(last).toMatchObject({ tenantId: tenantB, entityId: b.membershipId, before: null });
+    expect(last.after).toEqual({ switched: true });
+    expect(JSON.stringify(last)).not.toContain(a.membershipId);
   });
 
   it('once only one usable membership is left, the session selects it (audited)', async () => {
