@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { FocusedNotice } from '@/components/focused-notice';
 import { DemoBadge } from '@/components/demo-badge';
 import { ErrorState } from '@/components/error-state';
 import { PageHeader } from '@/components/page-header';
@@ -21,7 +22,7 @@ const t = getMessages();
 
 type Props = {
   params: Promise<{ enrollmentId: string; lessonId: string }>;
-  searchParams: Promise<{ demoState?: string }>;
+  searchParams: Promise<{ demoState?: string; enrolled?: string }>;
 };
 
 function titleFor(result: { ok: boolean; status?: number }, title: string) {
@@ -66,6 +67,8 @@ export default async function LessonPage({ params, searchParams }: Props) {
   const session = await getSession();
   const demoState = session.demo ? parseDemoState((await searchParams).demoState) : 'ready';
   const { enrollmentId, lessonId } = await params;
+  // Arriving from a demo catalog enrolment (D-110).
+  const enrolled = (await searchParams).enrolled === '1';
 
   // The lesson read checks ownership and the pinned version, so an id that is not the learner's stays a 404 in every
   // demo state (including loading).
@@ -121,11 +124,14 @@ export default async function LessonPage({ params, searchParams }: Props) {
         meta={
           <>
             <StatusBadge entity="enrollment" status={enrollment.status} />
-            {session.demo ? <DemoBadge /> : null}
+            {session.demoContent ? <DemoBadge /> : null}
           </>
         }
         description={t.learnerDashboard.version(enrollment.courseVersion)}
       />
+      {enrolled ? (
+        <FocusedNotice message={t.catalog.enrolledNotice(enrollment.courseTitle)} />
+      ) : null}
       <CoursePlayer outline={outline.data} lesson={lesson.data} />
     </>
   );

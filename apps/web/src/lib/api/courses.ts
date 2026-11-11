@@ -8,7 +8,7 @@ import {
 import { demoCategories, demoCourses } from '@/mocks/courses';
 import { demoError, validationError, type ApiResult, type DemoState } from './client';
 import { cursorOffset, encodeCursor, invalidCursor, queryKey } from './cursor';
-import { getSession } from './session';
+import { getContentSession } from './content-session';
 
 /*
  * GET /api/v1/courses and /categories (tenant workspace, `course.read`). Server-only: the tenant comes from the
@@ -34,7 +34,7 @@ export async function listCourses(
 ): Promise<ApiResult<CourseListPageData>> {
   const parsed = CourseListQuery.safeParse(input);
   if (!parsed.success) return validationError(parsed.error);
-  const session = await getSession();
+  const session = await getContentSession();
   if (
     demoState === 'forbidden' ||
     !session.activeTenantId ||
@@ -96,7 +96,7 @@ export async function listCourses(
 export async function listCategories(): Promise<
   ApiResult<{ data: { id: string; name: string }[] }>
 > {
-  const session = await getSession();
+  const session = await getContentSession();
   if (!session.activeTenantId || !session.permissions.includes('course.read'))
     return demoError(403);
   return { ok: true, data: CategoryList.parse({ data: demoCategories(session.activeTenantId) }) };

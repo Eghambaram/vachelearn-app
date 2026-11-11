@@ -5,7 +5,7 @@ import {
 } from '@vachelearn/contracts';
 import { buildTenantDashboard } from '@/mocks/tenant-dashboard';
 import { demoError, validationError, type ApiResult, type DemoState } from './client';
-import { getSession } from './session';
+import { getContentSession } from './content-session';
 
 /**
  * GET /api/v1/dashboard (tenant workspace). Tenant and branch scope come from the session — this function takes no
@@ -18,7 +18,7 @@ export async function getTenantDashboard(
 ): Promise<ApiResult<TenantDashboardData>> {
   const parsed = TenantDashboardQuery.safeParse(query);
   if (!parsed.success) return validationError(parsed.error);
-  const session = await getSession();
+  const session = await getContentSession();
   if (
     demoState === 'forbidden' ||
     !session.activeTenantId ||

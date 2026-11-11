@@ -40,7 +40,7 @@ export default async function PlatformDashboardPage({ searchParams }: Props) {
     <PageHeader
       title={t.platformDashboard.title}
       description={asOf ? t.platformDashboard.description(asOf) : undefined}
-      meta={session.demo ? <DemoBadge /> : null}
+      meta={session.demoContent ? <DemoBadge /> : null}
       actions={<PeriodFilter value={period} />}
     />
   );
@@ -72,7 +72,7 @@ export default async function PlatformDashboardPage({ searchParams }: Props) {
   return (
     <>
       {header(formatDateTime(data.generatedAt, { timeZone: data.timeZone }))}
-      <PlatformDashboard data={data} demo={session.demo} />
+      <PlatformDashboard data={data} demo={session.demoContent} />
     </>
   );
 }

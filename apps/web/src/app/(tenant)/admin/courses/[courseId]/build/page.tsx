@@ -61,7 +61,7 @@ export default async function CourseBuilderPage({ params, searchParams }: Props)
         meta={
           <>
             {courseId === 'new' ? null : <StatusBadge entity="course" status={status} />}
-            {session.demo ? <DemoBadge /> : null}
+            {session.demoContent ? <DemoBadge /> : null}
           </>
         }
         description={

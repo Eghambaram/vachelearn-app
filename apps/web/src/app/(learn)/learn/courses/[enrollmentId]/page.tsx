@@ -16,7 +16,7 @@ const t = getMessages();
 
 type Props = {
   params: Promise<{ enrollmentId: string }>;
-  searchParams: Promise<{ demoState?: string }>;
+  searchParams: Promise<{ demoState?: string; enrolled?: string }>;
 };
 
 /**
@@ -51,6 +51,11 @@ export default async function ResumeCourse({ params, searchParams }: Props) {
       />
     );
   }
-  const query = demoState === 'ready' ? '' : `?demoState=${demoState}`;
+  const query =
+    demoState !== 'ready'
+      ? `?demoState=${demoState}`
+      : (await searchParams).enrolled === '1'
+        ? '?enrolled=1'
+        : '';
   redirect(`${lessonHref(enrollmentId, result.data.resumeLessonId)}${query}`);
 }

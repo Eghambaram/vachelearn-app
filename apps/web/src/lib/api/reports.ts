@@ -16,7 +16,7 @@ import { DEMO_BRANCHES, DEMO_TENANTS, demoBranchId } from '@/mocks/demo-session'
 import { DEMO_TENANT_ZONE } from '@/mocks/tenant-dashboard';
 import { demoError, validationError, type ApiResult, type DemoState } from './client';
 import { cursorOffset, encodeCursor, invalidCursor, queryKey } from './cursor';
-import { getSession } from './session';
+import { getContentSession } from './content-session';
 
 /*
  * GET /api/v1/reports/compliance and …/compliance/options (`report.read` + `compliance.read`). Server-only. The tenant
@@ -27,7 +27,7 @@ import { getSession } from './session';
  */
 
 async function reportScope() {
-  const session = await getSession();
+  const session = await getContentSession();
   const tenantId = session.activeTenantId;
   if (
     !tenantId ||

@@ -64,8 +64,10 @@ export function toSessionView(
         membershipId: m.membershipId,
       })),
     activeTenantId: ctx.activeTenant?.tenantId ?? null,
+    activeTenantSlug: ctx.activeTenant?.slug ?? null,
     permissions: [...new Set([...ctx.tenantPermissions, ...ctx.platformPermissions])],
     demo: false,
+    demoContent: false,
     availableRoles: availableRoles(ctx),
     support: ctx.support
       ? {

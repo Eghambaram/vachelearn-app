@@ -38,7 +38,7 @@ export default async function CoursesPage({ searchParams }: Props) {
       <PageHeader
         title={t.courses.title}
         description={t.courses.description}
-        meta={session.demo ? <DemoBadge /> : null}
+        meta={session.demoContent ? <DemoBadge /> : null}
         actions={
           // Shown only to roles that may create courses; the API checks `course.create` again.
           session.permissions.includes('course.create') ? (

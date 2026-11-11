@@ -109,3 +109,40 @@ export function demoEnrollments(tenantId: string, now: Date): DemoEnrollment[] {
     ...build(tenantId, 'demo-other-learner', SOMEONE_ELSE, t),
   ];
 }
+
+/**
+ * An enrolment the learner made from the demo catalog (D-110): not started, on the course's published version. Kept in
+ * a browser cookie by the demo, never on the server.
+ */
+export function catalogEnrollment(
+  tenantId: string,
+  userId: string,
+  course: { id: string; title: string; publishedVersion: number | null },
+  index: number,
+): DemoEnrollment {
+  const seed = 100 + index;
+  const courseVersion = course.publishedVersion ?? 1;
+  const modules = demoOutline({
+    courseKey: `${course.id}-v${courseVersion}`,
+    seed,
+    status: 'not_started',
+    targetPercent: 0,
+  });
+  return {
+    id: catalogEnrollmentId(course.id),
+    tenantId,
+    userId,
+    courseTitle: course.title,
+    courseVersion,
+    seed,
+    status: 'not_started',
+    dueOn: null,
+    progressPercent: 0,
+    nextLessonTitle: null,
+    modules,
+    lastActivityAt: null,
+    completedAt: null,
+  };
+}
+
+export const catalogEnrollmentId = (courseId: string) => `enr-${courseId}`;

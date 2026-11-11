@@ -31,7 +31,7 @@ export default async function LearnerDashboardPage({ searchParams }: Props) {
     <PageHeader
       title={l.title(session.user.displayName)}
       description={l.description}
-      meta={session.demo ? <DemoBadge /> : null}
+      meta={session.demoContent ? <DemoBadge /> : null}
     />
   );
   if (demoState === 'loading') {
@@ -64,7 +64,7 @@ export default async function LearnerDashboardPage({ searchParams }: Props) {
   return (
     <>
       {header}
-      <LearnerDashboard data={result.data} demo={session.demo} />
+      <LearnerDashboard data={result.data} demo={session.demoContent} />
     </>
   );
 }

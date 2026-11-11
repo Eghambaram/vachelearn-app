@@ -23,10 +23,12 @@ import { calendarDateIn, daysBetween } from '@/lib/format';
 import { DEMO_ASSESSMENT, DEMO_QUESTIONS, demoAttempts, type DemoAttempt } from '@/mocks/attempts';
 import { currentAward, demoAwards, issuerName, type DemoAward } from '@/mocks/certificates';
 import { demoLessonContent } from '@/mocks/course-player';
-import { demoEnrollments, type DemoEnrollment } from '@/mocks/enrollments';
+import { catalogCourse } from '@/mocks/catalog';
+import { catalogEnrollment, demoEnrollments, type DemoEnrollment } from '@/mocks/enrollments';
 import { DEMO_TENANT_ZONE } from '@/mocks/tenant-dashboard';
 import { demoError, type ApiResult, type DemoState } from './client';
-import { getSession } from './session';
+import { getContentSession } from './content-session';
+import { readDemoEnrolments } from './demo-enrolments';
 
 /*
  * The learner's own learning: GET /api/v1/me/dashboard; for the player GET /api/v1/me/enrollments/:id/outline and
@@ -44,14 +46,22 @@ function notFound(): ApiResult<never> {
   };
 }
 
-async function ownEnrollments(now: Date) {
-  const session = await getSession();
+/** The signed-in learner's sample enrolments (fixtures + demo catalog), or null without `enrollment.read`. */
+export async function ownEnrollments(now: Date) {
+  const session = await getContentSession();
   // Every member's own learning is readable with `enrollment.read`; the user filter below is what keeps it "own".
   if (!session.activeTenantId || !session.permissions.includes('enrollment.read')) return null;
-  const mine = demoEnrollments(session.activeTenantId, now).filter(
+  const fixtures = demoEnrollments(session.activeTenantId, now).filter(
     (e) => e.userId === session.user.id,
   );
-  return { session, mine };
+  // Demo catalog enrolments (D-110): courses of this tenant's catalog only, and not ones already held.
+  const held = new Set(fixtures.filter((e) => e.status !== 'cancelled').map((e) => e.courseTitle));
+  const tenantId = session.activeTenantId;
+  const enrolled = (await readDemoEnrolments())
+    .map((courseId) => catalogCourse(tenantId, courseId, now))
+    .filter((course) => course !== null && !held.has(course.title))
+    .map((course, i) => catalogEnrollment(tenantId, session.user.id, course!, i));
+  return { session, mine: [...enrolled, ...fixtures] };
 }
 
 export async function getLearnerDashboard({

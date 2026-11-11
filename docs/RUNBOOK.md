@@ -43,6 +43,30 @@ Commands below were run on 2026-10-20 (Phase 1 Slice 1.1) on Ubuntu 26.04 under 
 | Background jobs | runs inside the API (`JOBS_WORKER`, on by default except in tests) | Postgres `jobs` table (D-040): polled every 2 s; 5 attempts, waits 30 s doubling to 1 h; a `running` job abandoned by a stopped process is retried after a 5-minute lease. Inspect locally: `SELECT type, status, attempts, run_after, last_error FROM jobs ORDER BY created_at DESC LIMIT 20;` (`last_error` is sanitised; payloads hold ids only) |
 | Email | local: Mailpit inbox http://localhost:58025 | `EMAIL_PROVIDER=smtp` sends to Mailpit; `console` logs masked recipient + subject only (links never reach the log, so use Mailpit to follow one). Delivery is at-least-once: a crash between the SMTP server accepting a message and `sent` being recorded can resend it, with the same Message-ID. **Production:** STARTTLS is mandatory unless `SMTP_SECURE=true` (implicit TLS), certificates are always verified, an SMTP 5xx fails the job at once, and `EMAIL_FROM` must not be a placeholder (`.invalid`, `example.*`) |
 
+### Client demo (local, D-110, D-111)
+
+A local production build with demo content on: real sign-in for every seeded role, the Phase 1 sample-data screens
+(courses, builder, learner dashboard, player, certificates, reports) marked Demo with a shell banner, the demo catalog
+with enrol (kept in a browser cookie only), and public tenant pages. Run 2026-11-11:
+
+1. `pnpm services:up`, then `pnpm --filter api db:seed` (dev database `vachelearn`). On a fresh database set
+   `SEED_PASSWORD` first and every demo account gets it. Accounts that already exist keep their password: set one per
+   account with "Forgot your password?" on `/login` and the link in Mailpit (http://localhost:58025).
+2. API on :4000: `pnpm --filter api build`, then from `apps/api` start `node --enable-source-maps dist/src/main.js`
+   with `NODE_ENV=development API_PORT=4000 DATABASE_URL=<local vachelearn URL> WEB_ORIGIN=http://localhost:3000
+   EMAIL_PROVIDER=smtp SMTP_HOST=127.0.0.1 SMTP_PORT=51025` (or `pnpm dev` with the root env file).
+3. Web on :3000: from `apps/web`, `ENABLE_DEMO_CONTENT=true API_INTERNAL_URL=http://localhost:4000 pnpm build`, then
+   `ENABLE_DEMO_CONTENT=true pnpm exec next start --port 3000`. `pnpm verify` and `pnpm test:e2e` rebuild `.next`
+   without the flag: rebuild the demo afterwards.
+4. Walk through: http://localhost:3000 (demo organisations) → `/t/demo-manufacturing`, `/t/demo-logistics` (catalog,
+   course pages, "Sign in to enrol") → sign in as `<role>.<tenant-slug>@demo.vachelearn.test` (roles: `admin`,
+   `branch-admin`, `learning-manager`, `compliance`, `instructor`, `learner`, `learner2`), `both-tenants@…`,
+   `platform-admin@…` → learner: Course catalog → a course → Enrol → first lesson; admin: Dashboard, Courses, People.
+
+Live in the demo: sign-in, sessions, workspaces, people, branches, roles, settings, audit log. Sample data: everything
+under the banner. Instructor screens still say "Not available yet" (Phase 5). Turn the flag off and rebuild to return to D-097. Never set it (or combine it with `ENABLE_DEMO_VERIFICATION`) on
+anything but a local machine: nothing enforces this, and real users would see sample certificates under their own names.
+
 How `apps/api` loads the shared contracts: `packages/contracts` exports TypeScript source to the web app and to tests,
 and a CommonJS build (`dist/`, `pnpm --filter @vachelearn/contracts build`) to the API through the `require` export
 condition. The API's `build`, `typecheck` and `dev` scripts build the contracts first. Prisma's client is generated into

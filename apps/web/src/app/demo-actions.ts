@@ -12,6 +12,7 @@ import {
 import { getSessionContext } from '@/lib/auth/session';
 import { availableRoles } from '@/lib/auth/session-view';
 import { ROLE_WORKSPACE, WORKSPACE_HOME } from '@/lib/api/session-types';
+import { DEMO_ENROLMENTS_COOKIE } from '@/lib/api/demo-enrolments';
 import { isDemoWorkspacesEnabled } from '@/lib/dev-tools';
 import { DEMO_TENANTS } from '@/mocks/demo-session';
 
@@ -66,5 +67,8 @@ export async function chooseWorkspaceRole(formData: FormData): Promise<void> {
 
 /** On sign-out: forget the workspace choice, so the next person on a shared device starts from their own roles. */
 export async function clearWorkspaceRole(): Promise<void> {
-  (await cookies()).delete({ name: WORKSPACE_ROLE_COOKIE, path: '/', secure: true });
+  const jar = await cookies();
+  jar.delete({ name: WORKSPACE_ROLE_COOKIE, path: '/', secure: true });
+  // Demo catalog enrolments (D-110) are per browser, not per user: the next person starts clean too.
+  jar.delete({ name: DEMO_ENROLMENTS_COOKIE, path: '/' });
 }

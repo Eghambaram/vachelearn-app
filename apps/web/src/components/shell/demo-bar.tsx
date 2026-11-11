@@ -45,3 +45,20 @@ export function DemoBar({ role }: { role: RoleKey }) {
     </div>
   );
 }
+
+/**
+ * Real sessions while demo content is on (D-110): says which screens show sample data and which are live. No role
+ * switcher — the signed-in user's real roles apply.
+ */
+export function DemoContentBar() {
+  return (
+    <div
+      role="region"
+      aria-label={t.demo.badge}
+      className="flex items-start gap-2 border-b border-warning/40 bg-warning-subtle px-4 py-2 text-sm font-medium text-warning sm:px-6"
+    >
+      <FlaskConical aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+      <p>{t.demo.contentBar}</p>
+    </div>
+  );
+}

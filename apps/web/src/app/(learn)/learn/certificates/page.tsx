@@ -33,7 +33,7 @@ export default async function MyCertificatesPage({ searchParams }: Props) {
       title={c.title}
       description={c.description}
       breadcrumbs={[{ label: t.nav.dashboard, href: '/learn' }, { label: c.title }]}
-      meta={session.demo ? <DemoBadge /> : null}
+      meta={session.demoContent ? <DemoBadge /> : null}
     />
   );
   if (demoState === 'loading') {

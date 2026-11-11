@@ -32,3 +32,12 @@ export function isDemoWorkspacesEnabled(env: Env = process.env): boolean {
 export function isDemoVerificationEnabled(env: Env = process.env): boolean {
   return devToolEnabled(env.ENABLE_DEMO_VERIFICATION, env.NODE_ENV);
 }
+
+/**
+ * Sample data for real signed-in sessions (D-110, client demo): the Phase 1 course, learning, certificate and report
+ * screens, the demo catalog with enrol, and the public tenant pages (D-111). Off unless exactly "true" — also in
+ * `next dev`, so D-097 ("Not available yet") stays the default everywhere.
+ */
+export function isDemoContentEnabled(env: Env = process.env): boolean {
+  return env.ENABLE_DEMO_CONTENT === 'true';
+}

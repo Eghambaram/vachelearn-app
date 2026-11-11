@@ -43,7 +43,7 @@ export default async function ComplianceReportPage({ searchParams }: Props) {
           { label: r.title, href: '/admin/reports' },
           { label: r.complianceTitle },
         ]}
-        meta={session.demo ? <DemoBadge /> : null}
+        meta={session.demoContent ? <DemoBadge /> : null}
         actions={
           session.permissions.includes('report.export') ? (
             <div className="flex flex-col items-start gap-1 sm:items-end">

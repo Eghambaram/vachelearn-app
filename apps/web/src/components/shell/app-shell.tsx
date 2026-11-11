@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { CircleHelp } from 'lucide-react';
-import { DemoBar } from '@/components/shell/demo-bar';
+import { DemoBar, DemoContentBar } from '@/components/shell/demo-bar';
 import { MobileNav } from '@/components/shell/mobile-nav';
 import { SidebarBody } from '@/components/shell/sidebar';
 import { MAIN_ID, SkipLink } from '@/components/shell/skip-link';
@@ -39,7 +39,11 @@ export function AppShell({
         <SidebarBody session={session} workspace={workspace} items={items} />
       </aside>
       <div className="flex min-w-0 flex-col">
-        {session.demo ? <DemoBar role={session.role} /> : null}
+        {session.demo ? (
+          <DemoBar role={session.role} />
+        ) : session.demoContent ? (
+          <DemoContentBar />
+        ) : null}
         {/* The support banner stays in view with the top bar: support mode is never scrolled out of sight (D-037). */}
         <div className="sticky top-0 z-10">
           {session.support ? <SupportBanner support={session.support} /> : null}

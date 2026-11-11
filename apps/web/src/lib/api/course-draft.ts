@@ -7,7 +7,7 @@ import {
 import { demoCourses } from '@/mocks/courses';
 import { demoAssessments, demoDraftFor, emptyDraft } from '@/mocks/course-draft';
 import { demoError, type ApiResult, type DemoState } from './client';
-import { getSession } from './session';
+import { getContentSession } from './content-session';
 
 /*
  * GET /api/v1/courses/:id/draft (Phase 3) — the editable draft of one course, for `course.update`. Tenant from the
@@ -33,7 +33,7 @@ export async function getCourseDraft(
   courseId: string,
   { demoState = 'ready', now = new Date() }: { demoState?: DemoState; now?: Date } = {},
 ): Promise<ApiResult<BuilderData>> {
-  const session = await getSession();
+  const session = await getContentSession();
   const tenantId = session.activeTenantId;
   if (demoState === 'forbidden' || !tenantId) return demoError(403);
   const canEdit = session.permissions.includes(

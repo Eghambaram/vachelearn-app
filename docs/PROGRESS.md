@@ -1,13 +1,13 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — Slice 2.6c done** (per-role e2e smoke on the seed). 2.6b 8fb01dc;
-2.6a d566646; 2.5c 1ef1c25; 2.5b 7fb2164; 2.5a e3e53e7. Phase 1 approved (a51d042). Next: Phase 2 exit gate.
+**Phase 2 · Platform foundation (R1) — 2.6c done (28da977); client demo build done** (D-110, D-111:
+demo content flag, catalog + enrol, public tenant pages). Phase 1 approved (a51d042). Next: Phase 2 exit gate.
 
 ## Last verified
-2026-11-11, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the 2.6c tree:
-- `pnpm verify` → exit 0 · contracts 56, web 656, api 375 · build OK · `test:isolation` → 255 passed
-- `pnpm test:e2e` → 275 passed (9.9 min; includes the `seed` setup project and `seed-roles.spec.ts`)
+2026-11-11, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), client demo tree:
+- format, lint, typecheck, `pnpm test` (contracts 56, web 681, api 375), api build, web build (demo flag on) · e2e 275
+  passed (before the final review fixes) · full `pnpm verify` exit 0 before those fixes. Detail in the log.
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
@@ -16,7 +16,8 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
   (97ef679) · 2.4b role assignment + first Tenant Admin (37e9a3b) · 2.4c support sessions (D-037, D-098) · 2.4d real
   session in the shell (b66e997) · 2.5a people API (e3e53e7) · 2.5b users/roles screens (7fb2164) · 2.5c branches,
   settings, job roles (1ef1c25) · 2.6a audit log (d566646) · 2.6b two-tenant fixture, R1 matrix, `db:seed` (8fb01dc)
-  · 2.6c per-role Playwright smoke on the seed (`e2e/seed-roles.spec.ts`). Detail: `docs/progress-log/2026-11.md`.
+  · 2.6c per-role Playwright smoke on the seed (28da977) · client demo (D-110, D-111; RUNBOOK "Client demo"). Detail:
+  `docs/progress-log/2026-11.md`.
 
 ## In progress / uncommitted
 - Nothing.
@@ -52,8 +53,9 @@ over Phase 2, qa-verifier from a clean clone, docs check (DOMAIN_MODEL, matrix, 
   reused by Playwright (`reuseExistingServer`) and serves an old build.
 - `.gitignore` patterns are anchored (`/build/`, `/apps/*/build/` …): a bare `build/` hid the builder route from git.
   `pnpm check:ignored-source` (first step of verify) fails if any source file under apps/ or packages/ is ignored.
-- Before any public deployment (security reviews 1.5.7, 2.3d): nonce-based `script-src` CSP for the web, HSTS at
-  the edge (checked), `API_INTERNAL_URL` set (the build only warns), the web→API hop private or https.
+- Before any public deployment (security reviews 1.5.7, 2.3d, demo): nonce-based `script-src` CSP for the web, HSTS at
+  the edge (checked), `API_INTERNAL_URL` set (the build only warns), the web→API hop private or https,
+  `ENABLE_DEMO_CONTENT` unset (nothing enforces it; consider a guard, D-110).
 - Exit-gate review Lows (stepper "(completed)", catalog/enrol spelling drift, donut colours, < 24 px targets, Select
   blank before hydration) and untested surfaces (screen readers, Safari, Firefox, touch, zoom, High Contrast): log.
 - Certificate preview builds its printed verification address from request headers (`siteOrigin`); Phase 2 should

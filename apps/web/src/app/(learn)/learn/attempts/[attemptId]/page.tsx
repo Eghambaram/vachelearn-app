@@ -93,7 +93,7 @@ export default async function AttemptPage({ params, searchParams }: Props) {
       meta={
         <>
           <StatusBadge entity="attempt" status={data.attempt.status} />
-          {session.demo ? <DemoBadge /> : null}
+          {session.demoContent ? <DemoBadge /> : null}
         </>
       }
       description={`${a.attemptOf(data.attempt.attemptNumber, data.assessment.attemptLimit)} · ${a.versionPassMark(
@@ -117,7 +117,7 @@ export default async function AttemptPage({ params, searchParams }: Props) {
     <>
       {header}
       {data.body.kind === 'taking' ? (
-        <AttemptTaker data={{ ...data, body: data.body }} demo={session.demo} />
+        <AttemptTaker data={{ ...data, body: data.body }} demo={session.demoContent} />
       ) : (
         <AttemptResult data={{ ...data, body: data.body }} />
       )}

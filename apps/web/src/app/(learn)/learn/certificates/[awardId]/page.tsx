@@ -98,7 +98,7 @@ export default async function CertificatePage({ params, searchParams }: Props) {
         meta={
           <>
             <StatusBadge entity="certificate" status={award.status} />
-            {session.demo ? <DemoBadge /> : null}
+            {session.demoContent ? <DemoBadge /> : null}
           </>
         }
         description={c.version(award.courseVersion)}

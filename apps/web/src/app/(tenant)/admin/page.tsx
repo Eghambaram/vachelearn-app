@@ -39,7 +39,7 @@ export default async function TenantDashboardPage({ searchParams }: Props) {
     <PageHeader
       title={t.tenantDashboard.title}
       description={description}
-      meta={session.demo ? <DemoBadge /> : null}
+      meta={session.demoContent ? <DemoBadge /> : null}
       actions={<PeriodFilter value={period} />}
     />
   );
@@ -83,7 +83,7 @@ export default async function TenantDashboardPage({ searchParams }: Props) {
       )}
       <TenantDashboard
         data={data}
-        demo={session.demo}
+        demo={session.demoContent}
         permissions={session.permissions}
         compliance={compliance?.ok ? compliance.data.totals : null}
       />

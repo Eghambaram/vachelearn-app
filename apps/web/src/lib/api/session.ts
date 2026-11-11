@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSessionContext } from '@/lib/auth/session';
 import { chooseRole, isRoleKey, toSessionView } from '@/lib/auth/session-view';
-import { isDemoWorkspacesEnabled } from '@/lib/dev-tools';
+import { isDemoContentEnabled, isDemoWorkspacesEnabled } from '@/lib/dev-tools';
 import { getMessages } from '@/lib/i18n';
 import { buildDemoSession, DEFAULT_DEMO_ROLE } from '@/mocks/demo-session';
 import type { SessionView } from './session-types';
@@ -36,10 +36,13 @@ export const getSession = cache(async function getSession(): Promise<SessionView
   if (real.status === 'signed-in') {
     const role = chooseRole(real.context, jar.get(WORKSPACE_ROLE_COOKIE)?.value);
     if (!role) redirect('/welcome');
-    return toSessionView(real.context, role, {
-      wholeTenant: t.shell.scopeWholeTenant,
-      platform: t.shell.scopePlatform,
-    });
+    return {
+      ...toSessionView(real.context, role, {
+        wholeTenant: t.shell.scopeWholeTenant,
+        platform: t.shell.scopePlatform,
+      }),
+      demoContent: isDemoContentEnabled(),
+    };
   }
   if (real.status === 'unavailable')
     throw new SessionUnavailableError('The session could not be checked');

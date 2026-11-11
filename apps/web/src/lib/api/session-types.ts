@@ -35,10 +35,17 @@ export type SessionView = {
   /** Tenants the user belongs to. Empty for platform staff (they have no implicit tenant access, D-037). */
   memberships: readonly TenantMembership[];
   activeTenantId: string | null;
+  /** The active tenant's slug (real sessions); maps sample data to a demo tenant (D-110). */
+  activeTenantSlug: string | null;
   /** Permission keys from docs/ROLE_PERMISSION_MATRIX.md. Used to shape navigation; the API re-checks every call. */
   permissions: readonly string[];
   /** True while the session comes from demo fixtures (Phase 1). */
   demo: boolean;
+  /**
+   * True when course, learning, certificate and report screens show sample data: demo sessions, and real sessions while
+   * `ENABLE_DEMO_CONTENT` is on (D-110). Those screens show their Demo badge whenever this is true.
+   */
+  demoContent: boolean;
   /** The roles this user may switch between (D-096): real roles only; the demo uses its own role switcher. */
   availableRoles: readonly RoleKey[];
   /** Platform staff inside a support session (D-037): the tenant shown in the banner, until `expiresAt`. */

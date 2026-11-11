@@ -72,7 +72,8 @@ export async function WorkspaceLayout({
 export async function notAvailableForRealSession(pathname: string) {
   try {
     const session = await getSession();
-    return session.demo ? null : <NotAvailableYet pathname={pathname} />;
+    // Demo sessions, and real ones while demo content is on (D-110), render the sample-data page.
+    return session.demoContent ? null : <NotAvailableYet pathname={pathname} />;
   } catch (err) {
     if (err instanceof SessionUnavailableError) return <SessionUnavailable />;
     throw err;
@@ -85,7 +86,7 @@ export async function notAvailableForRealSession(pathname: string) {
  */
 export async function notAvailableMetadata(pathname: string): Promise<Metadata | null> {
   const session = await getSession().catch(() => null);
-  if (session?.demo) return null;
+  if (session?.demoContent) return null;
   return { title: navItemFor(pathname)?.label ?? t.shell.notAvailableTitle };
 }
 

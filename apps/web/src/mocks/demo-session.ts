@@ -115,6 +115,7 @@ export const DEMO_ROLE_PERMISSIONS: Record<RoleKey, readonly string[]> = {
   ],
   learner: [
     'catalog.browse',
+    'enrollment.self_enroll',
     'enrollment.read',
     'attempt.take',
     'attempt.review',
@@ -133,6 +134,14 @@ const SCOPE_LABEL: Record<RoleKey, string> = {
   learner: 'Own learning',
 };
 
+/** The fixtures' learner: whose enrolments, attempts and certificates the sample data holds. */
+export const DEMO_USER_ID = 'demo-user';
+
+/** The demo tenant whose sample data a real tenant shows while demo content is on (D-110): logistics or manufacturing. */
+export function demoTenantForSlug(slug: string | null): string {
+  return slug?.includes('logistics') ? DEMO_TENANTS[1]!.tenantId : DEMO_TENANTS[0]!.tenantId;
+}
+
 export function buildDemoSession(role: RoleKey, tenantId: string | null): SessionView {
   const platform = role === 'platform_super_admin';
   const memberships = platform ? [] : DEMO_TENANTS;
@@ -140,7 +149,7 @@ export function buildDemoSession(role: RoleKey, tenantId: string | null): Sessio
     ? null
     : (memberships.find((m) => m.tenantId === tenantId) ?? memberships[0]!).tenantId;
   return {
-    user: { id: 'demo-user', displayName: 'Demo User', email: 'demo.user@example.invalid' },
+    user: { id: DEMO_USER_ID, displayName: 'Demo User', email: 'demo.user@example.invalid' },
     role,
     scopeLabel: SCOPE_LABEL[role],
     // The demo Branch Admin manages Branch A1 only; other tenant roles are tenant-wide.
@@ -150,8 +159,10 @@ export function buildDemoSession(role: RoleKey, tenantId: string | null): Sessio
         : null,
     memberships,
     activeTenantId,
+    activeTenantSlug: null,
     permissions: DEMO_ROLE_PERMISSIONS[role],
     demo: true,
+    demoContent: true,
     availableRoles: [role],
     support: null,
   };
