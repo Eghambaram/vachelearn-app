@@ -376,3 +376,48 @@ export async function getMyCertificate(
     }),
   };
 }
+
+/** One row of My learning (sample data, D-110): the learner's own live enrolments with server-computed status. */
+export type MyLearningItem = {
+  enrollmentId: string;
+  courseTitle: string;
+  courseVersion: number;
+  status: ReturnType<typeof enrollmentDisplayStatus>;
+  progressPercent: number;
+  nextLessonTitle: string | null;
+  dueOn: string | null;
+  completedAt: string | null;
+  lessonCount: number;
+};
+
+const MY_LEARNING_ORDER = ['overdue', 'in_progress', 'not_started', 'completed'] as const;
+
+/** My learning (UI spec #40): every own enrolment that is not cancelled, most urgent first. */
+export async function getMyLearning(
+  now = new Date(),
+): Promise<ApiResult<{ items: MyLearningItem[]; today: string; timeZone: string }>> {
+  const own = await ownEnrollments(now);
+  if (!own) return demoError(403);
+  const timeZone = DEMO_TENANT_ZONE;
+  const today = calendarDateIn(now, timeZone);
+  const items = own.mine
+    .filter((e) => e.status !== 'cancelled')
+    .map((e): MyLearningItem => ({
+      enrollmentId: e.id,
+      courseTitle: e.courseTitle,
+      courseVersion: e.courseVersion,
+      status: enrollmentDisplayStatus(e.status, e.dueOn, today),
+      progressPercent: e.progressPercent,
+      nextLessonTitle: e.status === 'not_started' ? null : e.nextLessonTitle,
+      dueOn: e.dueOn,
+      completedAt: e.completedAt,
+      lessonCount: e.modules.flatMap((m) => m.lessons).length,
+    }))
+    .sort(
+      (a, b) =>
+        MY_LEARNING_ORDER.indexOf(a.status as (typeof MY_LEARNING_ORDER)[number]) -
+          MY_LEARNING_ORDER.indexOf(b.status as (typeof MY_LEARNING_ORDER)[number]) ||
+        (a.dueOn ?? '9999').localeCompare(b.dueOn ?? '9999'),
+    );
+  return { ok: true, data: { items, today, timeZone } };
+}

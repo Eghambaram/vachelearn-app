@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { FocusedNotice } from '@/components/focused-notice';
+import { demoVideoFor } from '@/lib/api/demo-media';
 import { DemoBadge } from '@/components/demo-badge';
 import { ErrorState } from '@/components/error-state';
 import { PageHeader } from '@/components/page-header';
@@ -132,7 +133,11 @@ export default async function LessonPage({ params, searchParams }: Props) {
       {enrolled ? (
         <FocusedNotice message={t.catalog.enrolledNotice(enrollment.courseTitle)} />
       ) : null}
-      <CoursePlayer outline={outline.data} lesson={lesson.data} />
+      <CoursePlayer
+        outline={outline.data}
+        lesson={lesson.data}
+        demoVideo={lesson.data.content.type === 'video' ? demoVideoFor(lessonId) : null}
+      />
     </>
   );
 }

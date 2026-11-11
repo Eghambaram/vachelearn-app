@@ -38,14 +38,17 @@ import { NotConnectedAction } from './not-connected-action';
 const t = getMessages();
 const p = t.player;
 
-type Props = { outline: CoursePlayerData; lesson: LessonView };
+/** A local demo video file for video lessons (D-110, client demo); null shows the media placeholder. */
+export type DemoVideo = { src: string; captionsSrc: string } | null;
+
+type Props = { outline: CoursePlayerData; lesson: LessonView; demoVideo?: DemoVideo };
 
 /**
  * Course player (UI spec #41, ref 13): course progress, the lesson tree and one lesson. Everything shown about
  * progress and completion is the server's. Opening a lesson never completes it; the completion actions are not
  * connected until Phase 4. Omitted (D-043): notes, discussion, resources, bookmarks, lesson search, quick quiz.
  */
-export function CoursePlayer({ outline, lesson }: Props) {
+export function CoursePlayer({ outline, lesson, demoVideo = null }: Props) {
   const { enrollment, modules, timeZone } = outline;
   const flat = modules.flatMap((module, m) =>
     module.lessons.map((l, i) => ({ lesson: l, module, number: `${m + 1}.${i + 1}` })),
@@ -133,7 +136,7 @@ export function CoursePlayer({ outline, lesson }: Props) {
             </div>
           </dl>
 
-          <LessonBody content={lesson.content} timeZone={timeZone} />
+          <LessonBody content={lesson.content} timeZone={timeZone} demoVideo={demoVideo} />
 
           <Completion
             lesson={current.lesson}
@@ -177,7 +180,15 @@ export function CoursePlayer({ outline, lesson }: Props) {
   );
 }
 
-function LessonBody({ content, timeZone }: { content: LessonContent; timeZone: string }) {
+function LessonBody({
+  content,
+  timeZone,
+  demoVideo,
+}: {
+  content: LessonContent;
+  timeZone: string;
+  demoVideo: DemoVideo;
+}) {
   switch (content.type) {
     case 'text':
       return (
@@ -190,13 +201,35 @@ function LessonBody({ content, timeZone }: { content: LessonContent; timeZone: s
     case 'video':
       return (
         <figure className="flex flex-col gap-3">
-          <div
-            data-slot="mock-video"
-            className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-lg bg-sidebar p-4 text-center text-sidebar-foreground"
-          >
-            <PlayCircle aria-hidden="true" className="size-10 sm:size-12" />
-            <p className="max-w-md text-sm">{p.video.noMedia}</p>
-          </div>
+          {demoVideo ? (
+            // Native controls: keyboard operable, captions menu, no autoplay (web rules). Progress is not saved.
+            <video
+              data-slot="demo-video"
+              controls
+              preload="metadata"
+              playsInline
+              aria-label={p.video.label}
+              className="aspect-video w-full rounded-lg bg-sidebar"
+            >
+              <source src={demoVideo.src} type="video/mp4" />
+              <track
+                kind="captions"
+                src={demoVideo.captionsSrc}
+                srcLang="en"
+                label={p.video.captionsTrack}
+                default
+              />
+            </video>
+          ) : (
+            <div
+              data-slot="mock-video"
+              className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-lg bg-sidebar p-4 text-center text-sidebar-foreground"
+            >
+              <PlayCircle aria-hidden="true" className="size-10 sm:size-12" />
+              <p className="max-w-md text-sm">{p.video.noMedia}</p>
+            </div>
+          )}
+          {demoVideo ? <p className="text-xs text-muted-foreground">{p.video.demoMedia}</p> : null}
           <figcaption className="flex flex-col gap-1.5 text-sm">
             <span className="sr-only">{p.video.label}</span>
             <ProgressBar

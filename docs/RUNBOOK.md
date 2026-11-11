@@ -58,10 +58,14 @@ with enrol (kept in a browser cookie only), and public tenant pages. Run 2026-11
 3. Web on :3000: from `apps/web`, `ENABLE_DEMO_CONTENT=true API_INTERNAL_URL=http://localhost:4000 pnpm build`, then
    `ENABLE_DEMO_CONTENT=true pnpm exec next start --port 3000`. `pnpm verify` and `pnpm test:e2e` rebuild `.next`
    without the flag: rebuild the demo afterwards.
+   Demo videos (optional): copy MP4 files to `apps/web/public/demo-media/demo-1.mp4`, `demo-2.mp4`, `demo-3.mp4`
+   (git-ignored, never committed); video lessons then play them with a placeholder captions track. Without them,
+   video lessons show the media placeholder.
 4. Walk through: http://localhost:3000 (demo organisations) → `/t/demo-manufacturing`, `/t/demo-logistics` (catalog,
    course pages, "Sign in to enrol") → sign in as `<role>.<tenant-slug>@demo.vachelearn.test` (roles: `admin`,
    `branch-admin`, `learning-manager`, `compliance`, `instructor`, `learner`, `learner2`), `both-tenants@…`,
-   `platform-admin@…` → learner: Course catalog → a course → Enrol → first lesson; admin: Dashboard, Courses, People.
+   `platform-admin@…` → learner: My learning (status filters) → Course catalog → a course → Enrol → first lesson (video lessons play the
+   demo videos); admin: Dashboard, Courses, People.
 
 Live in the demo: sign-in, sessions, workspaces, people, branches, roles, settings, audit log. Sample data: everything
 under the banner. Instructor screens still say "Not available yet" (Phase 5). Turn the flag off and rebuild to return to D-097. Never set it (or combine it with `ENABLE_DEMO_VERIFICATION`) on
