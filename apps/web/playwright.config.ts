@@ -39,10 +39,17 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
+    // The demo seed (Slice 2.6c) runs once, after the servers start and before every other project.
+    { name: 'seed', testMatch: /seed\.setup\.ts$/ },
+    {
+      name: 'desktop-chromium',
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['seed'],
+    },
     {
       name: 'mobile-360',
       use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 780 } },
+      dependencies: ['seed'],
     },
   ],
   webServer: [

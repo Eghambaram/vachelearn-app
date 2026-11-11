@@ -21,12 +21,20 @@ export async function expectNoAxeViolations(page: Page) {
 
 export const uniqueEmail = (prefix = 'e2e') => `${prefix}-${randomUUID().slice(0, 8)}@example.test`;
 
-function cli(script: string, args: string[]) {
+function cli(script: string, args: string[], env: Record<string, string> = {}) {
   execFileSync('node', [resolve(process.cwd(), `../api/dist/src/cli/${script}.js`), ...args], {
-    env: { ...process.env, ...E2E_API_ENV },
+    env: { ...process.env, ...E2E_API_ENV, ...env },
     stdio: 'pipe',
   });
 }
+
+/** `db:seed` on the e2e database (Slice 2.6c): new demo accounts get PASSWORD; existing ones keep theirs. */
+export function seedDemoData() {
+  cli('seed', [], { SEED_PASSWORD: PASSWORD });
+}
+
+/** A seeded demo account (apps/api/src/seed/demo-seed.ts). */
+export const demoEmail = (local: string) => `${local}@demo.vachelearn.test`;
 
 export function createAccount(email = uniqueEmail(), name = 'E2E Person (Demo)') {
   cli('create-user', ['--email', email, '--name', name, '--reason', 'Playwright end-to-end test']);

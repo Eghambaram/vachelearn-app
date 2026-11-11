@@ -1,38 +1,29 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — Slice 2.6b done** (fixture, R1 matrix, seed). 2.6a d566646; 2.5c 1ef1c25; 2.5b
-7fb2164; 2.5a e3e53e7; Slice 2.3 done (53135bf). Phase 1 approved (a51d042). Next: 2.6c.
+**Phase 2 · Platform foundation (R1) — Slice 2.6c done** (per-role e2e smoke on the seed). 2.6b 8fb01dc;
+2.6a d566646; 2.5c 1ef1c25; 2.5b 7fb2164; 2.5a e3e53e7. Phase 1 approved (a51d042). Next: Phase 2 exit gate.
 
 ## Last verified
-2026-11-11, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.6b tree:
+2026-11-11, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the 2.6c tree:
 - `pnpm verify` → exit 0 · contracts 56, web 656, api 375 · build OK · `test:isolation` → 255 passed
-- `pnpm test:e2e` not rerun (no web change; 2.6a: 250 + 4 load failures passing on rerun) · `db:seed` run twice
+- `pnpm test:e2e` → 275 passed (9.9 min; includes the `seed` setup project and `seed-roles.spec.ts`)
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
-- 2.1 API scaffold (cd9d922) · 2.2 tenancy + isolation suite (a2ae10b) · 2.3a jobs + email (353a2e2) · 2.3b sign-in +
-  sessions (360f8f6) · 2.3c password links + `user:create` (68f5930) · 2.3d web sign-in + proxy + headers (53135bf).
-- 2.4a memberships, fixed roles, real request context, `user:grant` (97ef679).
-- 2.4b role-assignment API + first Tenant Admin (D-091–D-095) (37e9a3b).
-- 2.4c support sessions: `/platform/support-sessions` start/current/end; read-only SS context, 60 min, bound to the
-  opening browser session, every request audited with the session id; ends on end/expiry/sign-out/archive/role loss
-  (D-037, D-098). Audit fixes (follow-up commit): denied attempts audited, read-only on every route, composite FKs
-  for support audit rows, ended on every browser-session end + archive + sweep, D-099 Needs decision.
-- 2.6b shared two-tenant fixture + R1 isolation matrix (`test/r1.isolation.test.ts`), `db:seed` demo data.
-- 2.6a audit log: `GET /audit-events` + `/admin/audit` (D-099, D-109), support-view auditing.
-- 2.5c web: `/admin/branches` (+ new, detail), `/admin/settings` (General, Features), `/admin/settings/people`.
-- 2.5b web: `/admin/users` list + detail (details, status, branches, roles), `/admin/roles` reference (D-107).
-- 2.5a people API: `/people`, `/job-roles`, `/tenant-settings`; D-047 fields, D-101–D-106 (log 2026-11).
-- 2.4d web: real session in the shell (`GET /auth/session`), workspace by most capable role + picker (D-096, D-089),
-  "Not available yet" on demo screens for real sessions (D-097), real sign-out, `/platform/support` + banner (D-037).
+- 2.1 API scaffold (cd9d922) · 2.2 tenancy + isolation suite (a2ae10b) · 2.3a–d jobs + email, sign-in + sessions,
+  password links + `user:create`, web sign-in + proxy (353a2e2…53135bf) · 2.4a memberships, roles, `user:grant`
+  (97ef679) · 2.4b role assignment + first Tenant Admin (37e9a3b) · 2.4c support sessions (D-037, D-098) · 2.4d real
+  session in the shell (b66e997) · 2.5a people API (e3e53e7) · 2.5b users/roles screens (7fb2164) · 2.5c branches,
+  settings, job roles (1ef1c25) · 2.6a audit log (d566646) · 2.6b two-tenant fixture, R1 matrix, `db:seed` (8fb01dc)
+  · 2.6c per-role Playwright smoke on the seed (`e2e/seed-roles.spec.ts`). Detail: `docs/progress-log/2026-11.md`.
 
 ## In progress / uncommitted
 - Nothing.
 
 ## Next step
-2.6c (D-108): CI Playwright smoke per role on the seed (sign in → workspace per role), then the
-Phase 2 exit gate: qa-verifier from a clean clone, `docs/RUNBOOK.md` two-tenant isolation demo, security review.
+Phase 2 exit gate: `docs/RUNBOOK.md` two-tenant isolation demo script, tenant-isolation-auditor + security-reviewer
+over Phase 2, qa-verifier from a clean clone, docs check (DOMAIN_MODEL, matrix, API spec, RUNBOOK, `.env.example`).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
