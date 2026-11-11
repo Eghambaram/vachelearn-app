@@ -1,13 +1,13 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — Slice 2.6a done** (tenant audit log). 2.5c 1ef1c25; 2.5b
-7fb2164; 2.5a e3e53e7; Slice 2.3 done (53135bf). Phase 1 approved (a51d042). Next: 2.6b.
+**Phase 2 · Platform foundation (R1) — Slice 2.6b done** (fixture, R1 matrix, seed). 2.6a d566646; 2.5c 1ef1c25; 2.5b
+7fb2164; 2.5a e3e53e7; Slice 2.3 done (53135bf). Phase 1 approved (a51d042). Next: 2.6c.
 
 ## Last verified
-2026-11-03, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.6a tree:
-- `pnpm verify` → exit 0 · contracts 56, web 656, api 358 · build OK · `test:isolation` → 243 passed
-- `pnpm test:e2e` → 250 passed + 4 load failures (load avg 12.7) that passed on `--last-failed` rerun
+2026-11-11, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), on the final 2.6b tree:
+- `pnpm verify` → exit 0 · contracts 56, web 656, api 375 · build OK · `test:isolation` → 255 passed
+- `pnpm test:e2e` not rerun (no web change; 2.6a: 250 + 4 load failures passing on rerun) · `db:seed` run twice
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
@@ -19,6 +19,7 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
   opening browser session, every request audited with the session id; ends on end/expiry/sign-out/archive/role loss
   (D-037, D-098). Audit fixes (follow-up commit): denied attempts audited, read-only on every route, composite FKs
   for support audit rows, ended on every browser-session end + archive + sweep, D-099 Needs decision.
+- 2.6b shared two-tenant fixture + R1 isolation matrix (`test/r1.isolation.test.ts`), `db:seed` demo data.
 - 2.6a audit log: `GET /audit-events` + `/admin/audit` (D-099, D-109), support-view auditing.
 - 2.5c web: `/admin/branches` (+ new, detail), `/admin/settings` (General, Features), `/admin/settings/people`.
 - 2.5b web: `/admin/users` list + detail (details, status, branches, roles), `/admin/roles` reference (D-107).
@@ -30,9 +31,8 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
 - Nothing.
 
 ## Next step
-2.6b (D-108): shared two-tenant fixture helper (A: A1, A2; B: B1; every role; a member of both),
-isolation specs for every R1 resource on it, `db:seed` (idempotent, refuses production). Then 2.6c: CI Playwright
-smoke per role on the seed, the Phase 2 exit gate (qa-verifier from a clean clone, RUNBOOK two-tenant demo).
+2.6c (D-108): CI Playwright smoke per role on the seed (sign in → workspace per role), then the
+Phase 2 exit gate: qa-verifier from a clean clone, `docs/RUNBOOK.md` two-tenant isolation demo, security review.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).

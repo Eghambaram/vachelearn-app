@@ -91,7 +91,7 @@ tests pass.
 | Tenant/branch isolation suite | `pnpm --filter api test:isolation` (also part of `pnpm test`; full two-tenant fixture in 2.6) |
 | E2E (Playwright + axe) | `pnpm test:e2e` (needs `pnpm services:up`; starts the API on :4100 and the web on :3100; first time: `pnpm --filter web exec playwright install chromium`) |
 | Build | `pnpm build` |
-| DB migrate (dev) / deploy / reset | `pnpm --filter api db:migrate` · `db:deploy` · `db:reset` (localhost only); *Phase 2.6:* `db:seed` |
+| DB migrate (dev) / deploy / reset / seed | `pnpm --filter api db:migrate` · `db:deploy` · `db:reset` (localhost only) · `db:seed` (demo data, idempotent, local only; `SEED_PASSWORD` or a printed one) |
 | Create an account (operator) | `pnpm --filter api user:create --email <address> --name "<name>" --reason "<why>"` (sends a set-password email; D-083) |
 | Grant a role (operator) | `pnpm --filter api user:grant --email <address> --role <role> [--tenant <slug> [--branch <code>]] --reason "<why>"` (D-053) |
 | All gates (run before reporting a slice done) | `pnpm verify` = ignored-source check + format:check + lint + typecheck + test + build (needs local services for api tests) |
