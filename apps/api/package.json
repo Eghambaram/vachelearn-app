@@ -20,7 +20,8 @@
     "test:isolation": "pnpm generate && vitest run isolation",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:reset": "node scripts/assert-local-database.mjs && prisma migrate reset --force"
+    "db:reset": "node scripts/assert-local-database.mjs && prisma migrate reset --force",
+    "demo:isolation": "node scripts/isolation-demo.mjs"
   },
   "dependencies": {
     "@nestjs/common": "12.2.0",

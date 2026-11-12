@@ -1,7 +1,8 @@
-# VacheLearn Domain Model — Phase 0 draft
+# VacheLearn Domain Model
 
-Status: **Proposed** (Phase 0, 2026-10-20). Conceptual model only — no Prisma schema yet. The physical schema is
-written slice by slice from Phase 2 and this file is updated in the same change. Sources: MASTER_PROMPT §6, spec §3
+Status: conceptual model (§1–§7) **Proposed** (Phase 0, 2026-10-20); the R1 tables are built (Phase 2, see "Physical
+schema" below, checked against `schema.prisma` at the Phase 2 exit gate, 2026-11-11). The physical schema is written
+slice by slice and this file is updated in the same change. Sources: MASTER_PROMPT §6, spec §3
 and §4–§15, `docs/LEGACY_CAPABILITY_INVENTORY.md`. Decision IDs refer to `docs/DECISIONS.md`.
 
 ## 1. Classification rules
@@ -48,6 +49,9 @@ built and the guarantees the database itself enforces.
 | `auth_sessions.active_membership_id` | 2.4a | — | Composite FK `(user_id, active_membership_id) → memberships(user_id, id)`: a session can only point at its own user's membership (D-089) |
 | `platform_support_sessions` | 2.4c | Global (names a tenant) | Reason ≥ 3 characters; at most 60 minutes (CHECK, D-037); ended ⇔ `end_reason` (`ended`, `expired`, `signed_out`, `tenant_archived`, `staff_role_revoked`); one live per staff member (partial unique); bound to the opening `auth_sessions` row (FK) |
 | `auth_sessions.support_session_id` | 2.4c | — | Composite FK `(user_id, support_session_id) → platform_support_sessions(staff_user_id, id)`: a browser session can only carry its own staff member's support session; `audit_events.support_session_id` now references it too |
+
+Optimistic concurrency: `tenants`, `tenant_settings`, `branches` (2.2), `memberships` (2.4a) and `job_roles` (2.5a)
+carry `version INTEGER NOT NULL DEFAULT 1`; an edit names the version it read and a stale one is a 409.
 
 Not built yet: everything else in §2. Department is a free-text membership field for now (D-103), not a table.
 
@@ -211,7 +215,7 @@ Derived: **Expired** when `expiresAt` < now. Verification shows Valid · Expired
 ### Tenant, Branch, Membership
 
 Tenant: `active` ⇄ `suspended` (reason, audited) → `archived`. Branch: `active` ⇄ `inactive`. Membership:
-`invited` → `active` ⇄ `deactivated`. Suspension and deactivation revoke sessions on the next request (D-049);
+`active` ⇄ `deactivated` (built); an `invited` state comes with invitations in Phase 3. Suspension and deactivation revoke sessions on the next request (D-049);
 deactivating a membership ends the member's sessions in that tenant at once and keeps its role assignments, which
 grant nothing until reactivation (D-102). JobRole: `active` ⇄ `inactive` (an inactive role stays on members but
 cannot be newly chosen).
