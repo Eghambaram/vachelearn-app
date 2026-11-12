@@ -8,9 +8,8 @@ import type {
 } from '@vachelearn/contracts';
 import type { z } from 'zod';
 import type { Prisma } from '../../generated/prisma/client';
-import { liveReach, reachFor, reachFromContext, type Reach } from '../access/reach';
+import { liveReach, reachFor, reachFromContext, withinReach, type Reach } from '../access/reach';
 import type { RequestContext } from '../access/request-context';
-import { BRANCH_ADMIN_ASSIGNABLE } from '../access/permissions';
 import { SupportSessionsService } from '../access/support-sessions.service';
 import { lockTenant, usableTenantAdmin } from '../access/tenant-admins';
 import { AuditService, changedFields, type Tx } from '../audit/audit.service';
@@ -85,20 +84,6 @@ function visibleWhere(tenantId: string, reach: Reach): Prisma.MembershipWhereInp
   return reach.kind === 'tenant'
     ? { tenantId }
     : { tenantId, branches: { some: { branchId: { in: [...reach.branchIds] } } } };
-}
-
-/**
- * D-101: a branch-scoped caller acts only on members wholly inside its branches whose live roles are all branch roles it
- * could grant itself (Learner, Instructor) — never a peer Branch Admin, a Learning Manager or a Compliance Viewer, and
- * never a whole-organisation role holder (isolation + security reviews 2.5a).
- */
-function withinReach(reach: Reach, row: Pick<PersonRow, 'branches' | 'roleAssignments'>) {
-  if (reach.kind === 'tenant') return true;
-  return (
-    row.branches.length > 0 &&
-    row.branches.every((b) => reach.branchIds.has(b.branch.id)) &&
-    row.roleAssignments.every((a) => a.branch !== null && BRANCH_ADMIN_ASSIGNABLE.includes(a.role))
-  );
 }
 
 function toSummary(row: PersonRow, reach: Reach): PersonSummary {
@@ -608,6 +593,9 @@ export class PeopleService {
   /** The detail view; `canManage` answers "may this caller change this member" for the screen (D-101). */
   private toView(ctx: RequestContext, row: PersonRow, readReach: Reach): PersonView {
     const manage = ctx.support ? null : reachFor(ctx, 'user.update');
+    const lifecycle = ctx.support
+      ? null
+      : (reachFor(ctx, 'user.deactivate') ?? reachFor(ctx, 'user.reactivate'));
     const summary = toSummary(row, readReach);
     // A branch-scoped caller who manages this member's branches sees the primary marker too: under D-101 all the
     // member's branches lie within its own, so the marker reveals nothing outside its scope (UX review 2.5b) — and it
@@ -629,11 +617,10 @@ export class PeopleService {
       accountStatus: row.user.status,
       accountVerified: row.user.emailVerifiedAt !== null,
       deactivatedAt: row.deactivatedAt?.toISOString() ?? null,
-      // Free text that may be sensitive: only for callers who may deactivate or reactivate members (D-106).
+      // Free text that may be sensitive: only for callers who may deactivate or reactivate *this* member (D-106: a
+      // Branch Admin within D-101 reach) — the audit log hides it the same way (exit-gate isolation audit).
       deactivatedReason:
-        reachFor(ctx, 'user.deactivate') || reachFor(ctx, 'user.reactivate')
-          ? row.deactivatedReason
-          : null,
+        lifecycle !== null && withinReach(lifecycle, row) ? row.deactivatedReason : null,
       canManage:
         manage !== null &&
         row.userId !== ctx.userId &&

@@ -1,6 +1,11 @@
 import type { Tx } from '../audit/audit.service';
 import { ApiException } from '../common/errors/api-exception';
-import { tenantGrants, type TenantPermission, type TenantRole } from './permissions';
+import {
+  BRANCH_ADMIN_ASSIGNABLE,
+  tenantGrants,
+  type TenantPermission,
+  type TenantRole,
+} from './permissions';
 import type { RequestContext } from './request-context';
 
 /*
@@ -11,6 +16,28 @@ import type { RequestContext } from './request-context';
 export type Reach = { kind: 'tenant' } | { kind: 'branches'; branchIds: ReadonlySet<string> };
 
 const LIVE = { revokedAt: null } as const;
+
+/**
+ * D-101 (and D-113 for roles): a branch-scoped caller acts only on members wholly inside its branches whose live roles
+ * are all branch roles it could grant itself (Learner, Instructor) — never a peer Branch Admin, a Learning Manager or a
+ * Compliance Viewer, and never a whole-organisation role holder (isolation + security reviews 2.5a, exit gate).
+ */
+export function withinReach(
+  reach: Reach,
+  member: {
+    branches: readonly { branch: { id: string } }[];
+    roleAssignments: readonly { role: TenantRole; branch: { id: string } | null }[];
+  },
+) {
+  if (reach.kind === 'tenant') return true;
+  return (
+    member.branches.length > 0 &&
+    member.branches.every((b) => reach.branchIds.has(b.branch.id)) &&
+    member.roleAssignments.every(
+      (a) => a.branch !== null && BRANCH_ADMIN_ASSIGNABLE.includes(a.role),
+    )
+  );
+}
 
 /** Reach from the context: the access guard already narrowed the branch scope to the route's permission. */
 export function reachFromContext(ctx: RequestContext): Reach {

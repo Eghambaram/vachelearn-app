@@ -30,7 +30,7 @@ over Phase 2, qa-verifier from a clean clone, docs check (DOMAIN_MODEL, matrix, 
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
 - Review D-070 (resume = first unfinished lesson vs last opened); decide D-076 (verifying suspended tenants'
   certificates).
-- Phase 2: review D-080, D-086, D-088, D-090, D-095, decide D-099, and the matrix split note (PSA `saved_report.manage`) ·
+- Phase 2: review D-080, D-088, D-090, D-095, decide D-099, and the matrix split note (PSA `saved_report.manage`) ·
   D-082 production email provider (launch).
 
 ## Known issues
@@ -55,7 +55,12 @@ over Phase 2, qa-verifier from a clean clone, docs check (DOMAIN_MODEL, matrix, 
   `pnpm check:ignored-source` (first step of verify) fails if any source file under apps/ or packages/ is ignored.
 - Before any public deployment (security reviews 1.5.7, 2.3d, demo): nonce-based `script-src` CSP for the web, HSTS at
   the edge (checked), `API_INTERNAL_URL` set (the build only warns), the web→API hop private or https,
-  `ENABLE_DEMO_CONTENT` unset (nothing enforces it; consider a guard, D-110).
+  `ENABLE_DEMO_CONTENT` unset (nothing enforces it — `next start` always runs as production, so a NODE_ENV guard cannot
+  tell a local demo apart; since the Phase 2 gate it shows samples only in the two seeded `demo-*` tenants), no
+  `.dockerignore` yet (add one excluding env files, `public/demo-media`, `.next/cache` before Phase 7 images).
+- Phase 2 gate reviews, logged not fixed: a Branch Admin's `employeeId` "taken" 422 reveals that an ID exists
+  elsewhere in the tenant (accepted 2.5a); first-admin `accountCreated` tells platform staff an address has an
+  account (staff-only); `SEED_PASSWORD` skips the common-password check (local demo only); D-114 demo video licence.
 - Exit-gate review Lows (stepper "(completed)", catalog/enrol spelling drift, donut colours, < 24 px targets, Select
   blank before hydration) and untested surfaces (screen readers, Safari, Firefox, touch, zoom, High Contrast): log.
 - Certificate preview builds its printed verification address from request headers (`siteOrigin`); Phase 2 should

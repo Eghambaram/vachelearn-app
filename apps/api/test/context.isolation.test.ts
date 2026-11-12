@@ -270,6 +270,42 @@ describe('platform roles (D-037: no implicit tenant access)', () => {
     expect((await s.get(`/api/v1/branches/${A1}`)).status).toBe(403);
   });
 
+  it('an account cannot hold both a platform role and tenant roles through the operator path (D-037)', async () => {
+    const staff = await user('psa@example.test');
+    await memberships().operatorGrantPlatformRole(
+      { userId: staff, role: 'platform_super_admin' },
+      OPERATOR,
+    );
+    await expect(grant(staff, tenantA, 'tenant_admin')).rejects.toMatchObject({
+      status: 409,
+    });
+    const admin = await user('admin@example.test');
+    await grant(admin, tenantA, 'tenant_admin');
+    await expect(
+      memberships().operatorGrantPlatformRole(
+        { userId: admin, role: 'platform_super_admin' },
+        OPERATOR,
+      ),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(await db.roleAssignment.count({ where: { membership: { userId: staff } } })).toBe(0);
+    expect(await db.platformRoleAssignment.count({ where: { userId: admin } })).toBe(0);
+  });
+
+  it('an account holding a platform role gets no tenant grants even with a membership and role (D-037)', async () => {
+    // Built straight in the database, as a row written before this rule existed would be.
+    const id = await user('psa@example.test');
+    const membership = await db.membership.create({ data: { tenantId: tenantA, userId: id } });
+    await db.roleAssignment.create({
+      data: { tenantId: tenantA, membershipId: membership.id, role: 'tenant_admin' },
+    });
+    await db.platformRoleAssignment.create({ data: { userId: id, role: 'platform_super_admin' } });
+    const s = await signIn('psa@example.test');
+    expect((await s.get('/api/v1/platform/tenants')).status).toBe(200);
+    expect((await s.get('/api/v1/branches')).status).toBe(403);
+    expect((await s.get('/api/v1/people')).status).toBe(403);
+    expect((await s.switchTo(membership.id)).status).toBe(404);
+  });
+
   it('tenant roles never reach platform routes', async () => {
     const id = await user('admin@example.test');
     await grant(id, tenantA, 'tenant_admin');

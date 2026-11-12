@@ -5,7 +5,11 @@ import { getSessionContext } from '@/lib/auth/session';
 import { chooseRole, isRoleKey, toSessionView } from '@/lib/auth/session-view';
 import { isDemoContentEnabled, isDemoWorkspacesEnabled } from '@/lib/dev-tools';
 import { getMessages } from '@/lib/i18n';
-import { buildDemoSession, DEFAULT_DEMO_ROLE } from '@/mocks/demo-session';
+import {
+  buildDemoSession,
+  DEFAULT_DEMO_ROLE,
+  DEMO_CONTENT_TENANT_SLUGS,
+} from '@/mocks/demo-session';
 import type { SessionView } from './session-types';
 
 export { isRoleKey };
@@ -36,12 +40,18 @@ export const getSession = cache(async function getSession(): Promise<SessionView
   if (real.status === 'signed-in') {
     const role = chooseRole(real.context, jar.get(WORKSPACE_ROLE_COOKIE)?.value);
     if (!role) redirect('/welcome');
+    const view = toSessionView(real.context, role, {
+      wholeTenant: t.shell.scopeWholeTenant,
+      platform: t.shell.scopePlatform,
+    });
     return {
-      ...toSessionView(real.context, role, {
-        wholeTenant: t.shell.scopeWholeTenant,
-        platform: t.shell.scopePlatform,
-      }),
-      demoContent: isDemoContentEnabled(),
+      ...view,
+      // Sample data only in the seeded demo tenants (or platform screens with no tenant): never a real organisation.
+      demoContent:
+        isDemoContentEnabled() &&
+        (view.activeTenantSlug === null
+          ? view.support === null
+          : DEMO_CONTENT_TENANT_SLUGS.includes(view.activeTenantSlug)),
     };
   }
   if (real.status === 'unavailable')

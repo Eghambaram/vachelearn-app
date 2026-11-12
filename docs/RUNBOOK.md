@@ -53,13 +53,18 @@ with enrol (kept in a browser cookie only), and public tenant pages. Run 2026-11
    `SEED_PASSWORD` first and every demo account gets it. Accounts that already exist keep their password: set one per
    account with "Forgot your password?" on `/login` and the link in Mailpit (http://localhost:58025).
 2. API on :4000: `pnpm --filter api build`, then from `apps/api` start `node --enable-source-maps dist/src/main.js`
-   with `NODE_ENV=development API_PORT=4000 DATABASE_URL=<local vachelearn URL> WEB_ORIGIN=http://localhost:3000
-   EMAIL_PROVIDER=smtp SMTP_HOST=127.0.0.1 SMTP_PORT=51025` (or `pnpm dev` with the root env file).
+   with `NODE_ENV=development API_PORT=4000 API_HOST=127.0.0.1 DATABASE_URL=<local vachelearn URL>
+   WEB_ORIGIN=http://localhost:3000 EMAIL_PROVIDER=smtp SMTP_HOST=127.0.0.1 SMTP_PORT=51025` (or `pnpm dev` with the
+   root env file). `API_HOST=127.0.0.1` keeps the API (and `/api/docs`) off the network: every demo account shares one
+   password, so on a client's Wi-Fi nothing else should reach it (exit-gate security review).
 3. Web on :3000: from `apps/web`, `ENABLE_DEMO_CONTENT=true API_INTERNAL_URL=http://localhost:4000 pnpm build`, then
-   `ENABLE_DEMO_CONTENT=true pnpm exec next start --port 3000`. `pnpm verify` and `pnpm test:e2e` rebuild `.next`
+   `ENABLE_DEMO_CONTENT=true pnpm exec next start --port 3000 -H 127.0.0.1` (local only, as above). `pnpm verify` and `pnpm test:e2e` rebuild `.next`
    without the flag: rebuild the demo afterwards.
    Demo videos (optional): copy MP4 files to `apps/web/public/demo-media/demo-1.mp4`, `demo-2.mp4`, `demo-3.mp4`
-   (git-ignored, never committed); video lessons then play them with a placeholder captions track. Without them,
+   (git-ignored, never committed); video lessons then play them with a placeholder captions track. Everything in
+   `public/` is served to anyone, flag or not: never build a deployable image from a tree holding them. Where the
+   current files came from and their licence are not recorded (**Needs decision**, owner: confirm before showing them
+   outside the team). Without them,
    video lessons show the media placeholder.
 4. Walk through: http://localhost:3000 (demo organisations) → `/t/demo-manufacturing`, `/t/demo-logistics` (catalog,
    course pages, "Sign in to enrol") → sign in as `<role>.<tenant-slug>@demo.vachelearn.test` (roles: `admin`,
@@ -70,6 +75,39 @@ with enrol (kept in a browser cookie only), and public tenant pages. Run 2026-11
 Live in the demo: sign-in, sessions, workspaces, people, branches, roles, settings, audit log. Sample data: everything
 under the banner. Instructor screens still say "Not available yet" (Phase 5). Turn the flag off and rebuild to return to D-097. Never set it (or combine it with `ENABLE_DEMO_VERIFICATION`) on
 anything but a local machine: nothing enforces this, and real users would see sample certificates under their own names.
+
+### Two-tenant isolation demo (Phase 2 exit gate)
+
+Shows on the `db:seed` data that two tenants, and two branches of one tenant, cannot read or change each other's data
+through an ID, a filter, a header, a query parameter or a tenant switch. The automated proof is the isolation suite
+(`pnpm --filter api test:isolation`, every R1 resource); this is the demonstration of the same rules. Run 2026-11-11
+on the dev database: 27 checks, "All checks passed."
+
+1. `pnpm services:up`, `pnpm --filter api db:seed`, and the demo accounts' password known (see "Demo data"; reset
+   lost ones with "Forgot your password?" and Mailpit).
+2. API on :4000 with `WEB_ORIGIN=http://localhost:3000` (as in "Client demo" step 2, or `pnpm dev`).
+3. `DEMO_PASSWORD=<password> pnpm --filter api demo:isolation` (`apps/api/scripts/isolation-demo.mjs`; `API_URL` and
+   `WEB_ORIGIN` override the defaults; refuses a non-local API). It prints one PASS/FAIL line per call and exits 1 on
+   any FAIL. Nothing is changed: the write attempts in it must be refused.
+
+What it shows, and what to say:
+
+| Who (seed account) | Tries | Result |
+|---|---|---|
+| `admin.demo-manufacturing@…` | people list | only Manufacturing members |
+| same | a Logistics member / London branch by id (control: Logistics admin gets 200 for the same ids) | 404 — existence not revealed |
+| same | deactivate a Logistics member | 404, nothing changed |
+| same | `?branchId=<London>` · `?tenantId=<Logistics>` · `x-tenant-id` / `x-tenant-slug` headers | empty list · 422 · ignored |
+| same | `POST /auth/session/tenant` with the Logistics admin's membership id | 404 |
+| same | audit log | no Logistics record |
+| `branch-admin.demo-manufacturing@…` (Pune) | people list · `?branchId=<Houston>` | Pune members only · empty |
+| same | Houston learner / Houston branch by id (control: tenant admin gets 200) · grant a role in Houston | 404 · 404 · 404 |
+| `both-tenants@…` | switch to Manufacturing (Learning Manager), then Logistics (Learner, Chennai) | Manufacturing people only, then 403 on the people list and on the Manufacturing member |
+| `platform-admin@…` | tenant people list / member by id without a support session (D-037) | 403 |
+
+In the browser (client demo build, http://localhost:3000): sign in as the Manufacturing admin → People shows 8
+Manufacturing members; as the Pune branch admin → People shows the 3 Pune members; as `both-tenants@…` →
+"Choose a workspace" (checked in the browser 2026-11-11; the people counts above are the API results of the script).
 
 How `apps/api` loads the shared contracts: `packages/contracts` exports TypeScript source to the web app and to tests,
 and a CommonJS build (`dist/`, `pnpm --filter @vachelearn/contracts build`) to the API through the `require` export

@@ -117,6 +117,13 @@ describe('configuration (fail fast, nothing fails open)', () => {
     }
   });
 
+  it('API_HOST: unset listens on every interface; a host or IP narrows it; anything else is refused', () => {
+    expect(loadConfig(BASE).API_HOST).toBeNull();
+    expect(loadConfig({ ...BASE, API_HOST: '127.0.0.1' }).API_HOST).toBe('127.0.0.1');
+    expect(loadConfig({ ...BASE, API_HOST: '::1' }).API_HOST).toBe('::1');
+    expect(() => loadConfig({ ...BASE, API_HOST: 'http://x/' })).toThrow(/API_HOST/);
+  });
+
   it('TRUST_PROXY_HOPS: required and at least 1 in production (D-085: the peer is the web server)', () => {
     const prod = { ...PROD, WEB_ORIGIN: 'https://a.example' };
     expect(() => loadConfig({ ...prod, TRUST_PROXY_HOPS: undefined })).toThrow(

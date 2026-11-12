@@ -371,3 +371,40 @@ describe('security review 2.3b fixes', () => {
     expect((await limits.prune(new Date('2026-01-03'))).count).toBe(1);
   });
 });
+
+describe('D-086 per account and client network: no lockout of the owner (exit-gate review, 2026-11-11)', () => {
+  // A second app that trusts one proxy hop, so each request can name its client network in X-Forwarded-For.
+  let proxied: INestApplication;
+  beforeAll(async () => {
+    ({ app: proxied } = await createTestApp({ env: { TRUST_PROXY_HOPS: '1' } }));
+  });
+  afterAll(async () => {
+    await proxied.close();
+  });
+  const loginFrom = (ip: string, email: string, password = PASSWORD) =>
+    request(proxied.getHttpServer())
+      .post('/api/v1/auth/login')
+      .set('origin', WEB)
+      .set('x-forwarded-for', ip)
+      .send({ email, password });
+
+  it('guesses from one network are refused there, while the owner signs in from another', async () => {
+    await createUser('target@example.test');
+    for (let i = 0; i < LOGIN_LIMITS.account.max; i++) {
+      expect((await loginFrom('198.51.100.7', 'target@example.test', 'wrong guess')).status).toBe(
+        401,
+      );
+    }
+    expect((await loginFrom('198.51.100.7', 'target@example.test')).status).toBe(429);
+    expect((await loginFrom('203.0.113.20', 'target@example.test')).status).toBe(200);
+  });
+
+  it('an IPv6 attacker cannot rotate addresses inside one /64 to escape the account limit', async () => {
+    await createUser('target@example.test');
+    for (let i = 0; i < LOGIN_LIMITS.account.max; i++) {
+      const ip = `2001:db8:1:2::${(i + 1).toString(16)}`;
+      expect((await loginFrom(ip, 'target@example.test', 'wrong guess')).status).toBe(401);
+    }
+    expect((await loginFrom('2001:db8:1:2::ff', 'target@example.test')).status).toBe(429);
+  });
+});

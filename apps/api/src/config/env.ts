@@ -21,6 +21,14 @@ const EnvSchema = z
       error: 'must be development, test or production',
     }),
     API_PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
+    /**
+     * Interface the API listens on. Unset: every interface (containers, CI). Set 127.0.0.1 for a local demo on a shared
+     * network, so nothing else on it can reach the API (exit-gate security review).
+     */
+    API_HOST: z
+      .string()
+      .regex(/^[A-Za-z0-9.:-]{1,253}$/, 'must be a host name or IP address')
+      .optional(),
     /** PostgreSQL connection string (D-005). */
     DATABASE_URL: z
       .string({ error: 'is required' })
@@ -158,6 +166,7 @@ const EnvSchema = z
   .transform((env) => ({
     NODE_ENV: env.NODE_ENV,
     API_PORT: env.API_PORT,
+    API_HOST: env.API_HOST ?? null,
     DATABASE_URL: env.DATABASE_URL,
     LOG_LEVEL: env.LOG_LEVEL,
     WEB_ORIGIN: env.WEB_ORIGIN ?? 'http://localhost:3000',

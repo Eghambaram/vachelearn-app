@@ -14,7 +14,7 @@ import {
   type TenantRole,
 } from './permissions';
 import type { RequestContext } from './request-context';
-import { lockTenant } from './tenant-admins';
+import { isPlatformStaff, lockTenant } from './tenant-admins';
 
 /*
  * Memberships and role assignments (Slice 2.4a; D-026, D-053, D-089). The tenant a session works in is the session's
@@ -37,6 +37,9 @@ export type SessionAccess = {
 };
 
 const LIVE = { revokedAt: null } as const;
+
+const PLATFORM_STAFF_NO_TENANT_ROLE =
+  'Platform staff reach organisations only through support sessions (D-037): an account cannot hold both a platform role and tenant roles';
 
 @Injectable()
 export class MembershipsService {
@@ -64,7 +67,9 @@ export class MembershipsService {
     const platform = platformRoles.length
       ? { permissions: platformGrants(platformRoles.map((r) => r.role as PlatformRole)) }
       : null;
-    if (!activeMembershipId) return { platform, tenant: null, activeTenant: null };
+    // Defence in depth (D-037): platform staff get no tenant grants from a membership, even one created before they
+    // became staff; they reach tenants only through a support session (exit-gate isolation audit).
+    if (!activeMembershipId || platform) return { platform, tenant: null, activeTenant: null };
 
     const membership = await this.prisma.membership.findFirst({
       // The user id is part of the lookup: a session can only ever use its own user's membership.
@@ -147,6 +152,8 @@ export class MembershipsService {
         'End the support session before switching organisation',
       );
     }
+    // Platform staff hold no usable membership (D-037; accessFor grants them nothing in a tenant): the same 404.
+    if (ctx.platform) throw ApiException.notFound();
     const membership = await this.prisma.membership.findFirst({
       where: { id: membershipId, userId: ctx.userId, status: 'active' },
       select: { id: true, tenantId: true, tenant: { select: { status: true } } },
@@ -240,6 +247,9 @@ export class MembershipsService {
       });
       if (user?.status !== 'active')
         throw new ApiException(409, 'INVALID_STATE', 'The account is not active');
+      // D-037 / D-095: platform staff reach a tenant only through a support session, never through a tenant role.
+      if (await isPlatformStaff(tx, input.userId))
+        throw new ApiException(409, 'INVALID_STATE', PLATFORM_STAFF_NO_TENANT_ROLE);
       const tenant = await tx.tenant.findUnique({
         where: { id: input.tenantId },
         select: { status: true },
@@ -341,6 +351,12 @@ export class MembershipsService {
       });
       if (user?.status !== 'active')
         throw new ApiException(409, 'INVALID_STATE', 'The account is not active');
+      // D-037: an account holding a tenant role cannot become platform staff; revoke its tenant roles first.
+      const tenantRoles = await tx.roleAssignment.count({
+        where: { membership: { userId: input.userId }, ...LIVE },
+      });
+      if (tenantRoles > 0)
+        throw new ApiException(409, 'INVALID_STATE', PLATFORM_STAFF_NO_TENANT_ROLE);
       const live = await tx.platformRoleAssignment.findFirst({
         where: { userId: input.userId, role: input.role, ...LIVE },
         select: { id: true },

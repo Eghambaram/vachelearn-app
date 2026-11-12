@@ -245,7 +245,7 @@ describe('forgot password (D-087)', () => {
     expect((await setPassword(newest!.token!)).status).toBe(204);
   });
 
-  it('is rate-limited per account, the same for known and unknown addresses (429)', async () => {
+  it('is rate-limited per account and network, the same for known and unknown addresses (429)', async () => {
     const user = await accountWithPassword();
     for (const email of [user.email, address()]) {
       for (let i = 0; i < PASSWORD_LIMITS.forgotAccount.max; i++) {
@@ -267,6 +267,39 @@ describe('forgot password (D-087)', () => {
       expect(stored).not.toContain(leak);
       expect(logged).not.toContain(leak);
     }
+  });
+});
+
+describe('D-086 forgot-password per address and client network (exit-gate review, 2026-11-11)', () => {
+  // Trusts one proxy hop, so each request can name its client network in X-Forwarded-For.
+  let proxied: INestApplication;
+  beforeAll(async () => {
+    ({ app: proxied } = await createTestApp({
+      env: { EMAIL_PROVIDER: 'smtp', SMTP_HOST: '127.0.0.1', SMTP_PORT, TRUST_PROXY_HOPS: '1' },
+    }));
+  });
+  afterAll(async () => {
+    await proxied.close();
+  });
+  const forgotFrom = async (ip: string, email: string) => {
+    const res = await request(proxied.getHttpServer())
+      .post('/api/v1/auth/password/forgot')
+      .set('origin', WEB)
+      .set('x-forwarded-for', ip)
+      .send({ email });
+    await proxied.get(PasswordLinksService).settled();
+    return res;
+  };
+
+  it("someone else spending an address's budget does not block the owner's own request", async () => {
+    const user = await createAccount();
+    for (let i = 0; i < PASSWORD_LIMITS.forgotAccount.max; i++) {
+      expect((await forgotFrom('198.51.100.7', user.email)).status).toBe(202);
+    }
+    expect((await forgotFrom('198.51.100.7', user.email)).status).toBe(429);
+    const jobsBefore = await db.job.count({ where: { type: PASSWORD_LINK_JOB } });
+    expect((await forgotFrom('203.0.113.20', user.email)).status).toBe(202);
+    expect(await db.job.count({ where: { type: PASSWORD_LINK_JOB } })).toBe(jobsBefore + 1);
   });
 });
 

@@ -546,6 +546,21 @@ describe('review fixes 2.5a', () => {
     expect((await ins.get(`/api/v1/people/${m.memberA2}`)).status).toBe(404);
   });
 
+  it('a branch admin of A1 sees the deactivation reason only for members within its D-101 reach (D-106)', async () => {
+    const admin = await actors.signIn('admin-a@example.test');
+    // memberA12 is in A1 and A2: readable by the Branch Admin of A1 (D-026) but outside its reach (D-101).
+    await admin.post(`/api/v1/people/${m.memberA12}/deactivate`, { reason: 'Medical leave' });
+    await admin.post(`/api/v1/people/${m.memberA1}/deactivate`, { reason: 'Left the site' });
+    const ba = await actors.signIn('ba-a1@example.test');
+    const outside = PersonView.parse((await ba.get(`/api/v1/people/${m.memberA12}`)).body);
+    expect(outside).toMatchObject({ status: 'deactivated', deactivatedReason: null });
+    const inside = PersonView.parse((await ba.get(`/api/v1/people/${m.memberA1}`)).body);
+    expect(inside).toMatchObject({ status: 'deactivated', deactivatedReason: 'Left the site' });
+    expect(
+      PersonView.parse((await admin.get(`/api/v1/people/${m.memberA12}`)).body).deactivatedReason,
+    ).toBe('Medical leave');
+  });
+
   it('a branch admin who manages all of a member’s branches sees the primary marker in the detail only', async () => {
     const admin = await actors.signIn('admin-a@example.test');
     await admin.post(`/api/v1/people/${m.memberA1}/branches`, { branchId: A2 });

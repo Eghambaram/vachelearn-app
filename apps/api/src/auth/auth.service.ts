@@ -19,15 +19,18 @@ import { SessionsService } from './sessions.service';
 /*
  * Sign-in and sign-out (D-010; spec §5). Every failed sign-in — unknown email, wrong password, no password set yet,
  * address not verified, deactivated account — answers the same 401 after one Argon2id verification (spec §5 AC: same
- * response and timing class). Attempts are rate-limited per client IP, then per account (the user id when the address
- * is known, so case or Unicode variants share one bucket), before any hashing (D-086). Hashing runs through a small
+ * response and timing class). Attempts are rate-limited per client IP, then per account *and* client network (the user
+ * id when the address is known, so case or Unicode variants share one bucket), before any hashing (D-086). Never per
+ * account alone: that would let anyone who knows an address lock its owner out (exit-gate security review, owner
+ * decision 2026-11-11) — guesses from one network are refused while the owner, elsewhere, still signs in. Hashing runs through a small
  * gate (`HashGate`) so a sign-in flood cannot starve the rest of the API. Failures are logged without the address.
  */
 
 type LoginInput = z.output<typeof LoginBody>;
 
 export const LOGIN_LIMITS = {
-  account: { name: 'login-account', max: 10, windowMs: 15 * 60_000 },
+  /** Per account + client network (D-086); the name changed with the key, so old per-account buckets lapse. */
+  account: { name: 'login-account-ip', max: 10, windowMs: 15 * 60_000 },
   ip: { name: 'login-ip', max: 50, windowMs: 15 * 60_000 },
 } as const satisfies Record<string, Limit>;
 
@@ -60,7 +63,8 @@ export class AuthService implements OnModuleInit {
    */
   async login(input: LoginInput, clientIp: string, requestId: string, currentToken?: string) {
     const email = input.email.normalize('NFKC').toLowerCase();
-    await this.rateLimits.hit(LOGIN_LIMITS.ip, ipSubject(clientIp));
+    const network = ipSubject(clientIp);
+    await this.rateLimits.hit(LOGIN_LIMITS.ip, network);
 
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -73,7 +77,10 @@ export class AuthService implements OnModuleInit {
         credential: { select: { passwordHash: true } },
       },
     });
-    await this.rateLimits.hit(LOGIN_LIMITS.account, user ? `user:${user.id}` : `email:${email}`);
+    await this.rateLimits.hit(
+      LOGIN_LIMITS.account,
+      `${user ? `user:${user.id}` : `email:${email}`}|ip:${network}`,
+    );
 
     // Always one verification, whether or not there is a password to check.
     const stored = user?.credential?.passwordHash ?? (await dummyHash());

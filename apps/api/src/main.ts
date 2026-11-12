@@ -18,7 +18,10 @@ async function main() {
   }
   const app = await NestFactory.create(AppModule.forRoot(config), { bufferLogs: true });
   configureApp(app, config);
-  await app.listen(config.API_PORT);
+  // Every interface unless API_HOST names one (a local demo binds to 127.0.0.1).
+  await (config.API_HOST
+    ? app.listen(config.API_PORT, config.API_HOST)
+    : app.listen(config.API_PORT));
 }
 
 void main();

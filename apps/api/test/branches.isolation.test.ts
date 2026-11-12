@@ -279,6 +279,12 @@ describe('branches: isolation (cross-branch)', () => {
     expect((await ba.post(`/api/v1/branches/${A1.id}/deactivate`, { reason: 'No' })).status).toBe(
       403,
     );
+    // Reactivating is the same tenant-only permission, for its own branch and another alike (exit-gate audit).
+    for (const b of [A1, A2]) {
+      expect((await ba.post(`/api/v1/branches/${b.id}/reactivate`, { reason: 'No' })).status).toBe(
+        403,
+      );
+    }
   });
 
   it('a branch-scoped actor with no branches sees nothing: empty list, every id 404', async () => {

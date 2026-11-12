@@ -137,9 +137,19 @@ const SCOPE_LABEL: Record<RoleKey, string> = {
 /** The fixtures' learner: whose enrolments, attempts and certificates the sample data holds. */
 export const DEMO_USER_ID = 'demo-user';
 
-/** The demo tenant whose sample data a real tenant shows while demo content is on (D-110): logistics or manufacturing. */
+/**
+ * The seeded demo tenants (`pnpm --filter api db:seed`) that may show sample data while demo content is on (D-110).
+ * Any other tenant keeps "Not available yet" (D-097), so a real organisation never sees sample records under its
+ * members' names, even with the flag on by mistake (exit-gate security review).
+ */
+export const DEMO_CONTENT_TENANT_SLUGS: readonly string[] = [
+  'demo-manufacturing',
+  'demo-logistics',
+];
+
+/** The demo tenant whose sample data a seeded demo tenant shows while demo content is on (D-110). */
 export function demoTenantForSlug(slug: string | null): string {
-  return slug?.includes('logistics') ? DEMO_TENANTS[1]!.tenantId : DEMO_TENANTS[0]!.tenantId;
+  return slug === 'demo-logistics' ? DEMO_TENANTS[1]!.tenantId : DEMO_TENANTS[0]!.tenantId;
 }
 
 export function buildDemoSession(role: RoleKey, tenantId: string | null): SessionView {

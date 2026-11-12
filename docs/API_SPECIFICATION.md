@@ -59,8 +59,8 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
 - `POST /auth/login` `{ email, password }` → 200 `AuthSessionView` `{ user, csrfToken, expiresAt }`. Every failure
   (unknown email, wrong password, no password yet, unverified, deactivated) is the same 401 `INVALID_CREDENTIALS` after
   one Argon2id verification; a failure is logged as `auth.sign_in_failed` with a keyed hash, never the address. Rate
-  limits (D-086, Proposed): 10 attempts per account (by user id when the address exists, so case variants share it)
-  and 50 per client IP (IPv6 per /64) per 15 minutes → 429 `RATE_LIMITED` with `Retry-After`; keys are HMACs. At most
+  limits (D-112): 10 attempts per account per client network (by user id when the address exists, so case variants
+  share it; never per account alone, so nobody can lock an owner out) and 50 per client IP (IPv6 per /64) per 15 minutes → 429 `RATE_LIMITED` with `Retry-After`; keys are HMACs. At most
   2 hashes run at once with 32 waiting, beyond that 503 `BUSY` with `Retry-After`. Bodies over 4 KB on `/auth/*` → 413.
   Signing in from a browser that already holds a session ends that session.
 - `GET /auth/me` → `AuthSessionView`; `POST /auth/logout` → 204 and the cookie is cleared.
@@ -204,7 +204,7 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
 - `POST /auth/password/forgot` `{ email }` → always 202, empty body (no account enumeration). Active account with a
   password → reset link; without one yet → a fresh set-password link; unknown or deactivated → nothing. The account
   lookup runs after the 202 is sent, so response time does not reveal registered addresses. Limits
-  (D-086, Proposed): 3 per account and 20 per IP per hour → 429, the same for known and unknown addresses.
+  (D-112): 3 per address per client network and 20 per IP per hour → 429, the same for known and unknown addresses.
 - `POST /auth/password/set` `{ token, password }` → 204. Policy problems → 422 on `password` (`too_short`,
   `too_long`, `too_common`; the link stays usable). Unknown, used, revoked or expired link, or a deactivated account →
   400 `INVALID_LINK`. Success sets the password, verifies the address, revokes the user's other links and ends every

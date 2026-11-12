@@ -266,6 +266,62 @@ describe('Branch Admin (B (LRN, INS only))', () => {
         .status,
     ).toBe(404);
   });
+
+  it('branch admin of A1 cannot change roles of a tenant-wide role holder, a peer branch admin or a multi-branch member (D-113)', async () => {
+    const admin = await actors.signIn('admin-a@example.test');
+    // A second Tenant Admin who also gets a Learner role on A1 (and so joins A1, D-093).
+    const admin2 = await actors.grant(
+      await actors.user('admin2-a@example.test'),
+      tenantA,
+      'tenant_admin',
+    );
+    const adminLearner = RoleAssignmentView.parse(
+      (await assign(admin, { membershipId: admin2.membershipId, role: 'learner', branchId: A1 }))
+        .body,
+    );
+    // A peer Branch Admin of A1.
+    const peer = await actors.grant(
+      await actors.user('ba2-a1@example.test'),
+      tenantA,
+      'branch_admin',
+      A1,
+    );
+    // memberA1 also joins A2 (a Learner there): no longer wholly inside A1.
+    expect(
+      (await assign(admin, { membershipId: m.memberA1, role: 'learner', branchId: A2 })).status,
+    ).toBe(201);
+    const before = await db.roleAssignment.count();
+
+    const s = await actors.signIn('ba-a1@example.test');
+    for (const membershipId of [admin2.membershipId, peer.membershipId, m.memberA1]) {
+      const res = await assign(s, { membershipId, role: 'instructor', branchId: A1 });
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('OUTSIDE_BRANCH_SCOPE');
+    }
+    const revoke = await s.post(`/api/v1/role-assignments/${adminLearner.id}/revoke`, {
+      reason: 'Try it',
+    });
+    expect(revoke.status).toBe(403);
+    expect(revoke.body.error.code).toBe('OUTSIDE_BRANCH_SCOPE');
+    expect(await db.roleAssignment.count()).toBe(before);
+    expect(await db.roleAssignment.count({ where: { id: adminLearner.id, revokedAt: null } })).toBe(
+      1,
+    );
+
+    // A member wholly inside A1 with only branch roles stays manageable.
+    expect(
+      (await assign(s, { membershipId: m.memberA2, role: 'instructor', branchId: A1 })).status,
+    ).toBe(404);
+    const ok = await actors.grant(
+      await actors.user('only-a1@example.test'),
+      tenantA,
+      'learner',
+      A1,
+    );
+    expect(
+      (await assign(s, { membershipId: ok.membershipId, role: 'instructor', branchId: A1 })).status,
+    ).toBe(201);
+  });
 });
 
 describe('isolation', () => {
@@ -469,7 +525,11 @@ describe('isolation audit 2.4b fixes', () => {
   it('roles go only to active, non-staff accounts', async () => {
     const s = await actors.signIn('admin-a@example.test');
     const staff = await platformAdmin('staff@example.test');
-    const { membershipId } = await actors.grant(staff.id, tenantA, 'learner');
+    // A staff account with a membership: the operator path refuses that since the exit gate (D-037), so the row is
+    // built in the database, as one written before the rule would be. The API must still refuse it a role.
+    const { id: membershipId } = await db.membership.create({
+      data: { tenantId: tenantA, userId: staff.id },
+    });
     const res = await assign(s, { membershipId, role: 'learning_manager', branchId: null });
     expect(res.status).toBe(409);
     const memberA = await db.membership.findUniqueOrThrow({ where: { id: m.memberA } });

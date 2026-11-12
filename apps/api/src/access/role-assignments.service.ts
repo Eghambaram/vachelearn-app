@@ -11,7 +11,7 @@ import {
   TENANT_ONLY_ROLES,
   type TenantRole,
 } from './permissions';
-import { liveReach, reachFromContext, type Reach } from './reach';
+import { liveReach, reachFromContext, withinReach, type Reach } from './reach';
 import type { RequestContext } from './request-context';
 import { isPlatformStaff, lockTenant, usableTenantAdmin } from './tenant-admins';
 
@@ -55,6 +55,12 @@ const toView = (a: ViewRow): RoleAssignmentView => ({
 });
 
 const forbidden = (message = 'Forbidden') => new ApiException(403, 'FORBIDDEN', message);
+const outsideScope = () =>
+  new ApiException(
+    403,
+    'OUTSIDE_BRANCH_SCOPE',
+    'This person also belongs to branches you do not manage, or holds a role you cannot grant. Ask a Tenant Admin.',
+  );
 const selfChange = () => new ApiException(403, 'SELF_CHANGE', 'You cannot change your own roles');
 
 @Injectable()
@@ -120,6 +126,7 @@ export class RoleAssignmentsService {
         }
         const membership = await this.visibleMembership(tx, tenantId, reach, input.membershipId);
         if (membership.userId === ctx.userId) throw selfChange();
+        await this.assertWithinReach(tx, tenantId, reach, membership.id);
         if (membership.userStatus !== 'active' || (await isPlatformStaff(tx, membership.userId))) {
           throw new ApiException(409, 'INVALID_STATE', 'This account cannot be given a role here');
         }
@@ -199,6 +206,7 @@ export class RoleAssignmentsService {
         throw forbidden('A Branch Admin can revoke only Learner or Instructor');
       }
       if (assignment.membership.userId === ctx.userId) throw selfChange();
+      await this.assertWithinReach(tx, tenantId, reach, assignment.membershipId);
       if (assignment.role === 'tenant_admin') {
         const others = await tx.roleAssignment.count({
           where: { ...usableTenantAdmin(tenantId), id: { not: assignment.id } },
@@ -229,6 +237,25 @@ export class RoleAssignmentsService {
       });
       return toView(assignment);
     });
+  }
+
+  /**
+   * D-113: a Branch Admin changes roles only of members within D-101 reach — all their branches among its own, and
+   * only Learner/Instructor branch roles live — never a peer Branch Admin, a Learning Manager or a Tenant Admin.
+   */
+  private async assertWithinReach(tx: Tx, tenantId: string, reach: Reach, membershipId: string) {
+    if (reach.kind === 'tenant') return;
+    const member = await tx.membership.findFirstOrThrow({
+      where: { id: membershipId, tenantId },
+      select: {
+        branches: { select: { branch: { select: { id: true } } } },
+        roleAssignments: {
+          where: LIVE,
+          select: { role: true, branch: { select: { id: true } } },
+        },
+      },
+    });
+    if (!withinReach(reach, member)) throw outsideScope();
   }
 
   /** An active membership of the tenant that the actor may manage: any (tenant reach) or one in its branches. */

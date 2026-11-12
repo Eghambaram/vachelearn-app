@@ -35,7 +35,7 @@ export const LINK_LIFETIME_MS: Record<PasswordLinkPurpose, number> = {
 
 export const PASSWORD_LIMITS = {
   forgotIp: { name: 'forgot-ip', max: 20, windowMs: 60 * 60_000 },
-  forgotAccount: { name: 'forgot-account', max: 3, windowMs: 60 * 60_000 },
+  forgotAccount: { name: 'forgot-account-ip', max: 3, windowMs: 60 * 60_000 },
   setIp: { name: 'set-password-ip', max: 30, windowMs: 15 * 60_000 },
 } as const satisfies Record<string, Limit>;
 
@@ -121,9 +121,11 @@ export class PasswordLinksService implements OnModuleInit, OnApplicationShutdown
    */
   async requestForgot(input: z.output<typeof ForgotPasswordBody>, clientIp: string) {
     const email = input.email.normalize('NFKC').toLowerCase();
-    await this.rateLimits.hit(PASSWORD_LIMITS.forgotIp, ipSubject(clientIp));
-    // Keyed by the address for everyone (not the user id): the key itself must not need the lookup.
-    await this.rateLimits.hit(PASSWORD_LIMITS.forgotAccount, `email:${email}`);
+    const network = ipSubject(clientIp);
+    await this.rateLimits.hit(PASSWORD_LIMITS.forgotIp, network);
+    // Keyed by the address for everyone (not the user id): the key itself must not need the lookup. Per address *and*
+    // client network (D-086), so someone else spending an address's budget cannot block its owner's own request.
+    await this.rateLimits.hit(PASSWORD_LIMITS.forgotAccount, `email:${email}|ip:${network}`);
     const work = this.dispatchForgot(email)
       .catch((err: unknown) => this.logger.error({ err }, 'forgot-password dispatch failed'))
       .finally(() => this.pending.delete(work));

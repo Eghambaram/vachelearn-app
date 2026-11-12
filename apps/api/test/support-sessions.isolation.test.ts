@@ -339,8 +339,11 @@ describe('isolation audit 2.4c fixes', () => {
   });
 
   it('during support only sign-out and support start/end may change anything; switching tenant is refused', async () => {
-    // A staff account with a membership (possible only through the operator path).
-    const { membershipId } = await actors.grant(staffId, tenantB, 'learner');
+    // A staff account with a membership: refused by every path since the exit gate (D-037), so built in the database
+    // the way a row written before that rule would be.
+    const { id: membershipId } = await db.membership.create({
+      data: { tenantId: tenantB, userId: staffId },
+    });
     const { s } = await staffInSupport();
     const archive = await s.post(`/api/v1/platform/tenants/${tenantB}/suspend`, {
       reason: 'Not now',

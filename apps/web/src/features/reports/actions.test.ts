@@ -24,6 +24,15 @@ describe('complianceReportAction', () => {
     ).toMatchObject({ status: 422 });
   });
 
+  it('a real session without demo content gets 404, not a sample report (D-097)', async () => {
+    current = {
+      ...buildDemoSession('tenant_admin', 'demo-tenant-1'),
+      demo: false,
+      demoContent: false,
+    };
+    expect(await complianceReportAction({}, 'ready')).toMatchObject({ ok: false, status: 404 });
+  });
+
   it('an unknown demo state is ignored, and roles without the permissions are refused', async () => {
     as('tenant_admin');
     expect(await complianceReportAction({}, 'not-a-state')).toMatchObject({ ok: true });
