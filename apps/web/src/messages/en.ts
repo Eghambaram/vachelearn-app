@@ -1308,7 +1308,6 @@ export const en = {
       alreadyMember:
         'This person is already a member. Open their profile in Users to change roles, or reactivate them.',
       pending: 'This address already has a pending invitation. Resend it from the list instead.',
-      cannotInvite: 'This address cannot be invited to your organisation.',
       inviterCannotGrant:
         'The person who sent this invitation can no longer grant this role. Cancel it and send a new one.',
       rateLimited: 'Too many invitations were sent just now. Wait a while and try again.',

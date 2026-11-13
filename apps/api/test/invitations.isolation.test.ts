@@ -249,14 +249,56 @@ describe('creating an invitation', () => {
     expect(deactivated.body.error.code).toBe('ALREADY_MEMBER');
   });
 
-  it('refuses platform staff with a generic answer (D-037); a member of another tenant may be invited', async () => {
-    const staff = await invite('adminA', {
+  it('inviting platform staff or a closed account looks like any new address, sends nothing and can never be accepted (D-118, D-037)', async () => {
+    const closed = fresh();
+    const closedId = await actors.user(closed);
+    await db.user.update({
+      where: { id: closedId },
+      data: { status: 'deactivated', deactivatedAt: new Date() },
+    });
+    const freshRes = await invite('adminA', { email: fresh(), role: 'learner', branchId: null });
+    const staffRes = await invite('adminA', {
       email: emailOf('staff'),
       role: 'learner',
       branchId: null,
     });
-    expect(staff.status).toBe(409);
-    expect(staff.body.error.code).toBe('CANNOT_INVITE');
+    const closedRes = await invite('adminA', { email: closed, role: 'learner', branchId: null });
+    for (const res of [staffRes, closedRes]) {
+      expect(res.status).toBe(freshRes.status);
+      expect(Object.keys(res.body).sort()).toEqual(Object.keys(freshRes.body).sort());
+      expect(res.body.status).toBe('pending');
+    }
+    await runJobs();
+    // The fresh address got its email; the other two jobs ended without sending anything.
+    const jobs = await db.job.findMany({
+      where: { type: 'email.invitation' },
+      include: { delivery: true },
+    });
+    const byInvitation = new Map(
+      jobs.map((j) => [(j.payload as { invitationId: string }).invitationId, j]),
+    );
+    expect(byInvitation.get(freshRes.body.id)?.status).toBe('succeeded');
+    for (const res of [staffRes, closedRes]) {
+      const job = byInvitation.get(res.body.id);
+      expect(job?.status).toBe('failed');
+      expect(job?.delivery).toBeNull();
+      expect(
+        (await db.invitation.findUniqueOrThrow({ where: { id: res.body.id } })).tokenHash,
+      ).toBeNull();
+    }
+    // Even holding a valid link (planted here: none was ever sent), staff cannot join.
+    const token = 'P'.repeat(43);
+    await db.invitation.update({
+      where: { id: staffRes.body.id },
+      data: { tokenHash: hashSessionToken(token) },
+    });
+    const join = await (await as('staff')).post('/api/v1/me/invitations/accept', { token });
+    expect(join.status).toBe(400);
+    expect(join.body.error.code).toBe('INVALID_LINK');
+    expect(await db.membership.count({ where: { userId: f.user.staff } })).toBe(0);
+  });
+
+  it('a member of another tenant may be invited', async () => {
     const otherTenant = await invite('adminA', {
       email: emailOf('learnerB1'),
       role: 'learner',

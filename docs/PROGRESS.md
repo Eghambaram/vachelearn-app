@@ -1,12 +1,12 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 3 · People and content — slice 3.1 (invitations) committed; D-118 follow-up next, then planning 3.2 (groups).**
+**Phase 3 · People and content — slice 3.1 (invitations) committed (5d88451 + D-118); planning 3.2 (groups).**
 Phase 2 approved by the owner 2026-11-13 (exit gate be2af4e…462ba53, CI green); Phase 1 approved (a51d042).
 
 ## Last verified
 2026-11-13, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), working tree of slice 3.1 on 504c574:
-- `/verify` gates each exit 0 (contracts 56, web 721, api 432; isolation 308; lint 0 errors, 2 warnings in demo
+- `/verify` gates each exit 0 (contracts 56, web 721, api 433; isolation 309; lint 0 errors, 2 warnings in demo
   pages; build OK) · `pnpm test:e2e` 277 passed. CI on the pushed Phase 2 commits: green (2026-11-13).
 
 ## Done in this phase
@@ -23,10 +23,11 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
   `docs/progress-log/2026-11.md`.
 
 ## In progress / uncommitted
-- D-118 (confirmed 2026-11-13): answer a platform-staff or closed account like a fresh address — to build.
+- Nothing.
 
 ## Next step
-Build D-118 (small, own commit), then show the slice 3.2 groups plan and wait for approval.
+Slice 3.2 groups: plan shown to the owner 2026-11-13; waiting for approval and D-119 / D-120. Nothing pushed since
+Phase 2 (5d88451 and the D-118 commit are local).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).

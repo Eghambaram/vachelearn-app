@@ -43,7 +43,8 @@ import { NewUser } from '../users/users.service';
 /*
  * Invitations (Slice 3.1; spec §5; D-050, D-115, D-116). Inviting follows the granting rules of role assignment (matrix
  * "Granting rules"): a Tenant Admin invites with any tenant role; a Branch Admin only Learner or Instructor on its own
- * branches. Joining only (D-115): an address with a membership here, or a platform-staff account (D-037), is refused.
+ * branches. Joining only (D-115): an address with a membership here is refused. A platform-staff or closed account
+ * (D-037) never joins, but inviting one is answered like a fresh address and no email is sent (D-118).
  *
  * The emailed link (D-081 pattern): the job payload holds ids only; `compose` mints a 32-byte token when the email is
  * built and stores only its SHA-256. A resend clears the stored hash at once (the old link stops working) and bumps
@@ -174,6 +175,8 @@ export class InvitationsService implements OnModuleInit {
         if (inv.sendCount !== send) throw new PermanentJobError('Superseded by a resend');
         if (inv.expiresAt <= new Date()) throw new PermanentJobError('The invitation has expired');
         if (inv.tenant.status !== 'active') throw new PermanentJobError('The tenant is not active');
+        // D-118: invited like anyone else, but a platform-staff or closed account is never sent a link.
+        if (await cannotJoin(tx, inv.email)) throw new PermanentJobError('The address cannot join');
         const token = randomBytes(32).toString('base64url');
         await tx.invitation.update({
           where: { id: invitationId },
@@ -295,7 +298,7 @@ export class InvitationsService implements OnModuleInit {
           });
           if (!branch) throw ApiException.notFound();
         }
-        await this.assertCanJoin(tx, tenantId, input.email);
+        await this.assertCanJoin(tx, tenantId, input.email, 'invite');
 
         const pending = await tx.invitation.findFirst({
           where: { tenantId, email: input.email, status: 'pending' },
@@ -379,7 +382,7 @@ export class InvitationsService implements OnModuleInit {
     const row = await this.prisma.$transaction(async (tx) => {
       const reach = await liveReach(tx, ctx, tenantId, 'invitation.create');
       const inv = await this.manageable(tx, tenantId, reach, id);
-      await this.assertCanJoin(tx, tenantId, inv.email);
+      await this.assertCanJoin(tx, tenantId, inv.email, 'invite');
       // The link stays the original inviter's grant (re-checked at acceptance): never send one that cannot work.
       if (!(await this.inviterStillMay(tx, { tenantId, ...inv }))) {
         throw new ApiException(
@@ -618,7 +621,7 @@ export class InvitationsService implements OnModuleInit {
     if (!(await this.inviterStillMay(tx, inv))) throw invalidInvitation();
     // D-037 against a concurrent platform-role grant (security review 3.1): both lock the account row.
     await tx.$queryRaw`SELECT 1 FROM users WHERE id = ${userId}::uuid FOR UPDATE`;
-    await this.assertCanJoin(tx, inv.tenantId, inv.email);
+    await this.assertCanJoin(tx, inv.tenantId, inv.email, 'join');
 
     const tenantId = inv.tenantId;
     // The granting is the inviter's: role and membership are audited with the inviter as actor, the reason naming
@@ -734,8 +737,12 @@ export class InvitationsService implements OnModuleInit {
     );
   }
 
-  /** D-115 / D-037: the address has no membership here (any status), and is not a platform-staff or closed account. */
-  private async assertCanJoin(tx: Tx, tenantId: string, email: string) {
+  /**
+   * D-115: an address with a membership here (any status) is refused, as `ALREADY_MEMBER`. D-037 / D-118: a
+   * platform-staff or closed account can never join; when inviting, that is not revealed (the invitation is created
+   * like any other, its email is never sent — `cannotJoin` in the job), and joining answers as for any invalid link.
+   */
+  private async assertCanJoin(tx: Tx, tenantId: string, email: string, step: 'invite' | 'join') {
     const user = await tx.user.findUnique({
       where: { email },
       select: {
@@ -752,13 +759,7 @@ export class InvitationsService implements OnModuleInit {
         'This person is already a member of this organisation. Change their roles on their profile, or reactivate them.',
       );
     }
-    if (user.status !== 'active' || (await isPlatformStaff(tx, user.id))) {
-      throw new ApiException(
-        409,
-        'CANNOT_INVITE',
-        'This address cannot be invited to this organisation.',
-      );
-    }
+    if (step === 'join' && (await cannotJoin(tx, email))) throw invalidInvitation();
   }
 
   /** An open (pending or expired) invitation this reach may resend or cancel; out of reach → 404, role → 403. */
@@ -837,6 +838,12 @@ export class InvitationsService implements OnModuleInit {
       tx,
     );
   }
+}
+
+/** D-037 / D-118: a platform-staff or closed (non-active) account never joins a tenant through an invitation. */
+async function cannotJoin(tx: Tx, email: string) {
+  const user = await tx.user.findUnique({ where: { email }, select: { id: true, status: true } });
+  return user !== null && (user.status !== 'active' || (await isPlatformStaff(tx, user.id)));
 }
 
 const notPending = () =>

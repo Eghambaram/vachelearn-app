@@ -15,8 +15,6 @@ export function invitationErrorMessage(result: Failure): string {
       return e.alreadyMember;
     case 'INVITATION_PENDING':
       return e.pending;
-    case 'CANNOT_INVITE':
-      return e.cannotInvite;
     case 'INVITER_CANNOT_GRANT':
       return e.inviterCannotGrant;
     case 'RATE_LIMITED':

@@ -203,10 +203,11 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   branches. A branch outside the caller's reach, in another tenant or inactive → 404; a role the caller cannot grant
   → 403; a Branch Admin managing a Branch Admin invitation → 403 (it can see it, `canManage: false`).
 - Refusals on create (409): `ALREADY_MEMBER` — the address has a membership in this tenant, active or deactivated
-  (D-115; the message points to the profile); `CANNOT_INVITE` — a platform-staff or deactivated account (D-037;
-  generic); `INVITATION_PENDING` — an unexpired pending invitation exists (resend it instead; also the answer to two
-  simultaneous creates). An expired pending one is replaced. Resend/cancel of an accepted or cancelled invitation →
-  409 `INVALID_STATE`.
+  (D-115; the message points to the profile); `INVITATION_PENDING` — an unexpired pending invitation exists (resend it
+  instead; also the answer to two simultaneous creates). An expired pending one is replaced. Resend/cancel of an
+  accepted or cancelled invitation → 409 `INVALID_STATE`. A platform-staff or closed account is **not** refused
+  visibly (D-118): the invitation is created and answered like any other, its email job ends without sending
+  (`failed`, no delivery, no token), and an acceptance with any link is 400 `INVALID_LINK` (D-037).
 - Lists: newest first, `status` (`pending`, `expired` — derived from the expiry —, `accepted`, `revoked`), `branchId`
   (narrows, never widens), `search` (part of the address), signed cursor bound to the caller's scope (another
   tenant's or a wider scope's cursor → 422). Each row says `canManage`.

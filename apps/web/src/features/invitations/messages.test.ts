@@ -11,7 +11,6 @@ describe('invitation error copy', () => {
     const cases: [number, string, RegExp][] = [
       [409, 'ALREADY_MEMBER', /already a member/],
       [409, 'INVITATION_PENDING', /pending invitation/],
-      [409, 'CANNOT_INVITE', /cannot be invited/],
       [409, 'INVALID_STATE', /already accepted or cancelled/],
       [404, 'NOT_FOUND', /could not be found/],
       [403, 'FORBIDDEN', /cannot invite with this role/],
