@@ -127,6 +127,8 @@ export const TenantSettingsView = z.object({
   slug: z.string(),
   defaultTimezone: z.string(),
   defaultLocale: z.string(),
+  /** How long an invitation link stays valid, in days (D-050: 1–30). */
+  invitationExpiryDays: z.number().int().min(1).max(30),
   /** Feature switches (D-031) are set by platform staff; shown here read-only. */
   features: z.object({
     classroom: z.boolean(),
@@ -146,6 +148,7 @@ export const UpdateTenantSettingsBody = z
     displayName: z.string().trim().min(2).max(120).optional(),
     defaultTimezone: TimeZone.optional(),
     defaultLocale: LocaleTag.optional(),
+    invitationExpiryDays: z.number().int().min(1).max(30).optional(),
   })
   .refine((b) => Object.keys(b).some((k) => k !== 'version'), 'nothing to change');
 export type UpdateTenantSettingsBody = z.input<typeof UpdateTenantSettingsBody>;

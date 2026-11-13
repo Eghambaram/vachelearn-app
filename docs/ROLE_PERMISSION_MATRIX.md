@@ -126,6 +126,14 @@ notifications. These are not listed per role.
 - Slice 2.4c: `SS` cells apply inside a platform support session only (`platform.support_access.start`, D-037,
   D-098): read-only, whole tenant, 60 minutes, every request audited with the session id
   (`/api/v1/platform/support-sessions/**`). A test checks the support set equals the `SS` cells and holds reads only.
+- Slice 3.1: `invitation.read`, `invitation.create` (create and resend), `invitation.revoke` on
+  `/api/v1/invitations/**` apply granting rule 2 to what an invitation would grant: a Tenant Admin invites with any
+  tenant role; a Branch Admin (`B`) lists its own branches' invitations and invites, resends or cancels only Learner
+  and Instructor invitations on them (others → 404 out of reach, 403 for a role it cannot grant). Accepting re-checks
+  that the inviter still holds that authority (live roles, active membership); the created role is audited with the
+  inviter as actor. The `SS` column is `—`: support sessions do not see invitations. The invited person's routes are
+  `@Public()` (`/invitations/preview`, `/invitations/accept`, by token) and `@Authenticated()`
+  (`/me/invitations/accept`, own address only).
 
 ## Notes and open points
 

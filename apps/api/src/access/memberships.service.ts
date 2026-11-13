@@ -345,6 +345,8 @@ export class MembershipsService {
     actor: { userId: string | null; requestId: string | null; reason: string },
   ) {
     return this.prisma.$transaction(async (tx) => {
+      // Serialises with an invitation being accepted by this account (D-037; security review 3.1).
+      await tx.$queryRaw`SELECT 1 FROM users WHERE id = ${input.userId}::uuid FOR UPDATE`;
       const user = await tx.user.findUnique({
         where: { id: input.userId },
         select: { status: true },

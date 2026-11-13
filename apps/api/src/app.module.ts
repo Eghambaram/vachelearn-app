@@ -28,6 +28,11 @@ import { APP_CONFIG, type AppConfig } from './config/env';
 import { EMAIL_PROVIDER, EmailJobs } from './email/email-jobs';
 import { createEmailProvider } from './email/email.provider';
 import { HealthController } from './health/health.controller';
+import {
+  InvitationsController,
+  MyInvitationsController,
+} from './invitations/invitations.controller';
+import { InvitationsService } from './invitations/invitations.service';
 import { JobRegistry } from './jobs/job-handlers';
 import { JobWorker } from './jobs/job-worker';
 import { JobsService } from './jobs/jobs.service';
@@ -75,6 +80,8 @@ export class AppModule {
         JobRolesController,
         TenantSettingsController,
         AuditLogController,
+        InvitationsController,
+        MyInvitationsController,
       ],
       providers: [
         { provide: APP_CONFIG, useValue: config },
@@ -99,6 +106,7 @@ export class AppModule {
         JobRolesService,
         TenantSettingsService,
         AuditLogService,
+        InvitationsService,
         // Background jobs and email (D-040, D-081).
         { provide: JobRegistry, useValue: new JobRegistry() },
         JobsService,

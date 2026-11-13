@@ -31,6 +31,15 @@ function cli(script: string, args: string[], env: Record<string, string> = {}) {
   });
 }
 
+/**
+ * Empties the e2e test database's rate-limit counters (apps/api/src/cli/e2e-reset-limits.ts). Every test signs in from
+ * 127.0.0.1, so without this the real per-IP sign-in and set-password limits trip once the suite passes ~50 sign-ins
+ * in 15 minutes. The limits themselves are tested by the API tests (auth, password links, invitations).
+ */
+export function resetRateLimits() {
+  cli('e2e-reset-limits', []);
+}
+
 /** `db:seed` on the e2e database (Slice 2.6c): new demo accounts get PASSWORD; existing ones keep theirs. */
 export function seedDemoData() {
   cli('seed', [], { SEED_PASSWORD: PASSWORD });
@@ -83,6 +92,7 @@ export async function latestLink(email: string, count = 1) {
 }
 
 export async function activate(page: Page, email: string) {
+  resetRateLimits();
   await page.goto(await latestLink(email));
   await page.getByLabel(/^New password/).fill(PASSWORD);
   await page.getByLabel(/^Repeat the new password/).fill(PASSWORD);
@@ -91,6 +101,7 @@ export async function activate(page: Page, email: string) {
 }
 
 export async function signIn(page: Page, email: string) {
+  resetRateLimits();
   await page.goto('/login');
   await page.getByLabel(/^Email address/).fill(email);
   await page.getByLabel(/^Password/).fill(PASSWORD);

@@ -8,7 +8,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { conflict } from '../tenancy/tenants.service';
 
 /*
- * The caller's own tenant settings (Slice 2.5a): name, default time zone and locale, edited by a Tenant Admin
+ * The caller's own tenant settings (Slice 2.5a; invitation validity 3.1, D-050): name, default time zone and locale,
+ * how long invitation links stay valid, edited by a Tenant Admin
  * (`tenant_settings.update`) with the same version as platform edits of the tenant; feature switches are read-only
  * here (platform staff set them, D-031). The tenant is the session's, never a parameter. Changes are audited.
  */
@@ -27,6 +28,7 @@ const SELECT = {
       commerceEnabled: true,
       publicCatalogEnabled: true,
       analyticsEnabled: true,
+      invitationExpiryDays: true,
     },
   },
 } as const;
@@ -44,8 +46,12 @@ type Row = {
     commerceEnabled: boolean;
     publicCatalogEnabled: boolean;
     analyticsEnabled: boolean;
+    invitationExpiryDays: number;
   } | null;
 };
+
+/** D-050 default, also when a tenant has no settings row yet. */
+export const DEFAULT_INVITATION_EXPIRY_DAYS = 7;
 
 function toView(t: Row): TenantSettingsView {
   return {
@@ -53,6 +59,7 @@ function toView(t: Row): TenantSettingsView {
     slug: t.slug,
     defaultTimezone: t.defaultTimezone,
     defaultLocale: t.defaultLocale,
+    invitationExpiryDays: t.settings?.invitationExpiryDays ?? DEFAULT_INVITATION_EXPIRY_DAYS,
     features: {
       classroom: t.settings?.classroomEnabled ?? false,
       surveys: t.settings?.surveysEnabled ?? false,
@@ -91,17 +98,33 @@ export class TenantSettingsService {
     input: z.output<typeof UpdateTenantSettingsBody>,
   ): Promise<TenantSettingsView> {
     const tenantId = tenantOf(ctx);
-    const { version, ...patch } = input;
+    const { version, invitationExpiryDays, ...tenantPatch } = input;
     const updated = await this.prisma.$transaction(async (tx) => {
       const current = await tx.tenant.findUnique({ where: { id: tenantId }, select: SELECT });
       if (!current) throw ApiException.notFound();
       if (current.version !== version) throw conflict();
-      const diff = changedFields(current, patch);
+      const flat = {
+        ...current,
+        invitationExpiryDays:
+          current.settings?.invitationExpiryDays ?? DEFAULT_INVITATION_EXPIRY_DAYS,
+      };
+      const diff = changedFields(flat, {
+        ...tenantPatch,
+        ...(invitationExpiryDays === undefined ? {} : { invitationExpiryDays }),
+      });
+      // One version for the whole settings screen: the tenant row carries it, also for a settings-only change.
       const result = await tx.tenant.updateMany({
         where: { id: tenantId, version, status: 'active' },
-        data: { ...patch, version: { increment: 1 } },
+        data: { ...tenantPatch, version: { increment: 1 } },
       });
       if (result.count === 0) throw conflict();
+      if (invitationExpiryDays !== undefined) {
+        await tx.tenantSetting.upsert({
+          where: { tenantId },
+          create: { tenantId, invitationExpiryDays },
+          update: { invitationExpiryDays },
+        });
+      }
       if (diff.changed) {
         await this.audit.record(tx, {
           actorUserId: ctx.userId,

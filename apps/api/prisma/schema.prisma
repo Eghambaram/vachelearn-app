@@ -65,6 +65,7 @@ model Tenant {
   memberships     Membership[]
   supportSessions PlatformSupportSession[]
   jobRoles        JobRole[]
+  invitations     Invitation[]
 
   @@index([status, createdAt])
   @@map("tenants")
@@ -78,6 +79,8 @@ model TenantSetting {
   commerceEnabled      Boolean  @default(false) @map("commerce_enabled")
   publicCatalogEnabled Boolean  @default(false) @map("public_catalog_enabled")
   analyticsEnabled     Boolean  @default(false) @map("analytics_enabled")
+  /// How long an invitation link stays valid (D-050: 1–30 days, default 7; CHECK in migration `invitations`).
+  invitationExpiryDays Int      @default(7) @map("invitation_expiry_days")
   version              Int      @default(1)
   createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -119,6 +122,7 @@ model Branch {
   membershipBranches MembershipBranch[]
   primaryFor         Membership[]       @relation("PrimaryBranch")
   roleAssignments    RoleAssignment[]
+  invitations        Invitation[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, code])
@@ -249,13 +253,16 @@ model User {
   createdById       String?    @map("created_by_id") @db.Uuid
   updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  credential      UserCredential?
-  sessions        AuthSession[]
-  auditEvents     AuditEvent[]
-  passwordLinks   PasswordLink[]
-  memberships     Membership[]
-  platformRoles   PlatformRoleAssignment[]
-  supportSessions PlatformSupportSession[]
+  credential          UserCredential?
+  sessions            AuthSession[]
+  auditEvents         AuditEvent[]
+  passwordLinks       PasswordLink[]
+  memberships         Membership[]
+  platformRoles       PlatformRoleAssignment[]
+  supportSessions     PlatformSupportSession[]
+  invitationsSent     Invitation[]             @relation("InvitationCreatedBy")
+  invitationsAccepted Invitation[]             @relation("InvitationAcceptedUser")
+  invitationsRevoked  Invitation[]             @relation("InvitationRevokedBy")
 
   @@map("users")
 }
@@ -379,6 +386,7 @@ model Membership {
   branches        MembershipBranch[]
   roleAssignments RoleAssignment[]
   activeSessions  AuthSession[]
+  invitations     Invitation[]
 
   @@unique([tenantId, userId])
   @@unique([tenantId, id])
@@ -459,8 +467,8 @@ model RoleAssignment {
   revokedById   String?    @map("revoked_by_id") @db.Uuid
   revokedReason String?    @map("revoked_reason") @db.VarChar(500)
 
-  membership       Membership        @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
-  branch           Branch?           @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  membership Membership @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
+  branch     Branch?    @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
   // A branch role is created only on one of the member's own branches, and a branch membership cannot be removed
   // while a live role uses it (D-104) — database triggers (migration `people_basics`); revoked roles are history.
 
@@ -524,4 +532,51 @@ model PlatformSupportSession {
   @@index([tenantId, startedAt])
   @@index([staffUserId, endedAt])
   @@map("platform_support_sessions")
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  revoked
+
+  @@map("invitation_status")
+}
+
+/// An invitation to join a tenant with one role (Slice 3.1; spec §5; D-050, D-115, D-116). Expired is derived
+/// (`pending` past `expires_at`). Only the SHA-256 of the latest emailed token is kept, and only while the invitation
+/// can still be accepted; a resend replaces it (the old link stops working at once).
+model Invitation {
+  id                   String           @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId             String           @map("tenant_id") @db.Uuid
+  email                String           @db.Citext
+  role                 TenantRole
+  branchId             String?          @map("branch_id") @db.Uuid
+  status               InvitationStatus @default(pending)
+  /// Null until the email job mints a token (D-081), after a resend until the new one is minted, and once closed.
+  tokenHash            String?          @unique @map("token_hash") @db.Char(64)
+  /// Which send the live token belongs to: a job for an earlier send never mints (resend supersedes it).
+  sendCount            Int              @default(1) @map("send_count")
+  lastSentAt           DateTime?        @map("last_sent_at") @db.Timestamptz(3)
+  expiresAt            DateTime         @map("expires_at") @db.Timestamptz(3)
+  createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById          String           @map("created_by_id") @db.Uuid
+  acceptedAt           DateTime?        @map("accepted_at") @db.Timestamptz(3)
+  acceptedUserId       String?          @map("accepted_user_id") @db.Uuid
+  acceptedMembershipId String?          @map("accepted_membership_id") @db.Uuid
+  revokedAt            DateTime?        @map("revoked_at") @db.Timestamptz(3)
+  revokedById          String?          @map("revoked_by_id") @db.Uuid
+  revokedReason        String?          @map("revoked_reason") @db.VarChar(500)
+  updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant             Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branch             Branch?     @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  createdBy          User        @relation("InvitationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  acceptedUser       User?       @relation("InvitationAcceptedUser", fields: [acceptedUserId], references: [id], onDelete: Restrict)
+  revokedBy          User?       @relation("InvitationRevokedBy", fields: [revokedById], references: [id], onDelete: Restrict)
+  acceptedMembership Membership? @relation(fields: [tenantId, acceptedMembershipId], references: [tenantId, id], onDelete: Restrict)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([tenantId, branchId, createdAt(sort: Desc)])
+  @@map("invitations")
 }

@@ -48,6 +48,8 @@ built and the guarantees the database itself enforces.
 | `platform_role_assignments` | 2.4a | Global | One live per user + role; revoked with reason; grants platform routes only (D-037) |
 | `auth_sessions.active_membership_id` | 2.4a | — | Composite FK `(user_id, active_membership_id) → memberships(user_id, id)`: a session can only point at its own user's membership (D-089) |
 | `platform_support_sessions` | 2.4c | Global (names a tenant) | Reason ≥ 3 characters; at most 60 minutes (CHECK, D-037); ended ⇔ `end_reason` (`ended`, `expired`, `signed_out`, `tenant_archived`, `staff_role_revoked`); one live per staff member (partial unique); bound to the opening `auth_sessions` row (FK) |
+| `tenant_settings.invitation_expiry_days` | 3.1 | Tenant-owned (1:1) | D-050: default 7, CHECK 1–30; changed by the Tenant Admin in Settings (optimistic concurrency on the tenant row) |
+| `invitations` | 3.1 | Tenant-owned, direct (`branch_id?`) | `email` CITEXT, lower-case + `@` shape + ≤ 254 (CHECK); fixed role enum (D-053); composite FKs `(tenant_id, branch_id) → branches` and `(tenant_id, accepted_membership_id) → memberships`; Branch Admin needs a branch, Tenant Admin none (CHECKs, as role assignments); `token_hash` SHA-256 hex, unique, **only while pending** (CHECK); accepted ⇔ `accepted_at` + user + membership, revoked ⇔ `revoked_at` + actor + non-blank reason (CHECKs); `send_count ≥ 1`; `expires_at > created_at`; **one pending invitation per tenant + address** (partial unique index); closed rows are history — a trigger rejects any UPDATE of an accepted/revoked row and every DELETE |
 | `auth_sessions.support_session_id` | 2.4c | — | Composite FK `(user_id, support_session_id) → platform_support_sessions(staff_user_id, id)`: a browser session can only carry its own staff member's support session; `audit_events.support_session_id` now references it too |
 
 Optimistic concurrency: `tenants`, `tenant_settings`, `branches` (2.2), `memberships` (2.4a) and `job_roles` (2.5a)
@@ -78,7 +80,7 @@ Release: R1 = Phase 2 · R2 = Phases 3–4 · R3 = Phase 5 · R4 = Phase 6.
 | Role | Global | key (`tenant_admin`, …), name, scopeLevel | 7 fixed system roles (D-053) |
 | Permission | Global | key (`course.publish`) | Code registry mirrored in `ROLE_PERMISSION_MATRIX.md` |
 | RoleAssignment | Global for platform scope; Tenant-owned otherwise | userId/membershipId, roleId, scopeType (`platform`/`tenant`/`branch`), branchId?, grantedById, revokedAt/ById | One active assignment per (membership, role, scope); changes audited |
-| Invitation | Tenant-owned, direct (branchId?) | email, intendedRoleId, branchId?, groupId?, tokenHash, expiresAt, invitedById, status (`pending`/`accepted`/`revoked`/`expired`), acceptedAt, acceptedByUserId | Token hash unique; at most one pending per `(tenant_id, lower(email))` |
+| Invitation | Tenant-owned, direct (branchId?) | email, role, branchId?, tokenHash?, sendCount, lastSentAt, expiresAt, createdById, status (`pending`/`accepted`/`revoked`; `expired` derived), acceptedAt/UserId/MembershipId, revokedAt/ById/Reason | Built 3.1 (see Physical schema); groups on invitations come with groups (3.2) if wanted |
 | PlatformSupportSession | Global | staffUserId, tenantId, reason, startedAt, expiresAt, endedAt, accessLevel | D-037; every action inside is audited with the support session id |
 | AuditEvent | Evidence; Tenant-owned when tenantId set, else platform | actorUserId, tenantId?, branchId?, action, entityType, entityId, requestId, supportSessionId?, before/after (safe subset), occurredAt | Insert-only |
 
@@ -188,9 +190,13 @@ Derived: **Expired** when `expiresAt` < now. Verification shows Valid · Expired
 | From | Event | To |
 |---|---|---|
 | — | create | `pending` |
-| `pending` | accept (email + tenant match, not expired) | `accepted` |
-| `pending` | revoke / resend (resend revokes old, creates new) | `revoked` |
-| `pending` | expiry passes | `expired` (derived on read; may be materialised by a job) |
+| `pending` | accept (the link's token, not expired, tenant active, branch active, inviter still holds the granting authority, D-115 re-checked) | `accepted` (membership, branch, primary branch and role created in the same transaction; token hash cleared) |
+| `pending` | cancel (reason, audited) | `revoked` (shown as Cancelled) |
+| `pending` | new invitation to the same address after expiry | `revoked`, reason "Replaced by a new invitation" |
+| `pending` | resend | `pending` — same row: token hash cleared at once (old link dead), `send_count` + 1, expiry restarted; the job for this send mints the new link (built 3.1) |
+| `pending` | expiry passes | `expired` — derived on read (`expires_at ≤ now`), not stored; an expired invitation can still be resent or cancelled |
+
+Built in Slice 3.1 (D-050, D-115, D-116). `accepted` and `revoked` are final (database trigger).
 
 ### ClassSession and SessionRegistration (R3)
 
@@ -215,7 +221,7 @@ Derived: **Expired** when `expiresAt` < now. Verification shows Valid · Expired
 ### Tenant, Branch, Membership
 
 Tenant: `active` ⇄ `suspended` (reason, audited) → `archived`. Branch: `active` ⇄ `inactive`. Membership:
-`active` ⇄ `deactivated` (built); an `invited` state comes with invitations in Phase 3. Suspension and deactivation revoke sessions on the next request (D-049);
+`active` ⇄ `deactivated` (built). There is no `invited` membership state: an invitation is its own row, and the membership is created only when it is accepted (3.1). Suspension and deactivation revoke sessions on the next request (D-049);
 deactivating a membership ends the member's sessions in that tenant at once and keeps its role assignments, which
 grant nothing until reactivation (D-102). JobRole: `active` ⇄ `inactive` (an inactive role stays on members but
 cannot be newly chosen).
@@ -232,6 +238,8 @@ cannot be newly chosen).
 | Order create | `Idempotency-Key` header → `Order.idempotencyKey` |
 | Webhooks | `ProviderEvent (provider, event_id)` |
 | Jobs | `Job (type, business_key)` |
+| Invitation email | job business key `invitation:{id}:{sendCount}`; a job whose send was superseded by a resend mints nothing |
+| Invitation accept | conditional claim `UPDATE … WHERE status = 'pending' AND token_hash = …` in the joining transaction: one acceptance per link |
 | Notifications | `NotificationDelivery (notification, channel)` |
 
 ## 5. Immutability rules

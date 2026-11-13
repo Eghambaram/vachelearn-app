@@ -137,7 +137,7 @@ export class AuditLogService {
     });
     const page = rows.slice(0, query.limit);
     const last = page.at(-1);
-    const labels = await this.labels(tenantId, page);
+    const labels = await this.labels(tenantId, page, ctx.support !== undefined);
     const seesReasons =
       !ctx.support &&
       (reachFor(ctx, 'user.deactivate') !== null || reachFor(ctx, 'user.reactivate') !== null);
@@ -169,14 +169,14 @@ export class AuditLogService {
 
   /**
    * Names for the page's records, read in this tenant only (every lookup carries `tenantId`): members by name, branches
-   * and job roles by name, role assignments as "role · member", the tenant by its name. Batched per type.
+   * and job roles by name, role assignments as "role · member", invitations by the invited address, the tenant by its name. Batched per type.
    */
-  private async labels(tenantId: string, rows: readonly Row[]) {
+  private async labels(tenantId: string, rows: readonly Row[], support = false) {
     const ids = (type: string) => [
       ...new Set(rows.filter((r) => r.entityType === type).map((r) => r.entityId)),
     ];
     const out = new Map<string, string>();
-    const [members, branches, jobRoles, roles, tenant] = await Promise.all([
+    const [members, branches, jobRoles, roles, invitations, tenant] = await Promise.all([
       this.prisma.membership.findMany({
         where: { tenantId, id: { in: ids('membership') } },
         select: { id: true, user: { select: { displayName: true } } },
@@ -197,6 +197,11 @@ export class AuditLogService {
           membership: { select: { user: { select: { displayName: true } } } },
         },
       }),
+      this.prisma.invitation.findMany({
+        // Support sessions do not see invitations (matrix `invitation.*` SS = —): no invited address as a label.
+        where: { tenantId, id: { in: support ? [] : ids('invitation') } },
+        select: { id: true, email: true },
+      }),
       ids('tenant').includes(tenantId)
         ? this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { displayName: true } })
         : null,
@@ -207,6 +212,7 @@ export class AuditLogService {
     // The role key is translated by the screen: "<role>·<member>".
     for (const r of roles)
       out.set(`role_assignment:${r.id}`, `${r.role}·${r.membership.user.displayName}`);
+    for (const i of invitations) out.set(`invitation:${i.id}`, i.email);
     if (tenant) out.set(`tenant:${tenantId}`, tenant.displayName);
     return out;
   }

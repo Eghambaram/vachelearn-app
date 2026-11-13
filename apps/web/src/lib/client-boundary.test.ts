@@ -32,10 +32,11 @@ describe("'use client' modules stay clear of server-only data", () => {
   });
 
   it('import lib/api for types only, except its pure helpers', () => {
-    // session-types and client hold types, constants and pure functions; browser, auth, people, tenancy and audit are the browser's
+    // session-types and client hold types, constants and pure functions; browser, auth, people, tenancy, audit and invitations are the browser's
     // fetch clients for /api/v1 (they read no fixtures — checked below); every other lib/api module reads fixtures or
     // runs on the server only.
-    const PURE = /@\/lib\/api\/(session-types|client|browser|auth|people|tenancy|audit)['"]/;
+    const PURE =
+      /@\/lib\/api\/(session-types|client|browser|auth|people|tenancy|audit|invitations)['"]/;
     const offenders = files
       .filter((file) =>
         readFileSync(file, 'utf8')
@@ -50,7 +51,14 @@ describe("'use client' modules stay clear of server-only data", () => {
 
   it('the browser API clients read no fixtures and no server-only module', () => {
     const allowed = new Set(['./browser', './client', '@vachelearn/contracts']);
-    for (const file of ['browser.ts', 'auth.ts', 'people.ts', 'tenancy.ts', 'audit.ts']) {
+    for (const file of [
+      'browser.ts',
+      'auth.ts',
+      'people.ts',
+      'tenancy.ts',
+      'audit.ts',
+      'invitations.ts',
+    ]) {
       const source = readFileSync(path.join(SRC, 'lib/api', file), 'utf8');
       const imports = [...source.matchAll(/from ['"]([^'"]+)['"]/g)].map((m) => m[1]!);
       expect({ file, outside: imports.filter((i) => !allowed.has(i)) }).toEqual({

@@ -45,7 +45,7 @@ const nextConfig: NextConfig = {
     return [
       { source: '/:path*', headers: securityHeaders },
       // Pages that receive a secret link (#token=…): never send the URL anywhere, never cache them.
-      ...['/set-password', '/reset-password'].map((source) => ({
+      ...['/set-password', '/reset-password', '/accept-invite'].map((source) => ({
         source,
         headers: [
           { key: 'Referrer-Policy', value: 'no-referrer' },

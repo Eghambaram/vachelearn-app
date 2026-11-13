@@ -16,7 +16,7 @@ import { TimezoneField } from './timezone-field';
 const t = getMessages();
 const s = t.settings;
 
-type FieldName = 'displayName' | 'defaultTimezone' | 'defaultLocale';
+type FieldName = 'displayName' | 'defaultTimezone' | 'defaultLocale' | 'invitationExpiryDays';
 
 /**
  * General settings of the caller's organisation (UI spec #30; Slice 2.5c): name, default time zone, language tag. The
@@ -37,6 +37,7 @@ export function SettingsGeneral({
   const editRef = React.useRef<HTMLButtonElement>(null);
   const nameRef = React.useRef<HTMLInputElement>(null);
   const localeRef = React.useRef<HTMLInputElement>(null);
+  const expiryRef = React.useRef<HTMLInputElement>(null);
   const timezoneId = React.useRef<string | null>(null);
   const wasEditing = React.useRef(false);
 
@@ -51,6 +52,7 @@ export function SettingsGeneral({
     else if (found.defaultTimezone && timezoneId.current)
       document.getElementById(timezoneId.current)?.focus();
     else if (found.defaultLocale) localeRef.current?.focus();
+    else if (found.invitationExpiryDays) expiryRef.current?.focus();
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -58,10 +60,16 @@ export function SettingsGeneral({
     const form = new FormData(event.currentTarget);
     const displayName = String(form.get('displayName') ?? '').trim();
     const defaultLocale = String(form.get('defaultLocale') ?? '').trim();
+    const expiryText = String(form.get('invitationExpiryDays') ?? '').trim();
+    const invitationExpiryDays = /^\d{1,2}$/.test(expiryText) ? Number(expiryText) : NaN;
     const local: Partial<Record<FieldName, string>> = {
       displayName: displayName.length >= 2 ? undefined : s.fieldErrors.displayName,
       defaultTimezone: timezone ? undefined : s.fieldErrors.defaultTimezone,
       defaultLocale: defaultLocale ? undefined : s.fieldErrors.defaultLocale,
+      invitationExpiryDays:
+        invitationExpiryDays >= 1 && invitationExpiryDays <= 30
+          ? undefined
+          : s.fieldErrors.invitationExpiryDays,
     };
     setErrors(local);
     if (Object.values(local).some(Boolean)) {
@@ -71,7 +79,13 @@ export function SettingsGeneral({
     const failure = await run(
       (csrf) =>
         updateTenantSettings(
-          { version: settings.version, displayName, defaultTimezone: timezone!, defaultLocale },
+          {
+            version: settings.version,
+            displayName,
+            defaultTimezone: timezone!,
+            defaultLocale,
+            invitationExpiryDays,
+          },
           csrf,
         ),
       s.saved,
@@ -168,6 +182,28 @@ export function SettingsGeneral({
               />
             )}
           </FormField>
+          <FormField
+            label={s.invitationExpiryDays}
+            help={s.invitationExpiryDaysHelp}
+            error={errors.invitationExpiryDays}
+            required
+            className="sm:w-64"
+          >
+            {(field) => (
+              <Input
+                {...field}
+                ref={expiryRef}
+                name="invitationExpiryDays"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={30}
+                step={1}
+                defaultValue={settings.invitationExpiryDays}
+                autoComplete="off"
+              />
+            )}
+          </FormField>
           <div className="flex flex-wrap gap-2">
             <Button type="submit" aria-disabled={pending || undefined}>
               {pending ? s.saving : s.save}
@@ -198,6 +234,8 @@ export function SettingsGeneral({
           <dd>{settings.defaultTimezone.replaceAll('_', ' ')}</dd>
           <dt className="text-sm text-muted-foreground">{s.defaultLocale}</dt>
           <dd>{settings.defaultLocale}</dd>
+          <dt className="text-sm text-muted-foreground">{s.invitationExpiryDays}</dt>
+          <dd>{s.days(settings.invitationExpiryDays)}</dd>
         </dl>
       )}
     </section>

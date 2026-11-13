@@ -1,13 +1,13 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 3 · People and content — planning slice 3.1 (invitations).** Phase 2 approved by the owner 2026-11-13 (exit gate be2af4e…462ba53);
-Phase 1 approved (a51d042).
+**Phase 3 · People and content — slice 3.1 (invitations) committed; D-118 follow-up next, then planning 3.2 (groups).**
+Phase 2 approved by the owner 2026-11-13 (exit gate be2af4e…462ba53, CI green); Phase 1 approved (a51d042).
 
 ## Last verified
-2026-11-12, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), at 408c50c + the axe helper change:
-- `pnpm verify` exit 0 (contracts 56, web 693, api 383; lint 0 errors, 2 warnings in demo pages) · `pnpm test:e2e`
-  275 passed · QA from a clean clone at 408c50c: PASS WITH NOTES (isolation 259, demo 27/27). CI not run (not pushed).
+2026-11-13, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), working tree of slice 3.1 on 504c574:
+- `/verify` gates each exit 0 (contracts 56, web 721, api 432; isolation 308; lint 0 errors, 2 warnings in demo
+  pages; build OK) · `pnpm test:e2e` 277 passed. CI on the pushed Phase 2 commits: green (2026-11-13).
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
@@ -19,13 +19,14 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
   · 2.6c per-role Playwright smoke on the seed (28da977) · client demo (D-110, D-111; RUNBOOK "Client demo") · exit
   gate: isolation demo, reviews + fixes (D-106, D-112, D-113, D-037), QA (be2af4e, 408c50c). Detail:
   `docs/progress-log/2026-11.md`.
+- 3.1 invitations: API, email job, web list/invite/accept, Settings validity, reviews fixed. Detail:
+  `docs/progress-log/2026-11.md`.
 
 ## In progress / uncommitted
-- Nothing.
+- D-118 (confirmed 2026-11-13): answer a platform-staff or closed account like a fresh address — to build.
 
 ## Next step
-Slice 3.1 invitations: plan shown to the owner 2026-11-13; waiting for approval and D-050 / D-033 + the 3.1 rules.
-Check the first CI run on the pushed Phase 2 commits (pushed 2026-11-13 with the owner's go).
+Build D-118 (small, own commit), then show the slice 3.2 groups plan and wait for approval.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
@@ -68,8 +69,10 @@ Check the first CI run on the pushed Phase 2 commits (pushed 2026-11-13 with the
   blank before hydration) and untested surfaces (screen readers, Safari, Firefox, touch, zoom, High Contrast): log.
 - Certificate preview builds its printed verification address from request headers (`siteOrigin`); Phase 2 should
   use a configured public base URL (QA note, exit gate).
-- Still open from the 2.1 review list: rate limits on invites (Phase 3) and on `/ready` and `/verify` (before any
-  public deployment).
+- Still open from the 2.1 review list: rate limits on `/ready` and `/verify` (before any public deployment); invites
+  done in 3.1 (D-117).
+- E2E resets the test database's rate-limit counters before each sign-in/set-password (`e2e-reset-limits`, `*_test`
+  only); never run the API tests and e2e at the same time (shared `vachelearn_test`).
 - 2.3d reviews, logged: a set-password link opened on a shared PC stays in that browser's global history (single use
   + expiry are the controls); password managers get no username on the set-password form (API could return the
   address for a valid token); e2e shares `vachelearn_test` with the API tests (never run both at once) and reuses a

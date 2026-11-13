@@ -98,6 +98,7 @@ app never sets.
 | Attendance | Present · Absent · Late · Excused |
 | Order | Pending · Paid · Failed · Cancelled · Refunded · Partially Refunded |
 | Job / export | Queued · Running · Succeeded · Failed · Retrying |
+| Invitation (3.1) | Pending · Expired · Accepted · Cancelled (stored `revoked`; Expired is derived from the expiry date) |
 
 ### Status tones (implemented in Slice 1.3a — `apps/web/src/lib/status.ts`, `StatusBadge`)
 
@@ -108,7 +109,7 @@ update `status.ts` and this table together).
 | Tone | Icon | Statuses | Source |
 |---|---|---|---|
 | Success (green) | check circle | Active, Published, Compliant, Completed | web rule |
-| Success (green) | check circle | Valid, Passed, Present, Paid, Succeeded | **Proposed** |
+| Success (green) | check circle | Valid, Passed, Present, Paid, Succeeded, Accepted (invitation, 3.1) | **Proposed** |
 | Info (blue) | loader | In Progress | web rule |
 | Info (blue) | loader | Submitted, Queued, Running | **Proposed** |
 | Warning (amber text on amber tint) | clock | Due Soon, Under Review, Trial | web rule |

@@ -15,6 +15,7 @@ describe('status vocabulary', () => {
       'compliance',
       'course',
       'enrollment',
+      'invitation',
       'job',
       'jobRole',
       'member',

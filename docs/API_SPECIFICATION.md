@@ -194,10 +194,51 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   `@RecordSupportView` (`GET /people/:id`, `GET /branches/:id`) also record `support.viewed` with the record id taken
   from the answer — which exists only because the scoped lookup found it — never from the URL (D-099).
 
+## Invitations (Slice 3.1)
+
+- Inviter routes act in the session's tenant: `GET /invitations` (`invitation.read`), `POST /invitations`
+  (`invitation.create`), `POST /invitations/:id/resend` (`invitation.create`), `POST /invitations/:id/revoke`
+  (`invitation.revoke`, reason required). Granting rules as role assignment: a Tenant Admin invites with any tenant role
+  (Tenant Admin whole-tenant only, Branch Admin on a branch only); a Branch Admin only Learner/Instructor on its own
+  branches. A branch outside the caller's reach, in another tenant or inactive → 404; a role the caller cannot grant
+  → 403; a Branch Admin managing a Branch Admin invitation → 403 (it can see it, `canManage: false`).
+- Refusals on create (409): `ALREADY_MEMBER` — the address has a membership in this tenant, active or deactivated
+  (D-115; the message points to the profile); `CANNOT_INVITE` — a platform-staff or deactivated account (D-037;
+  generic); `INVITATION_PENDING` — an unexpired pending invitation exists (resend it instead; also the answer to two
+  simultaneous creates). An expired pending one is replaced. Resend/cancel of an accepted or cancelled invitation →
+  409 `INVALID_STATE`.
+- Lists: newest first, `status` (`pending`, `expired` — derived from the expiry —, `accepted`, `revoked`), `branchId`
+  (narrows, never widens), `search` (part of the address), signed cursor bound to the caller's scope (another
+  tenant's or a wider scope's cursor → 422). Each row says `canManage`.
+- The email (job `email.invitation`): ids only in the payload; the token is minted when the email is built and only
+  its SHA-256 stored; the link is `${WEB_ORIGIN}/accept-invite#token=…` (fragment: never in a log or `Referer`); the
+  subject carries no personal data. A resend clears the stored hash at once and bumps `send_count`, so only the newest
+  email's link works; the validity restarts (tenant setting, D-050: 1–30 days, default 7).
+- The invited person: `POST /invitations/preview` `{ token }` (public) → organisation, role, branch name, the invited
+  address, `accountExists`, expiry. `POST /invitations/accept` `{ token, displayName, password }` (public) creates the
+  account (address verified by the link), membership, branch, primary branch and role, and claims the invitation in one
+  transaction; it never opens a session — the person signs in (D-116). An account already exists → 409
+  `SIGN_IN_REQUIRED`. `POST /me/invitations/accept` `{ token }` (`@Authenticated`, signed in as the invited address;
+  another address → 403 `WRONG_ACCOUNT`; inside a support session → 409 `SUPPORT_ACTIVE`). Unknown, used, cancelled,
+  expired link, suspended/archived tenant, deactivated branch, or an inviter who no longer holds the authority → the
+  same 400 `INVALID_LINK`. Password policy → 422 on `password` as for set-password.
+- Audit: `invitation.created`, `invitation.resent`, `invitation.revoked`, `invitation.accepted` (the invited person);
+  the membership, branch and role rows created on acceptance are audited with the **inviter** as actor and reason
+  "Invitation accepted". No address appears in audit `after` values (the log shows it as the record's label).
+- Resend of an invitation whose inviter can no longer grant it (role revoked, membership deactivated) → 409
+  `INVITER_CANNOT_GRANT`: the link stays the inviter's grant and would fail at acceptance; cancel it and invite again.
+  Replacing an expired pending invitation needs the right to cancel it (a Branch Admin cannot replace another
+  branch's or a tenant-wide one: 409 `INVITATION_PENDING`). Support sessions see no invited address as an audit-log
+  label (matrix: support sees no invitations).
+- Rate limits (D-117, Proposed): sending (create + resend) 100 per inviter and 300 per tenant per hour, 5 resends per
+  invitation per day; link use (preview + both accepts) 10 per link per 15 minutes plus 300 per client network per
+  15 minutes → 429 `RATE_LIMITED`. Residual (accepted with D-116): whoever holds a forwarded link can create the
+  account for an address that has none yet; the owner recovers it through "Forgot your password?" (D-087, D-049).
+
 ## Password links (Slice 2.3c)
 
 - Accounts start without a password (D-083): `pnpm --filter api user:create --email … --name … --reason …` creates one and sends
-  its set-password email (invitations reuse this in Phase 3). Links are single-use, minted when the email is sent
+  its set-password email (invitations, Slice 3.1, create the account on acceptance instead). Links are single-use, minted when the email is sent
   (only the SHA-256 is stored, D-081), carry the token in the URL **fragment** (`/set-password#token=…`,
   `/reset-password#token=…`) so it never reaches a server log or `Referer`, and expire after 7 days (set) or
   30 minutes (reset) (D-087). A newer link of the same kind revokes the older one.
