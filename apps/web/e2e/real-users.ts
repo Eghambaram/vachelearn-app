@@ -15,6 +15,9 @@ const MAILPIT_URL = process.env.MAILPIT_URL ?? 'http://127.0.0.1:58025';
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 export async function expectNoAxeViolations(page: Page) {
+  // Scan the settled page: right after a server action refreshes it, Next briefly re-renders <head> with no <title>
+  // (QA, Phase 2 gate: axe `document-title` once in 5 mobile runs). A page that never gets a title still fails here.
+  await expect(page).toHaveTitle(/\S/);
   const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   expect(results.violations).toEqual([]);
 }

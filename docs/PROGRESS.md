@@ -1,13 +1,13 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — 2.6c done (28da977); client demo build done** (D-110, D-111:
-demo content flag, catalog + enrol, public tenant pages). Phase 1 approved (a51d042). Next: Phase 2 exit gate.
+**Phase 2 · Platform foundation (R1) — exit gate done, awaiting owner approval** (be2af4e, 408c50c + e2e helper fix).
+Phase 1 approved (a51d042).
 
 ## Last verified
-2026-11-11, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), client demo tree:
-- format, lint, typecheck, `pnpm test` (contracts 56, web 681, api 375), api build, web build (demo flag on) · e2e 275
-  passed (before the final review fixes) · full `pnpm verify` exit 0 before those fixes. Detail in the log.
+2026-11-12, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), at 408c50c + the axe helper change:
+- `pnpm verify` exit 0 (contracts 56, web 693, api 383; lint 0 errors, 2 warnings in demo pages) · `pnpm test:e2e`
+  275 passed · QA from a clean clone at 408c50c: PASS WITH NOTES (isolation 259, demo 27/27). CI not run (not pushed).
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
@@ -16,22 +16,22 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
   (97ef679) · 2.4b role assignment + first Tenant Admin (37e9a3b) · 2.4c support sessions (D-037, D-098) · 2.4d real
   session in the shell (b66e997) · 2.5a people API (e3e53e7) · 2.5b users/roles screens (7fb2164) · 2.5c branches,
   settings, job roles (1ef1c25) · 2.6a audit log (d566646) · 2.6b two-tenant fixture, R1 matrix, `db:seed` (8fb01dc)
-  · 2.6c per-role Playwright smoke on the seed (28da977) · client demo (D-110, D-111; RUNBOOK "Client demo"). Detail:
+  · 2.6c per-role Playwright smoke on the seed (28da977) · client demo (D-110, D-111; RUNBOOK "Client demo") · exit
+  gate: isolation demo, reviews + fixes (D-106, D-112, D-113, D-037), QA (be2af4e, 408c50c). Detail:
   `docs/progress-log/2026-11.md`.
 
 ## In progress / uncommitted
 - Nothing.
 
 ## Next step
-Phase 2 exit gate: `docs/RUNBOOK.md` two-tenant isolation demo script, tenant-isolation-auditor + security-reviewer
-over Phase 2, qa-verifier from a clean clone, docs check (DOMAIN_MODEL, matrix, API spec, RUNBOOK, `.env.example`).
+Owner approval of Phase 2 (and a push so CI runs — needs the owner's go). Then Phase 3 (`prompts/phase-3-*.md`).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
 - Review D-070 (resume = first unfinished lesson vs last opened); decide D-076 (verifying suspended tenants'
   certificates).
 - Phase 2: review D-080, D-088, D-090, D-095, decide D-099, and the matrix split note (PSA `saved_report.manage`) ·
-  D-082 production email provider (launch).
+  D-082 production email provider (launch) · D-114 demo video source and licence.
 
 ## Known issues
 - Node 26 not yet LTS (nodejs.org, 2026-10-20); bump `.nvmrc`/`engines` once it is (reported 2026-10-28).
@@ -40,6 +40,8 @@ over Phase 2, qa-verifier from a clean clone, docs check (DOMAIN_MODEL, matrix, 
 - `src/styles/vendor/shadcn-variants.css` is vendored (shadcn@4.22.1, MIT); `shadcn add` / `prettier --write` run from
   `apps/web` reformat it — restore with `git checkout` after adding components.
 - Proposed status tones (UI spec §Status tones) await owner review in the gallery.
+- Next briefly re-renders `<head>` without `<title>` after a server action refresh (axe caught it once); the real-session
+  axe helper waits for the title. Lint: unused `_modules` in `learn/catalog/page.tsx` and `t/[slug]/page.tsx` (warnings).
 - E2E is load-sensitive on WSL (8 cores, 7 GB RAM): local workers capped at 2 (CI default); full suite ~6 min locally,
   < 1 min on CI. Per-test timeout 60 s; `components.spec.ts` and `course-builder.spec.ts` 90 s (axe on very large
   pages). Builder: drag-and-drop and moving lessons between modules not built (buttons only). Unit tests too: with api
