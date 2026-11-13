@@ -1,7 +1,7 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 2 · Platform foundation (R1) — exit gate done, awaiting owner approval** (be2af4e, 408c50c + e2e helper fix).
+**Phase 3 · People and content — starting.** Phase 2 approved by the owner 2026-11-13 (exit gate be2af4e…462ba53);
 Phase 1 approved (a51d042).
 
 ## Last verified
@@ -24,7 +24,8 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
 - Nothing.
 
 ## Next step
-Owner approval of Phase 2 (and a push so CI runs — needs the owner's go). Then Phase 3 (`prompts/phase-3-*.md`).
+Phase 3 from `prompts/phase-3-people-content.md`: plan the phase and its first slice, show the owner, then build.
+Check the first CI run on the pushed Phase 2 commits (pushed 2026-11-13 with the owner's go).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
