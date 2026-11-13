@@ -1,7 +1,7 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 3 · People and content — slice 3.1 (invitations) committed (5d88451 + D-118); planning 3.2 (groups).**
+**Phase 3 · People and content — slice 3.1 (invitations) committed (5d88451 + D-118); building 3.2 (groups).**
 Phase 2 approved by the owner 2026-11-13 (exit gate be2af4e…462ba53, CI green); Phase 1 approved (a51d042).
 
 ## Last verified
@@ -26,8 +26,7 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
 - Nothing.
 
 ## Next step
-Slice 3.2 groups: plan shown to the owner 2026-11-13; waiting for approval and D-119 / D-120. Nothing pushed since
-Phase 2 (5d88451 and the D-118 commit are local).
+Slice 3.2 groups: plan approved 2026-11-13 (D-119–D-122 confirmed); building schema first. 3.1 pushed.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
