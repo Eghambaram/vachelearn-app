@@ -97,22 +97,18 @@ test.describe('workspace shell at 1440 px (Slice 1.4)', () => {
     page,
   }) => {
     await page.goto('/admin');
-    // Groups is still a placeholder screen (slice 3.2), so this checks the D-061 page too.
-    const groups = mainNav(page).getByRole('link', { name: 'Groups' });
-    for (
-      let i = 0;
-      i < 30 && !(await groups.evaluate((el) => el === document.activeElement));
-      i++
-    ) {
+    // Assignments is still a placeholder screen (slice 4.1), so this checks the D-061 page too (Groups became real in 3.2).
+    const item = mainNav(page).getByRole('link', { name: 'Assignments' });
+    for (let i = 0; i < 30 && !(await item.evaluate((el) => el === document.activeElement)); i++) {
       await page.keyboard.press('Tab');
     }
-    await expect(groups).toBeFocused();
+    await expect(item).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/\/admin\/groups$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Groups' })).toBeVisible();
-    await expect(groups).toHaveAttribute('aria-current', 'page');
-    await expect(page.getByText('Planned for slice 3.2')).toBeVisible();
-    await expect(page).toHaveTitle('Groups · VacheLearn');
+    await expect(page).toHaveURL(/\/admin\/assignments$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Assignments' })).toBeVisible();
+    await expect(item).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByText('Planned for slice 4.1')).toBeVisible();
+    await expect(page).toHaveTitle('Assignments · VacheLearn');
   });
 
   test('demo role switcher changes workspace without JavaScript tricks (plain form)', async ({

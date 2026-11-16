@@ -27,7 +27,11 @@ const WHOLE = 'whole';
 // The API validates the address again (and lower-cases it); this only catches typing slips early.
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-type FieldName = 'email' | 'role' | 'scope';
+const NO_GROUP = 'none';
+
+type FieldName = 'email' | 'role' | 'scope' | 'group';
+/** An active group the caller manages (D-122); `branchId` null = whole organisation. */
+export type GroupOption = { id: string; name: string; branchId: string | null };
 
 /**
  * Invite a person (Slice 3.1). Offers only what the caller may grant (matrix granting rules): a Tenant Admin any role,
@@ -39,6 +43,7 @@ export function InviteForm({
   scopeOptions,
   wholeOrganisation,
   expiryDays,
+  groups = [],
 }: {
   roles: readonly TenantRoleKey[];
   scopeOptions: readonly { id: string; label: string }[];
@@ -46,15 +51,19 @@ export function InviteForm({
   wholeOrganisation: boolean;
   /** The organisation's validity (D-050), when the caller can read the settings. */
   expiryDays: number | null;
+  /** Groups the caller may add people to; empty hides the field. */
+  groups?: readonly GroupOption[];
 }) {
   const router = useRouter();
   const { run, pending, error, statusRef } = useApiAction(invitationErrorMessage);
   const [role, setRole] = React.useState<TenantRoleKey | ''>('');
   const [scope, setScope] = React.useState('');
+  const [group, setGroup] = React.useState(NO_GROUP);
   const [errors, setErrors] = React.useState<Partial<Record<FieldName, string>>>({});
   const emailRef = React.useRef<HTMLInputElement>(null);
   const roleRef = React.useRef<HTMLButtonElement>(null);
   const scopeRef = React.useRef<HTMLButtonElement>(null);
+  const groupRef = React.useRef<HTMLButtonElement>(null);
 
   React.useEffect(() => emailRef.current?.focus(), []);
 
@@ -64,11 +73,16 @@ export function InviteForm({
       : []),
     ...(role === 'tenant_admin' ? [] : scopeOptions),
   ];
+  // D-122: a whole-organisation group, or one on the invited branch.
+  const groupChoices = scope
+    ? groups.filter((g) => g.branchId === null || (scope !== WHOLE && g.branchId === scope))
+    : [];
 
   function focusFirst(found: Partial<Record<FieldName, string>>) {
     if (found.email) emailRef.current?.focus();
     else if (found.role) roleRef.current?.focus();
     else if (found.scope) scopeRef.current?.focus();
+    else if (found.group) groupRef.current?.focus();
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -85,7 +99,16 @@ export function InviteForm({
       return;
     }
     const failure = await run(
-      (csrf) => createInvitation({ email, role, branchId: scope === WHOLE ? null : scope }, csrf),
+      (csrf) =>
+        createInvitation(
+          {
+            email,
+            role,
+            branchId: scope === WHOLE ? null : scope,
+            groupId: group === NO_GROUP ? null : group,
+          },
+          csrf,
+        ),
       i.sent(email),
       {
         onSuccess: (created) =>
@@ -97,6 +120,7 @@ export function InviteForm({
         email: failure.fields.includes('email') ? i.fieldErrors.email : undefined,
         role: failure.fields.includes('role') ? i.fieldErrors.role : undefined,
         scope: failure.fields.includes('branchId') ? i.fieldErrors.scope : undefined,
+        group: failure.fields.includes('groupId') ? i.fieldErrors.group : undefined,
       };
       setErrors(found);
       focusFirst(found);
@@ -133,6 +157,7 @@ export function InviteForm({
             onValueChange={(next) => {
               setRole(next as TenantRoleKey);
               setScope('');
+              setGroup(NO_GROUP);
             }}
           >
             <SelectTrigger {...field} ref={roleRef} className="w-full">
@@ -155,7 +180,14 @@ export function InviteForm({
         required
       >
         {(field) => (
-          <Select value={scope} onValueChange={setScope} disabled={!role}>
+          <Select
+            value={scope}
+            onValueChange={(next) => {
+              setScope(next);
+              setGroup(NO_GROUP);
+            }}
+            disabled={!role}
+          >
             <SelectTrigger {...field} ref={scopeRef} className="w-full">
               <SelectValue placeholder={i.chooseScope} />
             </SelectTrigger>
@@ -169,6 +201,25 @@ export function InviteForm({
           </Select>
         )}
       </FormField>
+      {groups.length > 0 ? (
+        <FormField label={i.group} help={i.groupHelp} error={errors.group}>
+          {(field) => (
+            <Select value={group} onValueChange={setGroup} disabled={!scope}>
+              <SelectTrigger {...field} ref={groupRef} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_GROUP}>{i.noGroup}</SelectItem>
+                {groupChoices.map((option) => (
+                  <SelectItem key={option.id} value={option.id}>
+                    {option.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </FormField>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" aria-disabled={pending || undefined}>
           {pending ? i.sending : i.send}

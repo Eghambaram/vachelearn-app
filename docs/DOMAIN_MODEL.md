@@ -50,10 +50,13 @@ built and the guarantees the database itself enforces.
 | `platform_support_sessions` | 2.4c | Global (names a tenant) | Reason ≥ 3 characters; at most 60 minutes (CHECK, D-037); ended ⇔ `end_reason` (`ended`, `expired`, `signed_out`, `tenant_archived`, `staff_role_revoked`); one live per staff member (partial unique); bound to the opening `auth_sessions` row (FK) |
 | `tenant_settings.invitation_expiry_days` | 3.1 | Tenant-owned (1:1) | D-050: default 7, CHECK 1–30; changed by the Tenant Admin in Settings (optimistic concurrency on the tenant row) |
 | `invitations` | 3.1 | Tenant-owned, direct (`branch_id?`) | `email` CITEXT, lower-case + `@` shape + ≤ 254 (CHECK); fixed role enum (D-053); composite FKs `(tenant_id, branch_id) → branches` and `(tenant_id, accepted_membership_id) → memberships`; Branch Admin needs a branch, Tenant Admin none (CHECKs, as role assignments); `token_hash` SHA-256 hex, unique, **only while pending** (CHECK); accepted ⇔ `accepted_at` + user + membership, revoked ⇔ `revoked_at` + actor + non-blank reason (CHECKs); `send_count ≥ 1`; `expires_at > created_at`; **one pending invitation per tenant + address** (partial unique index); closed rows are history — a trigger rejects any UPDATE of an accepted/revoked row and every DELETE |
+| `groups` | 3.2 | Tenant-owned, direct (`branch_id?`; null = whole tenant, D-119) | Name CITEXT 2–80 (CHECK), **unique per tenant among active groups ignoring case** (partial unique, D-121); description non-blank ≤ 500; archived ⇔ `archived_at` + actor + non-blank reason (CHECK); `(tenant_id, id)` unique (FK target); composite FK `(tenant_id, branch_id) → branches`; trigger: never deleted, tenant and branch never change |
+| `group_members` | 3.2 | Tenant-owned (one row per spell) | Composite FKs to the group and the membership in the same tenant; **one current spell per group + member** (partial unique `WHERE removed_at IS NULL`); removed ⇔ `removed_at` + actor + non-blank reason (CHECK); trigger: never deleted, a removal is final, identity columns never change; insert trigger: the group must be active and, for a branch group, the member must belong to that branch (D-120); deleting a `membership_branches` row is refused while the member has a current spell in that branch's groups |
+| `invitations.group_id` | 3.2 | — | D-122: composite FK `(tenant_id, group_id) → groups`; frozen with the rest of the grant while pending (trigger) |
 | `auth_sessions.support_session_id` | 2.4c | — | Composite FK `(user_id, support_session_id) → platform_support_sessions(staff_user_id, id)`: a browser session can only carry its own staff member's support session; `audit_events.support_session_id` now references it too |
 
-Optimistic concurrency: `tenants`, `tenant_settings`, `branches` (2.2), `memberships` (2.4a) and `job_roles` (2.5a)
-carry `version INTEGER NOT NULL DEFAULT 1`; an edit names the version it read and a stale one is a 409.
+Optimistic concurrency: `tenants`, `tenant_settings`, `branches` (2.2), `memberships` (2.4a), `job_roles` (2.5a) and
+`groups` (3.2) carry `version INTEGER NOT NULL DEFAULT 1`; an edit names the version it read and a stale one is a 409.
 
 Not built yet: everything else in §2. Department is a free-text membership field for now (D-103), not a table.
 
@@ -80,7 +83,7 @@ Release: R1 = Phase 2 · R2 = Phases 3–4 · R3 = Phase 5 · R4 = Phase 6.
 | Role | Global | key (`tenant_admin`, …), name, scopeLevel | 7 fixed system roles (D-053) |
 | Permission | Global | key (`course.publish`) | Code registry mirrored in `ROLE_PERMISSION_MATRIX.md` |
 | RoleAssignment | Global for platform scope; Tenant-owned otherwise | userId/membershipId, roleId, scopeType (`platform`/`tenant`/`branch`), branchId?, grantedById, revokedAt/ById | One active assignment per (membership, role, scope); changes audited |
-| Invitation | Tenant-owned, direct (branchId?) | email, role, branchId?, tokenHash?, sendCount, lastSentAt, expiresAt, createdById, status (`pending`/`accepted`/`revoked`; `expired` derived), acceptedAt/UserId/MembershipId, revokedAt/ById/Reason | Built 3.1 (see Physical schema); groups on invitations come with groups (3.2) if wanted |
+| Invitation | Tenant-owned, direct (branchId?) | email, role, branchId?, groupId? (3.2, D-122), tokenHash?, sendCount, lastSentAt, expiresAt, createdById, status (`pending`/`accepted`/`revoked`; `expired` derived), acceptedAt/UserId/MembershipId, revokedAt/ById/Reason | Built 3.1 (see Physical schema); optional group built 3.2 (D-122) |
 | PlatformSupportSession | Global | staffUserId, tenantId, reason, startedAt, expiresAt, endedAt, accessLevel | D-037; every action inside is audited with the support session id |
 | AuditEvent | Evidence; Tenant-owned when tenantId set, else platform | actorUserId, tenantId?, branchId?, action, entityType, entityId, requestId, supportSessionId?, before/after (safe subset), occurredAt | Insert-only |
 
@@ -88,8 +91,8 @@ Release: R1 = Phase 2 · R2 = Phases 3–4 · R3 = Phase 5 · R4 = Phase 6.
 
 | Entity | Class | Key fields | Uniqueness / notes |
 |---|---|---|---|
-| Group | Tenant-owned, direct (branchId? / departmentId?) | name, description, status | `(tenant_id, name)` unique among active |
-| GroupMember | Tenant-owned | groupId, membershipId, addedAt/ById, removedAt/ById | Removal sets `removedAt` (history kept); one active row per (group, member) |
+| Group | Tenant-owned, direct (branchId?; department scope deferred, D-119) | name, description, branchId?, status (`active`/`archived`), archivedAt/ById/Reason, version | Built 3.2: `(tenant_id, name)` unique among active ignoring case (D-121) |
+| GroupMember | Tenant-owned | groupId, membershipId, addedAt/ById, removedAt/ById/Reason | Built 3.2: removal sets `removedAt` (history kept); one current row per (group, member); re-adding creates a new row (D-120) |
 | Category, Tag | Tenant-owned | name, slug | `(tenant_id, slug)` unique |
 | Course | Tenant-owned | slug, ownerMembershipId, categoryId, status (`active`/`archived`), archivedAt, currentPublishedVersionId?, selfEnrollment (D-046) | `(tenant_id, slug)` unique |
 | CourseVersion | Tenant-owned | courseId, versionNumber, status, metadata snapshot (title, summary, description, level, language, duration, delivery mode, visibility, objectives, audience, prerequisites), completionPolicy, publishedAt/ById, `version` (concurrency) | `(tenant_id, course_id, version_number)` unique; at most one `draft` per course (partial unique); immutable once `published` |
@@ -198,6 +201,18 @@ Derived: **Expired** when `expiresAt` < now. Verification shows Valid · Expired
 
 Built in Slice 3.1 (D-050, D-115, D-116). `accepted` and `revoked` are final (database trigger).
 
+### Group and GroupMember (built 3.2)
+
+| From | Event | To |
+|---|---|---|
+| — | create (scope: whole tenant or one branch, fixed) | group `active` |
+| `active` | archive (reason, audited) | `archived` — members and history kept; no new members |
+| `archived` | reactivate (reason; the name must be free among active groups) | `active` |
+| — | add member (active member; for a branch group, of that branch) | spell current (`removed_at` null) |
+| current | remove (reason, audited) · member leaves the branch (reason "Left the branch", D-120) | removed — final; re-adding starts a new spell |
+
+A deactivated member's current spells stay (listed as Deactivated; they grant nothing).
+
 ### ClassSession and SessionRegistration (R3)
 
 | Entity | From | Event | To |
@@ -239,6 +254,7 @@ cannot be newly chosen).
 | Webhooks | `ProviderEvent (provider, event_id)` |
 | Jobs | `Job (type, business_key)` |
 | Invitation email | job business key `invitation:{id}:{sendCount}`; a job whose send was superseded by a resend mints nothing |
+| Group add member | partial unique "one current spell per group + member"; already-current members are skipped (a retry adds nothing) |
 | Invitation accept | conditional claim `UPDATE … WHERE status = 'pending' AND token_hash = …` in the joining transaction: one acceptance per link |
 | Notifications | `NotificationDelivery (notification, channel)` |
 

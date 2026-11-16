@@ -14,6 +14,8 @@ export const STATUS_VOCABULARY = {
   // An inactive branch or job role is kept as history, like an archived record: grey.
   branch: { active: 'success', inactive: 'muted' },
   jobRole: { active: 'success', inactive: 'muted' },
+  // Archived/Cancelled grey (web rules, status language).
+  group: { active: 'success', archived: 'muted' },
   course: { draft: 'neutral', under_review: 'warning', published: 'success', archived: 'muted' },
   enrollment: {
     not_started: 'neutral',

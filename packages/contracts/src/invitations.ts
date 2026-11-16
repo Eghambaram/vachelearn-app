@@ -23,6 +23,8 @@ export const InvitationView = z.object({
   email: z.string(),
   role: TenantRoleKey,
   branch: BranchRef.nullable(),
+  /** The group the person joins on acceptance (D-122), if any. */
+  group: z.object({ id: z.uuid(), name: z.string() }).nullable(),
   status: InvitationStatus,
   expiresAt: IsoInstant,
   createdAt: IsoInstant,
@@ -60,6 +62,9 @@ export const CreateInvitationBody = z.strictObject({
   email: InvitationEmail,
   role: TenantRoleKey,
   branchId: z.uuid().nullable(),
+  /** Optional group the person joins on acceptance (D-122): active, manageable by the inviter, and tenant-wide or
+   * in the invitation's branch. */
+  groupId: z.uuid().nullable().optional(),
 });
 export type CreateInvitationBody = z.input<typeof CreateInvitationBody>;
 

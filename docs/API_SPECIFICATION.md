@@ -236,6 +236,42 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   15 minutes → 429 `RATE_LIMITED`. Residual (accepted with D-116): whoever holds a forwarded link can create the
   account for an address that has none yet; the owner recovers it through "Forgot your password?" (D-087, D-049).
 
+- D-122 (Slice 3.2): `POST /invitations` takes an optional `groupId`. The group must be active, visible in the
+  inviter's live `group.member.manage` reach (else 404, as for any id they cannot see), and whole-organisation or on
+  the invited branch (else 422 `groupId` `branch_mismatch`; archived → 422 `archived`). The view shows `group`. On
+  acceptance the person is added to the group (audited `group.member_added`, the inviter as actor) only while the group
+  is still active and the inviter still manages it; otherwise they join without it (D-123), recorded as
+  `invitation.group_skipped` with a reason code (`group_unavailable` / `inviter_cannot_manage`). An invitation's `group`
+  is shown only to readers whose `group.read` reach covers that group (a Branch Admin sees `null` for a
+  whole-organisation group).
+
+## Groups (Slice 3.2)
+
+- Routes in the session's tenant: `GET /groups`, `GET /groups/:id`, `GET /groups/:id/members` (`group.read`);
+  `POST /groups`, `PATCH /groups/:id`, `POST /groups/:id/archive`, `POST /groups/:id/reactivate` (`group.manage`);
+  `POST /groups/:id/members`, `POST /groups/:id/members/:memberId/remove` (`group.member.manage`).
+- Scope (D-121): a tenant-wide caller reaches every group; a branch-scoped one (Branch Admin, branch-scoped Learning
+  Manager or Compliance Viewer) only groups on its branches — never whole-organisation groups. Anything out of reach is
+  a 404; creating a whole-organisation group without tenant-wide reach is a 403. `branchId` and `scope` list filters
+  narrow the reach, never widen it; cursors carry the reach in their key (another scope → 422).
+- The scope (`branchId`) is fixed at creation; `PATCH` changes name and description only, naming `version` (stale →
+  409 `CONFLICT`). A taken active name → 422 `name` `taken` (also on reactivate). Archive/reactivate of a group already
+  in that state → 409 `INVALID_STATE`.
+- Adding members (`{ membershipIds: [...] }`, 1–100): active members of the tenant, and of the group's branch for a
+  branch group (D-120). One id the caller may not add → 404 and nothing is added; a branch-scoped caller adds or
+  removes only members within D-101 reach (all their branches among the caller's, only Learner/Instructor roles), else
+  403 `OUTSIDE_BRANCH_SCOPE` and nothing changes (D-125); member rows carry `canRemove` for the screen; a deactivated member → 422
+  `membershipIds` `deactivated`; an archived group → 409 `GROUP_ARCHIVED`; a group on an inactive branch → 409
+  `BRANCH_INACTIVE`. Already-current members are skipped:
+  `{ added, alreadyMembers }` (a retry adds nothing). Removing ends one spell with a reason (already removed → 409
+  `INVALID_STATE`); history is listed with `state=removed`. Removing a member from a branch
+  (`POST /people/:id/branches/:branchId/remove`) first ends their spells in that branch's groups with the reason
+  "Left the branch".
+- Audit: `group.created`, `group.updated` (the description recorded as changed, never by value), `group.archived`,
+  `group.reactivated` (with reason), `group.member_added`, `group.member_removed` (reason; `after.membershipId`). The
+  audit log labels groups by name (not inside support sessions, which do not see groups). Accepted: a taken name
+  reveals that an unseen group has it (D-124); removed spells keep former branch members' name and email (D-126).
+
 ## Password links (Slice 2.3c)
 
 - Accounts start without a password (D-083): `pnpm --filter api user:create --email … --name … --reason …` creates one and sends

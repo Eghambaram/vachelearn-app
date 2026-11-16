@@ -115,6 +115,9 @@ export function InvitationList({
           <span className="text-xs text-muted-foreground">
             {row.branch ? row.branch.name : i.wholeOrganisation}
           </span>
+          {row.group ? (
+            <span className="text-xs text-muted-foreground">{i.groupColumn(row.group.name)}</span>
+          ) : null}
         </span>
       ),
     },

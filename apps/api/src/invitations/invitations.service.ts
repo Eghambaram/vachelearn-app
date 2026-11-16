@@ -33,6 +33,7 @@ import { ApiException } from '../common/errors/api-exception';
 import { afterCursor, CURSORS, Cursors, queryKey } from '../common/pagination/keyset';
 import { APP_CONFIG, type AppConfig } from '../config/env';
 import { EmailJobs } from '../email/email-jobs';
+import { groupsInReach, reachCovers } from '../groups/groups.service';
 import { PermanentJobError } from '../jobs/job-handlers';
 import { JobsService } from '../jobs/jobs.service';
 import { DEFAULT_INVITATION_EXPIRY_DAYS } from '../people/tenant-settings.service';
@@ -85,6 +86,7 @@ const VIEW_SELECT = {
   revokedAt: true,
   revokedReason: true,
   branch: { select: { id: true, code: true, name: true } },
+  group: { select: { id: true, name: true, branchId: true } },
   createdBy: { select: { displayName: true } },
 } as const satisfies Prisma.InvitationSelect;
 
@@ -120,13 +122,41 @@ function manages(reach: Reach | null, row: { role: string; branch: { id: string 
   );
 }
 
-function toView(row: Row, now: Date, manageReach: Reach | null): InvitationView {
+/** The inviter's grants still cover `invitation.create` for this role and branch. */
+function inviterMayInvite(
+  grants: ReturnType<typeof tenantGrants> | null,
+  inv: { role: DbTenantRole | TenantRole; branchId: string | null },
+) {
+  const grant = grants?.get('invitation.create');
+  if (grant?.kind === 'all') return true;
+  return (
+    grant?.kind === 'branches' &&
+    inv.branchId !== null &&
+    grant.branchIds.has(inv.branchId) &&
+    BRANCH_ADMIN_ASSIGNABLE.includes(inv.role as TenantRole)
+  );
+}
+
+/**
+ * The view for a reader: `groupReach` is their `group.read` reach — a group they could not open is not named (a Branch
+ * Admin never sees whole-organisation groups, D-121; isolation and security reviews 3.2).
+ */
+function toView(
+  row: Row,
+  now: Date,
+  manageReach: Reach | null,
+  groupReach: Reach | null,
+): InvitationView {
   const status = statusOf(row, now);
   return {
     id: row.id,
     email: row.email,
     role: row.role as TenantRole,
     branch: row.branch,
+    group:
+      row.group && reachCovers(groupReach, row.group.branchId)
+        ? { id: row.group.id, name: row.group.name }
+        : null,
     status,
     expiresAt: row.expiresAt.toISOString(),
     createdAt: row.createdAt.toISOString(),
@@ -243,7 +273,7 @@ export class InvitationsService implements OnModuleInit {
     const last = page.at(-1);
     const manageReach = ctx.support ? null : reachFor(ctx, 'invitation.revoke');
     return {
-      data: page.map((r) => toView(r, now, manageReach)),
+      data: page.map((r) => toView(r, now, manageReach, reachFor(ctx, 'group.read'))),
       page: {
         limit: query.limit,
         nextCursor:
@@ -298,6 +328,7 @@ export class InvitationsService implements OnModuleInit {
           });
           if (!branch) throw ApiException.notFound();
         }
+        if (input.groupId) await this.assertGroupFits(tx, ctx, tenantId, input);
         await this.assertCanJoin(tx, tenantId, input.email, 'invite');
 
         const pending = await tx.invitation.findFirst({
@@ -337,6 +368,7 @@ export class InvitationsService implements OnModuleInit {
             email: input.email,
             role: input.role as DbTenantRole,
             branchId: input.branchId,
+            groupId: input.groupId ?? null,
             expiresAt: new Date(now.getTime() + days * DAY_MS),
             createdById: ctx.userId,
           },
@@ -353,13 +385,14 @@ export class InvitationsService implements OnModuleInit {
           after: {
             role: input.role,
             branchId: input.branchId,
+            groupId: input.groupId ?? null,
             expiresAt: created.expiresAt.toISOString(),
           },
         });
         await this.enqueueEmail(tx, created.id, 1);
         return created;
       });
-      return toView(row, now, reachFor(ctx, 'invitation.revoke'));
+      return toView(row, now, reachFor(ctx, 'invitation.revoke'), reachFor(ctx, 'group.read'));
     } catch (err) {
       // The same address invited twice at once: one wins, the other is told so (never a 500).
       if (isUniqueViolation(err, 'invitations_one_pending_per_email')) {
@@ -384,7 +417,7 @@ export class InvitationsService implements OnModuleInit {
       const inv = await this.manageable(tx, tenantId, reach, id);
       await this.assertCanJoin(tx, tenantId, inv.email, 'invite');
       // The link stays the original inviter's grant (re-checked at acceptance): never send one that cannot work.
-      if (!(await this.inviterStillMay(tx, { tenantId, ...inv }))) {
+      if (!inviterMayInvite(await this.inviterGrants(tx, { tenantId, ...inv }), inv)) {
         throw new ApiException(
           409,
           'INVITER_CANNOT_GRANT',
@@ -419,7 +452,7 @@ export class InvitationsService implements OnModuleInit {
       await this.enqueueEmail(tx, id, fresh.sendCount);
       return fresh;
     });
-    return toView(row, now, reachFor(ctx, 'invitation.revoke'));
+    return toView(row, now, reachFor(ctx, 'invitation.revoke'), reachFor(ctx, 'group.read'));
   }
 
   async revoke(ctx: RequestContext, id: string, reason: string): Promise<InvitationView> {
@@ -431,7 +464,7 @@ export class InvitationsService implements OnModuleInit {
       await this.close(tx, ctx, tenantId, id, inv.branchId, reason);
       return tx.invitation.findUniqueOrThrow({ where: { id }, select: VIEW_SELECT });
     });
-    return toView(row, now, reachFor(ctx, 'invitation.revoke'));
+    return toView(row, now, reachFor(ctx, 'invitation.revoke'), reachFor(ctx, 'group.read'));
   }
 
   // ── The invited person (public / signed-in routes) ─────────────────────────────────────────────────────────────
@@ -604,6 +637,7 @@ export class InvitationsService implements OnModuleInit {
         email: true,
         role: true,
         branchId: true,
+        groupId: true,
         createdById: true,
         tenant: { select: { displayName: true } },
       },
@@ -618,7 +652,8 @@ export class InvitationsService implements OnModuleInit {
       });
       if (branch?.status !== 'active') throw invalidInvitation();
     }
-    if (!(await this.inviterStillMay(tx, inv))) throw invalidInvitation();
+    const inviterGrants = await this.inviterGrants(tx, inv);
+    if (!inviterMayInvite(inviterGrants, inv)) throw invalidInvitation();
     // D-037 against a concurrent platform-role grant (security review 3.1): both lock the account row.
     await tx.$queryRaw`SELECT 1 FROM users WHERE id = ${userId}::uuid FOR UPDATE`;
     await this.assertCanJoin(tx, inv.tenantId, inv.email, 'join');
@@ -681,6 +716,9 @@ export class InvitationsService implements OnModuleInit {
       entityId: role.id,
       after: { role: inv.role, branchId: inv.branchId, membershipId: membership.id },
     });
+    if (inv.groupId) {
+      await this.joinGroup(tx, inv.groupId, membership.id, inviterGrants, { ...granted, inv });
+    }
     const claimed = await tx.invitation.updateMany({
       where: { id: inv.id, status: 'pending', tokenHash, expiresAt: { gt: now } },
       data: {
@@ -705,11 +743,8 @@ export class InvitationsService implements OnModuleInit {
     return { organisation: inv.tenant.displayName, membershipId: membership.id };
   }
 
-  /** The inviter still holds `invitation.create` covering this role and branch (live roles, active membership). */
-  private async inviterStillMay(
-    tx: Tx,
-    inv: { tenantId: string; createdById: string; role: DbTenantRole; branchId: string | null },
-  ) {
+  /** The inviter's grants from their live roles now (active membership and account, active branches); null if none. */
+  private async inviterGrants(tx: Tx, inv: { tenantId: string; createdById: string }) {
     const actor = await tx.membership.findFirst({
       where: {
         tenantId: inv.tenantId,
@@ -724,17 +759,120 @@ export class InvitationsService implements OnModuleInit {
         },
       },
     });
-    if (!actor) return false;
-    const grant = tenantGrants(
+    if (!actor) return null;
+    return tenantGrants(
       actor.roleAssignments.map((a) => ({ role: a.role as TenantRole, branchId: a.branchId })),
-    ).get('invitation.create');
-    if (grant?.kind === 'all') return true;
-    return (
-      grant?.kind === 'branches' &&
-      inv.branchId !== null &&
-      grant.branchIds.has(inv.branchId) &&
-      BRANCH_ADMIN_ASSIGNABLE.includes(inv.role as TenantRole)
     );
+  }
+
+  /**
+   * D-122: the named group is active, the inviter may manage its members (out of reach, or no such right → 404, as for
+   * any id they cannot see), and it is a whole-organisation group or one on the invitation's branch.
+   */
+  private async assertGroupFits(
+    tx: Tx,
+    ctx: RequestContext,
+    tenantId: string,
+    input: { branchId: string | null; groupId?: string | null },
+  ) {
+    const reach = reachFor(ctx, 'group.member.manage')
+      ? await liveReach(tx, ctx, tenantId, 'group.member.manage').catch((err: unknown) => {
+          // No live right to manage group members: the same 404 as an unknown group.
+          if (err instanceof ApiException) return null;
+          throw err;
+        })
+      : null;
+    if (!reach) throw ApiException.notFound();
+    const group = await tx.group.findFirst({
+      where: { id: input.groupId!, tenantId, ...groupsInReach(reach) },
+      select: { branchId: true, status: true },
+    });
+    if (!group) throw ApiException.notFound();
+    if (group.status !== 'active') {
+      throw ApiException.validation([
+        { field: 'groupId', code: 'archived', message: 'The group is archived' },
+      ]);
+    }
+    if (group.branchId !== null && group.branchId !== input.branchId) {
+      throw ApiException.validation([
+        {
+          field: 'groupId',
+          code: 'branch_mismatch',
+          message: 'Choose a group for the whole organisation or for the invited branch',
+        },
+      ]);
+    }
+  }
+
+  /**
+   * D-122 on acceptance: adds the new member to the invitation's group, audited with the inviter as actor — only while
+   * the group is still active and the inviter may still manage it; otherwise the person joins without it (the
+   * invitation's main grant, membership and role, does not depend on the group).
+   */
+  private async joinGroup(
+    tx: Tx,
+    groupId: string,
+    membershipId: string,
+    grants: Awaited<ReturnType<InvitationsService['inviterGrants']>>,
+    granted: {
+      actorUserId: string;
+      tenantId: string;
+      requestId: string;
+      reason: string;
+      inv: { id: string; branchId: string | null };
+    },
+  ) {
+    const { inv, ...audit } = granted;
+    const grant = grants?.get('group.member.manage');
+    const reach: Reach | null =
+      grant?.kind === 'all'
+        ? { kind: 'tenant' }
+        : grant?.kind === 'branches' && grant.branchIds.size > 0
+          ? { kind: 'branches', branchIds: grant.branchIds }
+          : null;
+    if (!reach) return this.groupSkipped(tx, audit, inv.id, groupId, 'inviter_cannot_manage');
+    // Hold the group row: archiving cannot slip in between this check and the insert (the insert trigger re-checks).
+    await tx.$queryRaw`SELECT 1 FROM groups WHERE tenant_id = ${audit.tenantId}::uuid AND id = ${groupId}::uuid FOR SHARE`;
+    const group = await tx.group.findFirst({
+      where: { id: groupId, tenantId: audit.tenantId, status: 'active', ...groupsInReach(reach) },
+      select: { branchId: true },
+    });
+    if (!group || (group.branchId !== null && group.branchId !== inv.branchId)) {
+      return this.groupSkipped(tx, audit, inv.id, groupId, 'group_unavailable');
+    }
+    await tx.groupMember.create({
+      data: { tenantId: audit.tenantId, groupId, membershipId, addedById: audit.actorUserId },
+    });
+    await this.audit.record(tx, {
+      ...audit,
+      branchId: group.branchId,
+      action: 'group.member_added',
+      entityType: 'group',
+      entityId: groupId,
+      after: { membershipId },
+    });
+  }
+
+  /**
+   * D-123: the invitation's group was not applied on acceptance — recorded on the invitation (a reason code only), so the
+   * trail shows why someone invited into a group is not in it (security review 3.2).
+   */
+  private async groupSkipped(
+    tx: Tx,
+    audit: { actorUserId: string; tenantId: string; requestId: string },
+    invitationId: string,
+    groupId: string,
+    why: 'inviter_cannot_manage' | 'group_unavailable',
+  ) {
+    await this.audit.record(tx, {
+      actorUserId: audit.actorUserId,
+      tenantId: audit.tenantId,
+      action: 'invitation.group_skipped',
+      entityType: 'invitation',
+      entityId: invitationId,
+      requestId: audit.requestId,
+      after: { groupId, why },
+    });
   }
 
   /**

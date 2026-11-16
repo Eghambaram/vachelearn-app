@@ -134,6 +134,11 @@ notifications. These are not listed per role.
   inviter as actor. The `SS` column is `—`: support sessions do not see invitations. The invited person's routes are
   `@Public()` (`/invitations/preview`, `/invitations/accept`, by token) and `@Authenticated()`
   (`/me/invitations/accept`, own address only).
+- 3.2 groups: `group.*` scopes are enforced by the groups service in each query — `T` all groups; `B` and branch `S`
+  only groups on the caller's branches (never whole-organisation groups, D-121); out of reach → 404. Members added to a
+  branch group must belong to that branch (D-120, also a database trigger), and a branch-scoped manager adds or removes
+  only members within D-101 reach (D-125, else 403 `OUTSIDE_BRANCH_SCOPE`). The `SS` column is `—`: support sessions do
+  not see groups. Naming a group on an invitation (D-122) also needs `group.member.manage` covering that group.
 
 ## Notes and open points
 

@@ -334,7 +334,7 @@ email-verification page: following a set-password link verifies the address (D-0
 | 15 | Tenant dashboard | `/admin` | TA (also BA/LM/CV, scope-aware — see 31) | Drill down | Learners, active courses, completion, compliance, deadlines, activity | Demo 1.5.2 · real 4.7 + 5.2 | 07 | Compliance tiles from P5 |
 | 16 | Branch list / detail / create / edit | `/admin/branches` · `/admin/branches/[id]` | TA (BA read) | Create, edit, deactivate | Branches, counts | 2.5 · R1 | 07 | Map widget: D-043 — omit |
 | 17 | Users and memberships | `/admin/users` · `/admin/users/[id]` | TA, BA | Search, filter, deactivate, reactivate, manage branches | Memberships (D-047 fields) | 2.5 · R1 | 07 | Bulk import button: D-044 |
-| 18 | Groups and membership | `/admin/groups` · `/admin/groups/[id]` | TA, BA, LM | Create, edit, archive, add/remove members | Groups, members | 3.2 · R2 | 07 | — |
+| 18 | Groups and membership | `/admin/groups` · `/admin/groups/new` · `/admin/groups/[id]` | TA, BA, LM (manage); CV (read) | Create, edit, archive/reactivate, add/remove members (with reason; history view) | Groups, members, people search | 3.2 (built) · R2 | 07 | D-119–D-122 |
 | 19 | Role assignments | `/admin/roles` | TA, BA (limited) | Assign, revoke | RoleAssignments | 2.4 · R1 | — | D-053 fixed roles |
 | 20 | Invitations | `/admin/invitations` | TA, BA | Invite, resend, revoke | Invitations | 3.1 · R2 | 07 | D-050 |
 | 21 | Course management | `/admin/courses` | TA (BA/LM/INS read) | Search, filter (category, level, format, status), create, archive | Courses + current version | Demo 1.5.3 · real 3.3 | 02 | "Under Review" tab: D-022; "Import": D-043 — omit |

@@ -27,6 +27,8 @@ import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
 import { APP_CONFIG, type AppConfig } from './config/env';
 import { EMAIL_PROVIDER, EmailJobs } from './email/email-jobs';
 import { createEmailProvider } from './email/email.provider';
+import { GroupsController } from './groups/groups.controller';
+import { GroupsService } from './groups/groups.service';
 import { HealthController } from './health/health.controller';
 import {
   InvitationsController,
@@ -76,6 +78,7 @@ export class AppModule {
         SupportSessionsController,
         PlatformTenantsController,
         BranchesController,
+        GroupsController,
         PeopleController,
         JobRolesController,
         TenantSettingsController,
@@ -102,6 +105,7 @@ export class AppModule {
         AuditService,
         TenantsService,
         BranchesService,
+        GroupsService,
         PeopleService,
         JobRolesService,
         TenantSettingsService,

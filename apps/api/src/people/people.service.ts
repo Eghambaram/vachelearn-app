@@ -12,6 +12,7 @@ import { liveReach, reachFor, reachFromContext, withinReach, type Reach } from '
 import type { RequestContext } from '../access/request-context';
 import { SupportSessionsService } from '../access/support-sessions.service';
 import { lockTenant, usableTenantAdmin } from '../access/tenant-admins';
+import { endBranchGroupSpells } from '../groups/groups.service';
 import { AuditService, changedFields, type Tx } from '../audit/audit.service';
 import { ApiException } from '../common/errors/api-exception';
 import { CURSORS, Cursors, invalidCursor, queryKey } from '../common/pagination/keyset';
@@ -440,7 +441,7 @@ export class PeopleService {
 
   /**
    * Removes a branch from the member (D-104): refused while they hold a live role on it; the primary branch only as the
-   * last branch (otherwise make another primary first). The caller may no longer see the member afterwards: 204.
+   * last branch (otherwise make another primary first). Ends their spells in that branch's groups first (D-120). The caller may no longer see the member afterwards: 204.
    */
   async removeBranch(ctx: RequestContext, id: string, branchId: string): Promise<void> {
     const tenantId = tenantOf(ctx);
@@ -475,6 +476,8 @@ export class PeopleService {
         });
         await this.auditPrimary(tx, ctx, tenantId, id, null, branchId);
       }
+      // D-120: leaving the branch ends the member's spells in that branch's groups (kept, reason recorded).
+      await endBranchGroupSpells(tx, this.audit, ctx, tenantId, id, branchId);
       await tx.membershipBranch.deleteMany({ where: { tenantId, membershipId: id, branchId } });
       await tx.membership.updateMany({
         where: { id, tenantId },

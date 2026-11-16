@@ -1,13 +1,13 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 3 · People and content — slice 3.1 (invitations) committed (5d88451 + D-118); building 3.2 (groups).**
+**Phase 3 · People and content — slice 3.2 (groups) done and committed; next: plan slice 3.3.**
 Phase 2 approved by the owner 2026-11-13 (exit gate be2af4e…462ba53, CI green); Phase 1 approved (a51d042).
 
 ## Last verified
-2026-11-13, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), working tree of slice 3.1 on 504c574:
-- `/verify` gates each exit 0 (contracts 56, web 721, api 433; isolation 309; lint 0 errors, 2 warnings in demo
-  pages; build OK) · `pnpm test:e2e` 277 passed. CI on the pushed Phase 2 commits: green (2026-11-13).
+2026-11-13, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), slice 3.2 with D-125 built:
+- `pnpm verify` exit 0 (contracts 56, web 745, api 490 incl. isolation; lint 0 errors, 2 old warnings; build OK) ·
+  `pnpm test:e2e` 279 passed, 0 failed (10.2 min, desktop + 360 px, axe).
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
@@ -19,14 +19,16 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
   · 2.6c per-role Playwright smoke on the seed (28da977) · client demo (D-110, D-111; RUNBOOK "Client demo") · exit
   gate: isolation demo, reviews + fixes (D-106, D-112, D-113, D-037), QA (be2af4e, 408c50c). Detail:
   `docs/progress-log/2026-11.md`.
-- 3.1 invitations: API, email job, web list/invite/accept, Settings validity, reviews fixed. Detail:
-  `docs/progress-log/2026-11.md`.
+- 3.1 invitations: API, email job, web list/invite/accept, Settings validity, reviews fixed (5d88451, 608a9a0).
+- 3.2 groups: schema + triggers, API, D-120 branch hook, invitation group (D-122), web screens, reviews fixed,
+  D-123–D-126 Confirmed (D-125 D-101 reach on add/remove). Detail: `docs/progress-log/2026-11.md`.
 
 ## In progress / uncommitted
 - Nothing.
 
 ## Next step
-Slice 3.2 groups: plan approved 2026-11-13 (D-119–D-122 confirmed); building schema first. 3.1 pushed.
+Plan slice 3.3 from `prompts/phase-3-*.md` (show the plan; wait for approval). Phase 4 must still re-check each
+member's reach on group assignment fan-out (D-125).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
@@ -36,6 +38,14 @@ Slice 3.2 groups: plan approved 2026-11-13 (D-119–D-122 confirmed); building s
   D-082 production email provider (launch) · D-114 demo video source and licence.
 
 ## Known issues
+- Older review Lows logged, not fixed (Phase 2 gate, exit gate, 2.3d, misc): `docs/progress-log/2026-11.md`
+  "Logged review Lows (moved from PROGRESS)".
+- 3.2 reviews, logged: bulk add holds the tenant lock across up to 100 audit inserts (batch them; per-user write rate
+  limit before public deployment); the D-123 `inviter_cannot_manage` path has no test (no fixture role holds
+  `invitation.create` without `group.member.manage`); invite page reads at most 100 groups.
+- Screen-reader-only name suffix written as `<span className="sr-only"> {name}</span>` loses the space in name
+  computation ("AddAsha"): fixed in groups; ~10 earlier components (invitation-list, person-branches, learner
+  dashboard, my-learning, player, site chrome, layouts) still use it — small follow-up.
 - Node 26 not yet LTS (nodejs.org, 2026-10-20); bump `.nvmrc`/`engines` once it is (reported 2026-10-28).
 - `engineStrict` is enforced on fresh installs only; an existing `node_modules` skips the check ("Already up to date").
 - D-058: TypeScript pinned ~6.0 and ESLint plugin peer exception — revisit when typescript-eslint supports TS 7.
@@ -62,23 +72,12 @@ Slice 3.2 groups: plan approved 2026-11-13 (D-119–D-122 confirmed); building s
   `ENABLE_DEMO_CONTENT` unset (nothing enforces it — `next start` always runs as production, so a NODE_ENV guard cannot
   tell a local demo apart; since the Phase 2 gate it shows samples only in the two seeded `demo-*` tenants), no
   `.dockerignore` yet (add one excluding env files, `public/demo-media`, `.next/cache` before Phase 7 images).
-- Phase 2 gate reviews, logged not fixed: a Branch Admin's `employeeId` "taken" 422 reveals that an ID exists
-  elsewhere in the tenant (accepted 2.5a); first-admin `accountCreated` tells platform staff an address has an
-  account (staff-only); `SEED_PASSWORD` skips the common-password check (local demo only); D-114 demo video licence.
-- Exit-gate review Lows (stepper "(completed)", catalog/enrol spelling drift, donut colours, < 24 px targets, Select
-  blank before hydration) and untested surfaces (screen readers, Safari, Firefox, touch, zoom, High Contrast): log.
 - Certificate preview builds its printed verification address from request headers (`siteOrigin`); Phase 2 should
   use a configured public base URL (QA note, exit gate).
 - Still open from the 2.1 review list: rate limits on `/ready` and `/verify` (before any public deployment); invites
   done in 3.1 (D-117).
 - E2E resets the test database's rate-limit counters before each sign-in/set-password (`e2e-reset-limits`, `*_test`
   only); never run the API tests and e2e at the same time (shared `vachelearn_test`).
-- 2.3d reviews, logged: a set-password link opened on a shared PC stays in that browser's global history (single use
-  + expiry are the controls); password managers get no username on the set-password form (API could return the
-  address for a valid token); e2e shares `vachelearn_test` with the API tests (never run both at once) and reuses a
-  running API on :4100 locally.
-- Logged review Lows (detail in the log): no sign-in load test; Argon2 cost rise needs rehash-on-sign-in; job lease
-  heartbeat untested; job rows never pruned; email subjects carry no personal data; images/actions tag-pinned.
 - Phase 7 (isolation audit 2.2): the app connects as the table owner, so the `audit_events` trigger is the only guard
   (an owner can TRUNCATE or disable it) — add a separate runtime role with `REVOKE UPDATE, DELETE, TRUNCATE`.
 - Phase 5 rules from the 1.5.8 audit: signed keyset cursors without personal data (+ as-of date), export request

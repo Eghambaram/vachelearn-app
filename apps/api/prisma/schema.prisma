@@ -66,6 +66,7 @@ model Tenant {
   supportSessions PlatformSupportSession[]
   jobRoles        JobRole[]
   invitations     Invitation[]
+  groups          Group[]
 
   @@index([status, createdAt])
   @@map("tenants")
@@ -123,6 +124,7 @@ model Branch {
   primaryFor         Membership[]       @relation("PrimaryBranch")
   roleAssignments    RoleAssignment[]
   invitations        Invitation[]
+  groups             Group[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, code])
@@ -387,6 +389,7 @@ model Membership {
   roleAssignments RoleAssignment[]
   activeSessions  AuthSession[]
   invitations     Invitation[]
+  groupMembers    GroupMember[]
 
   @@unique([tenantId, userId])
   @@unique([tenantId, id])
@@ -562,6 +565,8 @@ model Invitation {
   createdById          String           @map("created_by_id") @db.Uuid
   acceptedAt           DateTime?        @map("accepted_at") @db.Timestamptz(3)
   acceptedUserId       String?          @map("accepted_user_id") @db.Uuid
+  /// D-122: an active group the inviter manages; the person joins it on acceptance.
+  groupId              String?          @map("group_id") @db.Uuid
   acceptedMembershipId String?          @map("accepted_membership_id") @db.Uuid
   revokedAt            DateTime?        @map("revoked_at") @db.Timestamptz(3)
   revokedById          String?          @map("revoked_by_id") @db.Uuid
@@ -570,6 +575,7 @@ model Invitation {
 
   tenant             Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   branch             Branch?     @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  group              Group?      @relation(fields: [tenantId, groupId], references: [tenantId, id], onDelete: Restrict)
   createdBy          User        @relation("InvitationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   acceptedUser       User?       @relation("InvitationAcceptedUser", fields: [acceptedUserId], references: [id], onDelete: Restrict)
   revokedBy          User?       @relation("InvitationRevokedBy", fields: [revokedById], references: [id], onDelete: Restrict)
@@ -579,4 +585,61 @@ model Invitation {
   @@index([tenantId, createdAt(sort: Desc), id(sort: Desc)])
   @@index([tenantId, branchId, createdAt(sort: Desc)])
   @@map("invitations")
+}
+
+enum GroupStatus {
+  active
+  archived
+
+  @@map("group_status")
+}
+
+/// A set of members for targeting (Slice 3.2; D-119–D-121): the whole tenant or one branch. Archived, never deleted.
+model Group {
+  id             String      @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId       String      @map("tenant_id") @db.Uuid
+  /// Unique within the tenant among active groups, ignoring case (partial unique index in the migration).
+  name           String      @db.Citext
+  description    String?     @db.VarChar(500)
+  /// Null = the whole tenant (D-119). Fixed at creation (trigger).
+  branchId       String?     @map("branch_id") @db.Uuid
+  status         GroupStatus @default(active)
+  archivedAt     DateTime?   @map("archived_at") @db.Timestamptz(3)
+  archivedReason String?     @map("archived_reason") @db.VarChar(500)
+  archivedById   String?     @map("archived_by_id") @db.Uuid
+  version        Int         @default(1)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById    String?     @map("created_by_id") @db.Uuid
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branch      Branch?       @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  members     GroupMember[]
+  invitations Invitation[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, status, name])
+  @@index([tenantId, branchId, status])
+  @@map("groups")
+}
+
+/// One spell of a member in a group (D-120): removal records when, who and why; re-adding is a new row.
+model GroupMember {
+  id            String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  groupId       String    @map("group_id") @db.Uuid
+  membershipId  String    @map("membership_id") @db.Uuid
+  addedAt       DateTime  @default(now()) @map("added_at") @db.Timestamptz(3)
+  addedById     String?   @map("added_by_id") @db.Uuid
+  removedAt     DateTime? @map("removed_at") @db.Timestamptz(3)
+  removedById   String?   @map("removed_by_id") @db.Uuid
+  removedReason String?   @map("removed_reason") @db.VarChar(500)
+
+  group      Group      @relation(fields: [tenantId, groupId], references: [tenantId, id], onDelete: Restrict)
+  membership Membership @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Restrict)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, groupId, removedAt])
+  @@index([tenantId, membershipId, removedAt])
+  @@map("group_members")
 }
