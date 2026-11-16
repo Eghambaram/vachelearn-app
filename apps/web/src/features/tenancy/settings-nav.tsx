@@ -8,6 +8,7 @@ const t = getMessages();
 const SECTIONS = [
   { href: '/admin/settings', label: t.settings.general },
   { href: '/admin/settings/people', label: t.settings.jobRoles },
+  { href: '/admin/settings/catalog', label: t.settings.catalog },
 ] as const;
 
 /** The settings sections (UI spec #30, #53): links, the current one marked for assistive technology. */

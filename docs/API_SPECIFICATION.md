@@ -245,6 +245,35 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   is shown only to readers whose `group.read` reach covers that group (a Branch Admin sees `null` for a
   whole-organisation group).
 
+## Categories, tags and courses (Slice 3.3)
+
+- Routes in the session's tenant: `GET /categories`, `GET /tags` (`course.read`); `POST /categories|tags`,
+  `PATCH /categories|tags/:id`, `POST /categories|tags/:id/archive|reactivate` (`catalog.manage`). `GET /courses`,
+  `GET /courses/:id` (`course.read`); `POST /courses` (`course.create`); `PATCH /courses/:id/draft` (`course.update`).
+- Who sees courses (D-127): every `course.read` caller with tenant or branch reach sees every course of the tenant,
+  drafts included, read-only (`canEdit` false); an Instructor (assigned reach) gets an empty list and 404 on a course
+  until class sessions exist (5.5). Creating and editing re-check the caller's live tenant-wide reach (else 403).
+- Categories and tags (D-128): names unique per tenant ignoring case (422 `name` `taken`); rename names `version`
+  (stale → 409 `CONFLICT`); archive/reactivate with a reason (already in that state → 409 `INVALID_STATE`); never
+  deleted. The lists follow D-127 (an Instructor gets an empty list); `archivedReason` is returned only to catalog
+  managers (null for other readers). Every change re-checks the caller's live tenant-wide `catalog.manage`.
+- Names and titles are NFC-normalised; control, bidi-override and zero-width characters are refused (422). Course
+  titles may keep the zero-width joiner and non-joiner, which Indic scripts need (D-129).
+- `POST /courses` (`{ title, summary?, categoryId?, level?, deliveryMode?, language? }`) creates the course and its
+  first draft; the slug comes from the title, then `-2` … `-5` when taken, then a random six-character suffix; a title
+  without Latin letters or digits gets `course-<random>` (D-130, one bounded lookup). `PATCH /courses/:id/draft` names the
+  draft `version` and any basics to change (stale → 409 `CONFLICT`, nothing written; no change → 200 with the same
+  version). `categoryId` / `tagIds` (≤ 10, no duplicates) must be this tenant's — another tenant's id or an unknown one
+  is 422 `not_found` — and active, unless already on the draft (422 `archived`). An archived course → 409
+  `COURSE_ARCHIVED`; a course without a draft → 409 `NO_DRAFT` (drafts of published courses come with 3.6).
+- `GET /courses`: `search` (title), `status` (`draft`/`published`/`archived`), `categoryId`, `level`, `deliveryMode`,
+  `language`; `sort` `title`/`updatedAt`; cursors bound to the tenant and query (422 otherwise). Metadata filters apply
+  to the draft, else a published version (3.6 narrows this to the current published version).
+- Audit: `category.*` / `tag.*` (`created`, `renamed`, `archived`, `reactivated`), `course.created`,
+  `course.draft_updated` (changed field names; title, category, tags, level, language and duration by value; summary,
+  description, audience, prerequisites and objectives only as `[changed]`). The audit log labels courses by title and
+  categories and tags by name (also inside support sessions: matrix `course.read` SS).
+
 ## Groups (Slice 3.2)
 
 - Routes in the session's tenant: `GET /groups`, `GET /groups/:id`, `GET /groups/:id/members` (`group.read`);

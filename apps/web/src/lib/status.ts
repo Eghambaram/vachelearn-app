@@ -16,6 +16,7 @@ export const STATUS_VOCABULARY = {
   jobRole: { active: 'success', inactive: 'muted' },
   // Archived/Cancelled grey (web rules, status language).
   group: { active: 'success', archived: 'muted' },
+  catalogItem: { active: 'success', archived: 'muted' },
   course: { draft: 'neutral', under_review: 'warning', published: 'success', archived: 'muted' },
   enrollment: {
     not_started: 'neutral',

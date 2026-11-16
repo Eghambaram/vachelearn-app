@@ -134,6 +134,10 @@ notifications. These are not listed per role.
   inviter as actor. The `SS` column is `—`: support sessions do not see invitations. The invited person's routes are
   `@Public()` (`/invitations/preview`, `/invitations/accept`, by token) and `@Authenticated()`
   (`/me/invitations/accept`, own address only).
+- 3.3 courses: courses have no branch, so `course.read` with `T`, `B` or `S` reach reads every course of the tenant,
+  drafts included (D-127); `A` (Instructor) reads none until class sessions exist (5.5). Categories and tags are read
+  with `course.read` and changed with `catalog.manage`. `course.create` / `course.update` are re-checked live as
+  tenant-wide.
 - 3.2 groups: `group.*` scopes are enforced by the groups service in each query — `T` all groups; `B` and branch `S`
   only groups on the caller's branches (never whole-organisation groups, D-121); out of reach → 404. Members added to a
   branch group must belong to that branch (D-120, also a database trigger), and a branch-scoped manager adds or removes

@@ -27,6 +27,10 @@ import { AllExceptionsFilter } from './common/errors/all-exceptions.filter';
 import { APP_CONFIG, type AppConfig } from './config/env';
 import { EMAIL_PROVIDER, EmailJobs } from './email/email-jobs';
 import { createEmailProvider } from './email/email.provider';
+import { CategoriesController, TagsController } from './catalog/catalog.controller';
+import { CatalogItemsService } from './catalog/catalog-items.service';
+import { CoursesController } from './courses/courses.controller';
+import { CoursesService } from './courses/courses.service';
 import { GroupsController } from './groups/groups.controller';
 import { GroupsService } from './groups/groups.service';
 import { HealthController } from './health/health.controller';
@@ -79,6 +83,9 @@ export class AppModule {
         PlatformTenantsController,
         BranchesController,
         GroupsController,
+        CategoriesController,
+        TagsController,
+        CoursesController,
         PeopleController,
         JobRolesController,
         TenantSettingsController,
@@ -106,6 +113,8 @@ export class AppModule {
         TenantsService,
         BranchesService,
         GroupsService,
+        CatalogItemsService,
+        CoursesService,
         PeopleService,
         JobRolesService,
         TenantSettingsService,

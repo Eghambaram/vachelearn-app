@@ -1,13 +1,13 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 3 · People and content — slice 3.2 (groups) done and committed; next: plan slice 3.3.**
+**Phase 3 · People and content — slice 3.3 done (categories, tags, course drafts); next: plan 3.4 (storage + assets).**
 Phase 2 approved by the owner 2026-11-13 (exit gate be2af4e…462ba53, CI green); Phase 1 approved (a51d042).
 
 ## Last verified
-2026-11-13, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), slice 3.2 with D-125 built:
-- `pnpm verify` exit 0 (contracts 56, web 745, api 490 incl. isolation; lint 0 errors, 2 old warnings; build OK) ·
-  `pnpm test:e2e` 279 passed, 0 failed (10.2 min, desktop + 360 px, axe).
+2026-11-16, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), slice 3.3 as committed:
+- format, lint (0 errors, 2 old warnings), typecheck, `pnpm test` (contracts 56, web 771, api 543), `test:isolation`
+  419 passed, `pnpm build` OK · `pnpm test:e2e` 281 passed, 0 failed (17.6 min, desktop + 360 px, axe).
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
@@ -21,13 +21,16 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
   `docs/progress-log/2026-11.md`.
 - 3.1 invitations: API, email job, web list/invite/accept, Settings validity, reviews fixed (5d88451, 608a9a0).
 - 3.2 groups: schema + triggers, API, D-120 branch hook, invitation group (D-122), web screens, reviews fixed,
-  D-123–D-126 Confirmed (D-125 D-101 reach on add/remove). Detail: `docs/progress-log/2026-11.md`.
+  D-123–D-126 Confirmed (D-125 D-101 reach on add/remove) (57ff2f1).
+- 3.3 categories, tags, course drafts (owner approved 2026-11-16): schema + triggers, catalog + courses API, real course list, new
+  course, basics editor with 409 reload, Settings › Categories and tags, reviews fixed. Detail: progress log.
 
 ## In progress / uncommitted
 - Nothing.
 
 ## Next step
-Plan slice 3.3 from `prompts/phase-3-*.md` (show the plan; wait for approval). Phase 4 must still re-check each
+Plan slice 3.4 (storage + assets) from `prompts/phase-3-*.md`; recommend RustFS 1.0 (Apache-2.0, GA 2026-09) for
+D-078 after checking its current release. Show the plan; wait for approval. Phase 4 must still re-check each
 member's reach on group assignment fan-out (D-125).
 
 ## Blocked on owner
@@ -38,11 +41,11 @@ member's reach on group assignment fan-out (D-125).
   D-082 production email provider (launch) · D-114 demo video source and licence.
 
 ## Known issues
-- Older review Lows logged, not fixed (Phase 2 gate, exit gate, 2.3d, misc): `docs/progress-log/2026-11.md`
-  "Logged review Lows (moved from PROGRESS)".
-- 3.2 reviews, logged: bulk add holds the tenant lock across up to 100 audit inserts (batch them; per-user write rate
-  limit before public deployment); the D-123 `inviter_cannot_manage` path has no test (no fixture role holds
-  `invitation.create` without `group.member.manage`); invite page reads at most 100 groups.
+- 3.3 reviews, logged: every course reader sees the course owner's name and membership id; archived tags/categories
+  are refused by the API only (no DB trigger); the course list's published-side filter becomes "current published
+  version" in 3.6.
+- Older review Lows logged, not fixed (Phase 2 gate, exit gate, 2.3d, 3.2, certificate preview URL, 2.1 rate limits,
+  Phase 5 export rules): `docs/progress-log/2026-11.md` "Logged review Lows (moved from PROGRESS)".
 - Screen-reader-only name suffix written as `<span className="sr-only"> {name}</span>` loses the space in name
   computation ("AddAsha"): fixed in groups; ~10 earlier components (invitation-list, person-branches, learner
   dashboard, my-learning, player, site chrome, layouts) still use it — small follow-up.
@@ -72,17 +75,10 @@ member's reach on group assignment fan-out (D-125).
   `ENABLE_DEMO_CONTENT` unset (nothing enforces it — `next start` always runs as production, so a NODE_ENV guard cannot
   tell a local demo apart; since the Phase 2 gate it shows samples only in the two seeded `demo-*` tenants), no
   `.dockerignore` yet (add one excluding env files, `public/demo-media`, `.next/cache` before Phase 7 images).
-- Certificate preview builds its printed verification address from request headers (`siteOrigin`); Phase 2 should
-  use a configured public base URL (QA note, exit gate).
-- Still open from the 2.1 review list: rate limits on `/ready` and `/verify` (before any public deployment); invites
-  done in 3.1 (D-117).
 - E2E resets the test database's rate-limit counters before each sign-in/set-password (`e2e-reset-limits`, `*_test`
   only); never run the API tests and e2e at the same time (shared `vachelearn_test`).
 - Phase 7 (isolation audit 2.2): the app connects as the table owner, so the `audit_events` trigger is the only guard
   (an owner can TRUNCATE or disable it) — add a separate runtime role with `REVOKE UPDATE, DELETE, TRUNCATE`.
-- Phase 5 rules from the 1.5.8 audit: signed keyset cursors without personal data (+ as-of date), export request
-  without cursor/limit, scope snapshot + re-check, CSV formula escaping — in `lib/api/cursor.ts` and
-  `contracts/src/compliance.ts` comments.
 - 2.4a audit, for Phase 4: grants keep one kind per permission (own + branches → branches only; fails closed) — keep
   a union per key before services use `own`/`assigned` (4.1). Matrix qualifiers `B (LRN, INS only)`, `B (within own
   branches)`, `A (own learners)`, `A (own sessions: edit, not create)` are enforced by the owning services (2.4b, 2.5,

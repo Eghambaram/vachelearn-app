@@ -169,14 +169,25 @@ export class AuditLogService {
 
   /**
    * Names for the page's records, read in this tenant only (every lookup carries `tenantId`): members by name, branches
-   * and job roles by name, role assignments as "role · member", invitations by the invited address, groups by name, the tenant by its name. Batched per type.
+   * and job roles by name, role assignments as "role · member", invitations by the invited address, groups, categories and tags by name, courses by title, the tenant by its name. Batched per type.
    */
   private async labels(tenantId: string, rows: readonly Row[], support = false) {
     const ids = (type: string) => [
       ...new Set(rows.filter((r) => r.entityType === type).map((r) => r.entityId)),
     ];
     const out = new Map<string, string>();
-    const [members, branches, jobRoles, roles, invitations, groups, tenant] = await Promise.all([
+    const [
+      members,
+      branches,
+      jobRoles,
+      roles,
+      invitations,
+      groups,
+      categories,
+      tags,
+      courses,
+      tenant,
+    ] = await Promise.all([
       this.prisma.membership.findMany({
         where: { tenantId, id: { in: ids('membership') } },
         select: { id: true, user: { select: { displayName: true } } },
@@ -207,6 +218,19 @@ export class AuditLogService {
         where: { tenantId, id: { in: support ? [] : ids('group') } },
         select: { id: true, name: true },
       }),
+      // Courses and their lists are readable inside support sessions (matrix `course.read` SS).
+      this.prisma.category.findMany({
+        where: { tenantId, id: { in: ids('category') } },
+        select: { id: true, name: true },
+      }),
+      this.prisma.tag.findMany({
+        where: { tenantId, id: { in: ids('tag') } },
+        select: { id: true, name: true },
+      }),
+      this.prisma.course.findMany({
+        where: { tenantId, id: { in: ids('course') } },
+        select: { id: true, title: true },
+      }),
       ids('tenant').includes(tenantId)
         ? this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { displayName: true } })
         : null,
@@ -219,6 +243,9 @@ export class AuditLogService {
       out.set(`role_assignment:${r.id}`, `${r.role}·${r.membership.user.displayName}`);
     for (const i of invitations) out.set(`invitation:${i.id}`, i.email);
     for (const g of groups) out.set(`group:${g.id}`, g.name);
+    for (const c of categories) out.set(`category:${c.id}`, c.name);
+    for (const t of tags) out.set(`tag:${t.id}`, t.name);
+    for (const c of courses) out.set(`course:${c.id}`, c.title);
     if (tenant) out.set(`tenant:${tenantId}`, tenant.displayName);
     return out;
   }

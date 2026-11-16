@@ -70,8 +70,9 @@ test.describe('real sessions in the app shell (Slice 2.4d)', () => {
     await expect(page.getByRole('heading', { level: 2, name: 'Not available yet' })).toBeVisible();
     await expect(page.getByText(/arrives in Phase 5/)).toBeVisible();
     await expectNoAxeViolations(page);
+    // Courses are real since slice 3.3: a new organisation has none yet.
     await page.goto('/admin/courses');
-    await expect(page.getByText('arrives in Phase 3', { exact: false })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'No courses yet' })).toBeVisible();
     await signOutFromMenu(page);
   });
 

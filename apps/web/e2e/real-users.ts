@@ -133,12 +133,17 @@ export async function tenantWithAdmin(page: Page, label: string) {
 }
 
 /** A state-changing API call from inside the signed-in page (same origin, the session's CSRF token). */
-export async function apiPost(page: Page, path: string, body: unknown) {
+export async function apiPost(
+  page: Page,
+  path: string,
+  body: unknown,
+  method: 'POST' | 'PATCH' = 'POST',
+) {
   return page.evaluate(
-    async ({ path, body }) => {
+    async ({ path, body, method }) => {
       const me = (await (await fetch('/api/v1/auth/me')).json()) as { csrfToken: string };
       const res = await fetch(`/api/v1${path}`, {
-        method: 'POST',
+        method,
         headers: { 'content-type': 'application/json', 'x-csrf-token': me.csrfToken },
         body: JSON.stringify(body),
       });
@@ -147,6 +152,6 @@ export async function apiPost(page: Page, path: string, body: unknown) {
         body: (await res.json().catch(() => null)) as Record<string, unknown> | null,
       };
     },
-    { path, body },
+    { path, body, method },
   );
 }

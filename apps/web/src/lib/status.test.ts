@@ -11,6 +11,7 @@ describe('status vocabulary', () => {
       'attempt',
       'attendance',
       'branch',
+      'catalogItem',
       'certificate',
       'compliance',
       'course',

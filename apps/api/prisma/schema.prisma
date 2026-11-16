@@ -58,15 +58,20 @@ model Tenant {
   createdById         String?      @map("created_by_id") @db.Uuid
   updatedAt           DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  settings        TenantSetting?
-  branches        Branch[]
-  auditEvents     AuditEvent[]
-  jobs            Job[]
-  memberships     Membership[]
-  supportSessions PlatformSupportSession[]
-  jobRoles        JobRole[]
-  invitations     Invitation[]
-  groups          Group[]
+  settings          TenantSetting?
+  branches          Branch[]
+  auditEvents       AuditEvent[]
+  jobs              Job[]
+  memberships       Membership[]
+  supportSessions   PlatformSupportSession[]
+  jobRoles          JobRole[]
+  invitations       Invitation[]
+  groups            Group[]
+  categories        Category[]
+  tags              Tag[]
+  courses           Course[]
+  courseVersions    CourseVersion[]
+  courseVersionTags CourseVersionTag[]
 
   @@index([status, createdAt])
   @@map("tenants")
@@ -390,6 +395,7 @@ model Membership {
   activeSessions  AuthSession[]
   invitations     Invitation[]
   groupMembers    GroupMember[]
+  ownedCourses    Course[]
 
   @@unique([tenantId, userId])
   @@unique([tenantId, id])
@@ -642,4 +648,181 @@ model GroupMember {
   @@index([tenantId, groupId, removedAt])
   @@index([tenantId, membershipId, removedAt])
   @@map("group_members")
+}
+
+// ── Slice 3.3: categories, tags, courses and draft versions (D-127–D-130) ─────────────────────────────────────────
+
+enum CatalogItemStatus {
+  active
+  archived
+
+  @@map("catalog_item_status")
+}
+
+/// A flat course category (D-128). Archived, never deleted; names unique in the tenant ignoring case.
+model Category {
+  id             String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId       String            @map("tenant_id") @db.Uuid
+  name           String            @db.Citext
+  status         CatalogItemStatus @default(active)
+  archivedAt     DateTime?         @map("archived_at") @db.Timestamptz(3)
+  archivedReason String?           @map("archived_reason") @db.VarChar(500)
+  archivedById   String?           @map("archived_by_id") @db.Uuid
+  version        Int               @default(1)
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById    String?           @map("created_by_id") @db.Uuid
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  versions CourseVersion[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, name])
+  @@index([tenantId, status, name])
+  @@map("categories")
+}
+
+/// A flat course tag (D-128). Archived, never deleted; names unique in the tenant ignoring case.
+model Tag {
+  id             String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId       String            @map("tenant_id") @db.Uuid
+  name           String            @db.Citext
+  status         CatalogItemStatus @default(active)
+  archivedAt     DateTime?         @map("archived_at") @db.Timestamptz(3)
+  archivedReason String?           @map("archived_reason") @db.VarChar(500)
+  archivedById   String?           @map("archived_by_id") @db.Uuid
+  version        Int               @default(1)
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById    String?           @map("created_by_id") @db.Uuid
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  versions CourseVersionTag[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, name])
+  @@index([tenantId, status, name])
+  @@map("tags")
+}
+
+enum CourseStatus {
+  active
+  archived
+
+  @@map("course_status")
+}
+
+enum CourseVersionStatus {
+  draft
+  published
+
+  @@map("course_version_status")
+}
+
+enum CourseLevel {
+  beginner
+  intermediate
+  advanced
+
+  @@map("course_level")
+}
+
+enum DeliveryMode {
+  online
+  classroom
+  blended
+
+  @@map("delivery_mode")
+}
+
+enum CourseVisibility {
+  assigned_only
+  catalog
+
+  @@map("course_visibility")
+}
+
+/// A course of the tenant (whole tenant, no branch; D-127). Its content lives in versions.
+model Course {
+  id                String       @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId          String       @map("tenant_id") @db.Uuid
+  /// Generated from the first title; unique in the tenant ignoring case; fixed (D-130).
+  slug              String       @db.Citext
+  ownerMembershipId String       @map("owner_membership_id") @db.Uuid
+  /// Listing title: the draft's title, else the current published one. Kept by the service in the same transaction.
+  title             String       @db.VarChar(120)
+  status            CourseStatus @default(active)
+  archivedAt        DateTime?    @map("archived_at") @db.Timestamptz(3)
+  archivedReason    String?      @map("archived_reason") @db.VarChar(500)
+  archivedById      String?      @map("archived_by_id") @db.Uuid
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       String?      @map("created_by_id") @db.Uuid
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  owner    Membership      @relation(fields: [tenantId, ownerMembershipId], references: [tenantId, id], onDelete: Restrict)
+  versions CourseVersion[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, slug])
+  @@index([tenantId, status, updatedAt])
+  @@index([tenantId, title])
+  @@map("courses")
+}
+
+/// One version of a course: at most one draft per course; a published version is immutable (trigger).
+model CourseVersion {
+  id              String              @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId        String              @map("tenant_id") @db.Uuid
+  courseId        String              @map("course_id") @db.Uuid
+  /// Given at publish (3.6); null while draft.
+  versionNumber   Int?                @map("version_number")
+  status          CourseVersionStatus @default(draft)
+  title           String              @db.VarChar(120)
+  summary         String?             @db.VarChar(300)
+  description     String?             @db.VarChar(5000)
+  categoryId      String?             @map("category_id") @db.Uuid
+  level           CourseLevel?
+  deliveryMode    DeliveryMode?       @map("delivery_mode")
+  /// BCP 47, from the D-129 list.
+  language        String              @default("en") @db.VarChar(35)
+  durationMinutes Int?                @map("duration_minutes")
+  objectives      String[]            @default([])
+  audience        String?             @db.VarChar(500)
+  prerequisites   String?             @db.VarChar(500)
+  visibility      CourseVisibility    @default(assigned_only)
+  publishedAt     DateTime?           @map("published_at") @db.Timestamptz(3)
+  publishedById   String?             @map("published_by_id") @db.Uuid
+  /// Optimistic-concurrency token for draft edits.
+  version         Int                 @default(1)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById     String?             @map("created_by_id") @db.Uuid
+  updatedAt       DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById     String?             @map("updated_by_id") @db.Uuid
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  course   Course             @relation(fields: [tenantId, courseId], references: [tenantId, id], onDelete: Restrict)
+  category Category?          @relation(fields: [tenantId, categoryId], references: [tenantId, id], onDelete: Restrict)
+  tags     CourseVersionTag[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, courseId, versionNumber])
+  @@index([tenantId, courseId, status])
+  @@index([tenantId, categoryId])
+  @@map("course_versions")
+}
+
+/// Tags of a version (D-128: up to 10, frozen with the version).
+model CourseVersionTag {
+  tenantId        String @map("tenant_id") @db.Uuid
+  courseVersionId String @map("course_version_id") @db.Uuid
+  tagId           String @map("tag_id") @db.Uuid
+
+  tenant  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  version CourseVersion @relation(fields: [tenantId, courseVersionId], references: [tenantId, id], onDelete: Cascade)
+  tag     Tag           @relation(fields: [tenantId, tagId], references: [tenantId, id], onDelete: Restrict)
+
+  @@id([courseVersionId, tagId])
+  @@index([tenantId, tagId])
+  @@map("course_version_tags")
 }
