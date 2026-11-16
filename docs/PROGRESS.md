@@ -1,13 +1,13 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 3 · People and content — slice 3.3 done (categories, tags, course drafts); next: plan 3.4 (storage + assets).**
+**Phase 3 · People and content — slice 3.4 done (storage + assets); next: plan 3.5 (content builder).**
 Phase 2 approved by the owner 2026-11-13 (exit gate be2af4e…462ba53, CI green); Phase 1 approved (a51d042).
 
 ## Last verified
-2026-11-16, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit (Docker), slice 3.3 as committed:
-- format, lint (0 errors, 2 old warnings), typecheck, `pnpm test` (contracts 56, web 771, api 543), `test:isolation`
-  419 passed, `pnpm build` OK · `pnpm test:e2e` 281 passed, 0 failed (17.6 min, desktop + 360 px, axe).
+2026-11-16, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit + RustFS 1.0.4 (Docker), slice 3.4 as committed:
+- `pnpm verify` exit 0 after the review fixes (contracts 56, web 773, api 584; lint 0 errors, 2 old warnings; build
+  OK) · `test:isolation` 458 passed · `pnpm test:e2e` 283 passed, 0 failed (11.8 min, desktop + 360 px, axe).
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
@@ -22,16 +22,18 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
 - 3.1 invitations: API, email job, web list/invite/accept, Settings validity, reviews fixed (5d88451, 608a9a0).
 - 3.2 groups: schema + triggers, API, D-120 branch hook, invitation group (D-122), web screens, reviews fixed,
   D-123–D-126 Confirmed (D-125 D-101 reach on add/remove) (57ff2f1).
-- 3.3 categories, tags, course drafts (owner approved 2026-11-16): schema + triggers, catalog + courses API, real course list, new
+- 3.3 categories, tags, course drafts (65dc400): schema + triggers, catalog + courses API, real course list, new
   course, basics editor with 409 reload, Settings › Categories and tags, reviews fixed. Detail: progress log.
+- 3.4 storage + assets: RustFS, streaming uploads checked by content, signed links (D-133, D-135), mock video job,
+  course cover, reviews fixed (D-078, D-131–D-135 Confirmed).
 
 ## In progress / uncommitted
 - Nothing.
 
 ## Next step
-Plan slice 3.4 (storage + assets) from `prompts/phase-3-*.md`; recommend RustFS 1.0 (Apache-2.0, GA 2026-09) for
-D-078 after checking its current release. Show the plan; wait for approval. Phase 4 must still re-check each
-member's reach on group assignment fan-out (D-125).
+Plan 3.5
+(content builder: modules, lessons, ordering, completion rules — D-041). Owner's local root env file needs the new
+STORAGE_* block from `.env.example`. Phase 4 must still re-check each member's reach on group fan-out (D-125).
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
@@ -41,6 +43,10 @@ member's reach on group assignment fan-out (D-125).
   D-082 production email provider (launch) · D-114 demo video source and licence.
 
 ## Known issues
+- 3.4 reviews, logged for later: the nonce CSP must allow the storage origin in `img-src`/`media-src`; a launch check
+  that the production bucket is private (Phase 7); an asset `purpose` before any second kind of image exists (else a
+  `course.update` holder could expose it as a cover, D-133); the upload cap is per API process; a real video
+  provider must bind refs to the tenant (D-006).
 - 3.3 reviews, logged: every course reader sees the course owner's name and membership id; archived tags/categories
   are refused by the API only (no DB trigger); the course list's published-side filter becomes "current published
   version" in 3.6.

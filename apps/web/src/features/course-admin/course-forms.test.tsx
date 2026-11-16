@@ -23,6 +23,7 @@ const DRAFT: CourseDraftView = {
   objectives: [],
   audience: null,
   prerequisites: null,
+  cover: null,
   updatedAt: '2026-11-16T08:00:00.000Z',
 };
 const COURSE = (
@@ -67,7 +68,12 @@ function api(routes: [string, { status: number; body?: unknown }][]) {
       calls.push({
         path,
         method: init.method ?? 'GET',
-        body: init.body ? JSON.parse(String(init.body)) : undefined,
+        body:
+          init.body instanceof FormData
+            ? Object.fromEntries([...init.body.keys()].map((k) => [k, 'file']))
+            : init.body
+              ? JSON.parse(String(init.body))
+              : undefined,
       });
       const route = routes.find(([prefix]) => path.startsWith(prefix))?.[1] ?? { status: 500 };
       return new Response(route.body === undefined ? null : JSON.stringify(route.body), {
@@ -147,6 +153,86 @@ describe('CourseBasics', () => {
     await user.click(screen.getByRole('button', { name: 'Save draft' }));
     expect(screen.getByLabelText(/Course title/)).toHaveAccessibleDescription(/3 to 120/);
     expect(calls).toEqual([]);
+  });
+
+  it('uploads a cover image, previews it and saves it with the draft (D-133)', async () => {
+    const calls = api([
+      ['/auth/me', { status: 200, body: SESSION }],
+      [
+        '/assets?kind=image',
+        {
+          status: 201,
+          body: {
+            id: ID(70),
+            kind: 'image',
+            status: 'ready',
+            contentType: 'image/png',
+            sizeBytes: 68,
+            sha256: 'a'.repeat(64),
+            fileName: 'cover.png',
+            scanStatus: 'not_scanned',
+            failureReason: null,
+            createdAt: '2026-11-16T08:00:00.000Z',
+            readyAt: '2026-11-16T08:00:00.000Z',
+          },
+        },
+      ],
+      [
+        `/courses/${ID(1)}/draft`,
+        {
+          status: 200,
+          body: COURSE({
+            draft: { ...DRAFT, version: 4, cover: { id: ID(70), fileName: 'cover.png' } },
+          }),
+        },
+      ],
+    ]);
+    render(<CourseBasics course={COURSE()} categories={[]} tags={[]} />);
+    const user = userEvent.setup({ delay: null });
+    expect(screen.getByText('No cover image.')).toBeInTheDocument();
+    await user.upload(
+      screen.getByLabelText('Upload a cover image'),
+      new File([new Uint8Array([137, 80, 78, 71])], 'cover.png', { type: 'image/png' }),
+    );
+    expect(await screen.findByText(/New cover: cover\.png \(not saved yet\)/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: 'Cover image for Lockout tagout (Demo)' }),
+    ).toHaveAttribute('src', `/api/v1/assets/${ID(70)}/content`);
+    const upload = calls.find((c) => c.path.startsWith('/assets'))!;
+    expect(upload.method).toBe('POST');
+    await user.click(screen.getByRole('button', { name: 'Save draft' }));
+    expect(await screen.findByText('Draft saved.')).toBeInTheDocument();
+    expect(calls.find((c) => c.method === 'PATCH')?.body).toEqual({
+      version: 3,
+      coverAssetId: ID(70),
+    });
+  });
+
+  it('a refused upload says why, in our words, and keeps the current cover', async () => {
+    api([
+      ['/auth/me', { status: 200, body: SESSION }],
+      [
+        '/assets?kind=image',
+        {
+          status: 422,
+          body: {
+            error: {
+              code: 'VALIDATION_FAILED',
+              message: 'x',
+              requestId: 'r',
+              fieldErrors: [{ field: 'file', code: 'type_not_allowed', message: 'server words' }],
+            },
+          },
+        },
+      ],
+    ]);
+    render(<CourseBasics course={COURSE()} categories={[]} tags={[]} />);
+    const user = userEvent.setup({ delay: null, applyAccept: false });
+    const input = screen.getByLabelText('Upload a cover image');
+    await user.upload(input, new File(['MZ'], 'cover.png', { type: 'image/png' }));
+    expect(input).toHaveAccessibleDescription(/This file is not a PNG, JPEG or WebP image\./);
+    expect(screen.queryByText('server words')).not.toBeInTheDocument();
+    expect(screen.getByText('No cover image.')).toBeInTheDocument();
   });
 
   it('is read-only for course readers who cannot edit (D-127)', () => {

@@ -10,6 +10,6 @@ export type HealthResponse = z.infer<typeof HealthResponse>;
 
 export const ReadyResponse = z.object({
   status: z.literal('ready'),
-  checks: z.object({ database: z.literal('up') }),
+  checks: z.object({ database: z.literal('up'), storage: z.literal('up') }),
 });
 export type ReadyResponse = z.infer<typeof ReadyResponse>;

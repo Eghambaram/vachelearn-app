@@ -13,7 +13,7 @@ describe('/health and /ready', () => {
       expect(ready.status).toBe(200);
       expect(ReadyResponse.parse(ready.body)).toEqual({
         status: 'ready',
-        checks: { database: 'up' },
+        checks: { database: 'up', storage: 'up' },
       });
     } finally {
       await app.close();
@@ -30,6 +30,17 @@ describe('/health and /ready', () => {
       expect(ready.status).toBe(503);
       expect(ready.body.error.code).toBe('NOT_READY');
       expect((await request(app.getHttpServer()).get('/health')).status).toBe(200);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('/ready is 503 NOT_READY when object storage cannot be reached', async () => {
+    const { app } = await createTestApp({ env: { STORAGE_ENDPOINT: 'http://127.0.0.1:1' } });
+    try {
+      const ready = await request(app.getHttpServer()).get('/ready');
+      expect(ready.status).toBe(503);
+      expect(ready.body.error.code).toBe('NOT_READY');
     } finally {
       await app.close();
     }

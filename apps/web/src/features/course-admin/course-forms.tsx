@@ -26,10 +26,15 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { currentSession } from '@/lib/api/auth';
-import { createCourse, saveCourseDraft } from '@/lib/api/course-admin';
+import {
+  assetContentUrl,
+  createCourse,
+  saveCourseDraft,
+  uploadAsset,
+} from '@/lib/api/course-admin';
 import { getMessages } from '@/lib/i18n';
 import { useApiAction } from '@/lib/use-api-action';
-import { courseErrorMessage } from './messages';
+import { courseErrorMessage, coverUploadMessage } from './messages';
 
 // English only for now (D-028); becomes per-request when a second language is added.
 const t = getMessages();
@@ -149,6 +154,9 @@ type Basics = {
   objectives: string;
   audience: string;
   prerequisites: string;
+  coverAssetId: string | null;
+  /** The cover's file name, for the screen-reader text and the "not saved yet" note. */
+  coverName: string | null;
 };
 
 function basicsOf(d: CourseDraftView): Basics {
@@ -165,6 +173,8 @@ function basicsOf(d: CourseDraftView): Basics {
     objectives: d.objectives.join('\n'),
     audience: d.audience ?? '',
     prerequisites: d.prerequisites ?? '',
+    coverAssetId: d.cover?.id ?? null,
+    coverName: d.cover?.fileName ?? null,
   };
 }
 
@@ -192,13 +202,14 @@ function changes(saved: Basics, now: Basics): Omit<UpdateCourseDraftBody, 'versi
     out.durationMinutes = now.duration.trim() === '' ? null : Number(now.duration.trim());
   if (lines(now.objectives).join('\n') !== lines(saved.objectives).join('\n'))
     out.objectives = lines(now.objectives);
+  if (now.coverAssetId !== saved.coverAssetId) out.coverAssetId = now.coverAssetId;
   const a = [...now.tagIds].sort().join();
   if (a !== [...saved.tagIds].sort().join()) out.tagIds = now.tagIds;
   return out;
 }
 
 type FieldErrors = Partial<
-  Record<'title' | 'duration' | 'objectives' | 'categoryId' | 'tagIds', string>
+  Record<'title' | 'duration' | 'objectives' | 'categoryId' | 'tagIds' | 'cover', string>
 >;
 
 /**
@@ -308,6 +319,7 @@ export function CourseBasics({
     else if (field === 'tagIds') setErrors({ tagIds: text });
     else if (field === 'durationMinutes') setErrors({ duration: text });
     else if (field?.startsWith('objectives')) setErrors({ objectives: text });
+    else if (field === 'coverAssetId') setErrors({ cover: text });
     setMessage({ tone: 'danger', text });
   }
 
@@ -359,6 +371,19 @@ export function CourseBasics({
               />
             )}
           </FormField>
+          <CoverField
+            className="md:col-span-2"
+            title={values.title.trim() || draft.title}
+            editable={editable}
+            assetId={values.coverAssetId}
+            fileName={values.coverName}
+            savedAssetId={saved.coverAssetId}
+            error={errors.cover}
+            onChange={(assetId, fileName) => {
+              setValues((v) => ({ ...v, coverAssetId: assetId, coverName: fileName }));
+              setErrors((e) => ({ ...e, cover: undefined }));
+            }}
+          />
           <FormField label={f.summary} help={f.summaryHelp} className="md:col-span-2">
             {(field) => (
               <Textarea
@@ -562,5 +587,122 @@ export function CourseBasics({
         ) : null}
       </form>
     </section>
+  );
+}
+
+/**
+ * The course cover (Slice 3.4, D-132, D-133): uploading stores the image at once (the API checks its type and size);
+ * it becomes the cover when the draft is saved. Shown through `/api/v1/assets/:id/content`, which checks access on
+ * every load and redirects to a 5-minute link.
+ */
+function CoverField({
+  className,
+  title,
+  editable,
+  assetId,
+  fileName,
+  savedAssetId,
+  error,
+  onChange,
+}: {
+  className?: string;
+  title: string;
+  editable: boolean;
+  assetId: string | null;
+  fileName: string | null;
+  savedAssetId: string | null;
+  error?: string;
+  onChange: (assetId: string | null, fileName: string | null) => void;
+}) {
+  const [uploading, setUploading] = React.useState(false);
+  const [note, setNote] = React.useState<string | null>(null);
+  const [uploadError, setUploadError] = React.useState<string | undefined>();
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const unsaved = assetId !== savedAssetId;
+
+  async function choose(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || uploading) return;
+    setUploading(true);
+    setNote(null);
+    setUploadError(undefined);
+    const session = await currentSession();
+    const result = session.ok ? await uploadAsset('image', file, session.data.csrfToken) : session;
+    setUploading(false);
+    if (result.ok) {
+      onChange(result.data.id, result.data.fileName);
+      setNote(f.coverUploaded);
+      return;
+    }
+    setUploadError(coverUploadMessage(result));
+    inputRef.current?.focus();
+  }
+
+  const shownError = uploadError ?? error;
+  return (
+    <div className={className}>
+      <FormField
+        label={editable ? (assetId ? f.coverReplace : f.coverChoose) : f.cover}
+        help={f.coverHelp}
+        error={shownError}
+      >
+        {(field) => (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+            {assetId ? (
+              // eslint-disable-next-line @next/next/no-img-element -- a signed, short-lived link: next/image would cache it
+              <img
+                src={assetContentUrl(assetId)}
+                alt={f.coverAlt(title)}
+                className="h-32 w-full max-w-56 rounded-md border object-cover"
+              />
+            ) : (
+              <p className="flex h-32 w-full max-w-56 items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
+                {f.coverNone}
+              </p>
+            )}
+            {editable ? (
+              <div className="flex flex-col gap-2">
+                <Input
+                  {...field}
+                  ref={inputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  disabled={uploading}
+                  onChange={choose}
+                />
+                {assetId ? (
+                  <span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={uploading}
+                      onClick={() => {
+                        onChange(null, null);
+                        setNote(f.coverRemoved);
+                      }}
+                    >
+                      {f.coverRemove}
+                    </Button>
+                  </span>
+                ) : null}
+                <p role="status" className="text-sm text-muted-foreground">
+                  {uploading
+                    ? f.coverUploading
+                    : unsaved && assetId && fileName
+                      ? `${note ?? ''} ${f.coverPending(fileName)}`.trim()
+                      : unsaved
+                        ? note
+                        : assetId && fileName
+                          ? f.coverFile(fileName)
+                          : null}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </FormField>
+    </div>
   );
 }

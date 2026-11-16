@@ -13,7 +13,7 @@ Status: established in Phase 2 Slice 2.1 (2026-10-27). Endpoints are added slice
 |---|---|
 | `/api/v1/**` | Every API route |
 | `/health` | Liveness: the process is up. Always 200 `{ "status": "ok" }` |
-| `/ready` | Readiness: the database answers within 2 s. 200 `{ "status": "ready", "checks": { "database": "up" } }`, otherwise 503 `NOT_READY` |
+| `/ready` | Readiness: the database answers within 2 s and the storage bucket within 3 s (3.4). 200 `{ "status": "ready", "checks": { "database": "up", "storage": "up" } }`, otherwise 503 `NOT_READY` |
 | `/api/docs`, `/api/docs-json` | OpenAPI, development only by default (see below); 404 in production |
 
 ## Errors
@@ -244,6 +244,36 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   `invitation.group_skipped` with a reason code (`group_unavailable` / `inviter_cannot_manage`). An invitation's `group`
   is shown only to readers whose `group.read` reach covers that group (a Branch Admin sees `null` for a
   whole-organisation group).
+
+## Assets (Slice 3.4)
+
+- Routes in the session's tenant: `POST /assets?kind=image|document|video` (`asset.upload`, Tenant Admin; the only
+  route that accepts `multipart/form-data`, one part named `file` — every other route answers 415 to a non-JSON body;
+  same-origin and CSRF checks still apply). `GET /assets/:id` (details), `GET /assets/:id/access`
+  (`{ url, expiresAt }`), `GET /assets/:id/content` (302 to the signed link, `Cache-Control: no-store`,
+  `Referrer-Policy: no-referrer`; what `<img>` uses) — all route permission `course.read`, then D-133 in the service.
+- Upload (D-131, D-132): streamed to a private temporary file (never held in memory), stopped past the kind's limit
+  (422 `file` `too_large`); the type is detected from the contents (422 `type_not_allowed` for SVG, Office files,
+  executables or a mismatch); empty → 422 `empty`. Image: PNG/JPEG/WebP ≤ 5 MB · document: PDF ≤ 25 MB · video:
+  MP4/WebM ≤ 500 MB. Stored under `tenants/{tenantId}/{kind}/{random UUID}`; the key is never returned. SHA-256 and
+  the cleaned file name (no path, control or bidi characters) are recorded. `scanStatus` is `not_scanned` (D-134).
+  Live tenant-wide `asset.upload` is re-checked before reading and before recording (support sessions 403).
+  A declared `Content-Length` far over the limit is refused before the body is read; past the limit the API stops
+  reading and closes the connection (`Connection: close`). An upload cut off midway leaves no temporary file or
+  record. At most two uploads per person at once (429 `TOO_MANY_UPLOADS`; per API process). Node's default 5-minute
+  request timeout applies, so a 500 MB video needs about 14 Mbit/s upstream — larger or slower uploads wait for direct
+  upload with the real video provider (D-006).
+- Videos (D-006 `mock`): created `processing`; the job `asset.video_check` (one per asset) marks them `ready` (or
+  `failed` with a reason); `/access` before then → 409 `ASSET_NOT_READY`.
+- Reading (D-133): Tenant Admins read every asset of the tenant; course readers (D-127: TA, BA, LM, CV, support
+  sessions) read an asset that is a course's cover; everyone else — other tenants, Instructors, learners (until
+  Phase 4) — gets 404, the same as a missing asset. Links last 5 minutes (D-135); documents download as attachments,
+  images and video display inline, always with the detected content type; the download name's extension follows the
+  detected type (a PDF named `x.html` downloads as `x.pdf`).
+- Signed links are secrets while they live: never logged (request log: path only; `location` redacted), never stored.
+- `PATCH /courses/:id/draft` accepts `coverAssetId` (null removes it): a ready image of this tenant, else 422
+  `coverAssetId` `not_found` / `not_image` / `not_ready`. The draft view returns `cover { id, fileName }`; list rows
+  `coverAssetId`. Audit: `asset.uploaded` (kind, type, size); cover changes inside `course.draft_updated` (ids).
 
 ## Categories, tags and courses (Slice 3.3)
 

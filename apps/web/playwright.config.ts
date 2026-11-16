@@ -20,6 +20,10 @@ export const E2E_API_ENV = {
   EMAIL_PROVIDER: 'smtp',
   SMTP_HOST: '127.0.0.1',
   SMTP_PORT: process.env.MAILPIT_SMTP_PORT ?? '51025',
+  // Object storage (D-078): the test bucket, created on start (local placeholders; CI runs the same RustFS image).
+  STORAGE_ENDPOINT: process.env.TEST_STORAGE_ENDPOINT ?? 'http://127.0.0.1:59000',
+  STORAGE_BUCKET: 'vachelearn-assets-test',
+  STORAGE_AUTO_CREATE_BUCKET: 'true',
   LOG_LEVEL: 'warn',
 };
 

@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { CatalogItemListQuery, CategoryView } from '@vachelearn/contracts';
 import type { z } from 'zod';
 import type { Category, Prisma } from '../../generated/prisma/client';
-import { liveReach, reachFor } from '../access/reach';
+import { liveReach, reachFor, readsCourses } from '../access/reach';
 import type { RequestContext } from '../access/request-context';
 import { lockTenant } from '../access/tenant-admins';
 import { AuditService, type Tx } from '../audit/audit.service';
@@ -57,12 +57,6 @@ export function toCatalogItemView(r: ItemRow, withReason = true): CategoryView {
 function tenantOf(ctx: RequestContext) {
   if (!ctx.tenant) throw ApiException.notFound();
   return ctx.tenant.tenantId;
-}
-
-/** D-127: the lists follow course reading — tenant or branch reach; assigned-only reach (Instructor) none yet. */
-function readsCourses(ctx: RequestContext) {
-  const scope = ctx.tenant?.branchScope ?? [];
-  return scope === 'ALL' || scope.length > 0;
 }
 
 /** Changes re-check the caller's live tenant-wide `catalog.manage` inside the transaction (reviews 3.3). */

@@ -42,6 +42,14 @@ const SUPPORT_WRITE = 'vl:support-write';
  */
 export const AllowedDuringSupport = () => SetMetadata(SUPPORT_WRITE, true);
 
+const MULTIPART = 'vl:multipart';
+
+/**
+ * A file upload route (D-131): also accepts `multipart/form-data`. Only for authenticated routes — the same-origin and
+ * CSRF-token checks still apply, so a cross-site form cannot reach it.
+ */
+export const AcceptsFileUpload = () => SetMetadata(MULTIPART, true);
+
 /** Signed-in callers only, whoever they are: for the caller's own session and account. */
 export const Authenticated = () =>
   applyDecorators(SetMetadata(REQUIRES, { scope: 'authenticated' } satisfies Requirement));
@@ -83,7 +91,10 @@ export class AccessGuard implements CanActivate {
       );
     }
     // JSON only: an HTML form can send urlencoded or multipart bodies cross-site, never JSON (defence in depth).
-    if (mutating && hasBody(req) && !isJson(req.headers['content-type'])) {
+    const upload =
+      this.reflector.getAllAndOverride<boolean>(MULTIPART, targets) === true &&
+      /^multipart\/form-data;/i.test(req.headers['content-type'] ?? '');
+    if (mutating && hasBody(req) && !upload && !isJson(req.headers['content-type'])) {
       throw new ApiException(
         415,
         'UNSUPPORTED_MEDIA_TYPE',

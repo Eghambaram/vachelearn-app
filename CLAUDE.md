@@ -63,13 +63,13 @@ tests pass.
 - Monorepo with **pnpm workspaces**: `apps/web` (Next.js App Router + TypeScript), `apps/api` (NestJS + TypeScript),
   `packages/ui` (design system, only once ≥2 consumers or clear benefit), `packages/contracts` (shared Zod schemas /
   API types, if it removes duplication). `infra/` for Docker Compose and deploy assets.
-- **PostgreSQL** + **Prisma** (one ORM only). Docker Compose for local Postgres, MinIO and Mailpit.
+- **PostgreSQL** + **Prisma** (one ORM only). Docker Compose for local Postgres, RustFS (S3-compatible, D-078) and Mailpit.
 - Tailwind CSS + shadcn/ui with VacheLearn tokens. React Hook Form + Zod on the web. **Zod** schemas in
   `packages/contracts` for API validation too (D-035 Confirmed) — use it everywhere.
 - REST under `/api/v1`, OpenAPI generated from code. Auth owned by the API (see D-010 in DECISIONS.md).
 - Adapters for everything external: `StorageService`, `VideoProvider`, `EmailProvider`, `PaymentProvider`,
-  `PdfRenderer`. Local implementations first (an S3-compatible server chosen in Phase 3 — MinIO no longer publishes
-  images, D-078 —, mock video, console/Mailpit email, disabled payments).
+  `PdfRenderer`. Local implementations first (RustFS for S3-compatible storage — MinIO no longer publishes images,
+  D-078 —, mock video, console/Mailpit email, disabled payments).
 - Modular monolith. No microservices, no Redis/queue until a job genuinely needs it (start with a Postgres-backed
   job/outbox table).
 - Before adding any dependency: check it is maintained, check the installed major version's docs, and state why.
@@ -83,13 +83,13 @@ tests pass.
 | Purpose | Command |
 |---|---|
 | Install | `pnpm install` (Node 24 LTS per `.nvmrc`, pnpm 12.8.1 per `packageManager`) |
-| Local services (Postgres 18 :55432, Mailpit :51025/:58025) | `pnpm services:up` · `pnpm services:down` (`infra/docker-compose.yml`; no object storage until Phase 3, D-078) |
+| Local services (Postgres 18 :55432, Mailpit :51025/:58025, RustFS :59000) | `pnpm services:up` · `pnpm services:down` (`infra/docker-compose.yml`; RustFS object storage since 3.4, D-078) |
 | Dev servers | `pnpm dev` (web :3000, api :4000; needs a root `.env` copied from `.env.example`) |
 | Lint / format check / format | `pnpm lint` · `pnpm format:check` · `pnpm format` (run Prettier from the root only: from `apps/web` it reformats the vendored CSS) |
 | Type-check | `pnpm typecheck` (web runs `next typegen`; api builds contracts + `prisma generate` first) |
-| Unit + integration tests | `pnpm test` (contracts, web, api; api needs `pnpm services:up` — real Postgres test DB `vachelearn_test` and Mailpit for the email tests). Single: `pnpm --filter web test -- <pattern>`, `pnpm --filter api test -- <pattern>` |
+| Unit + integration tests | `pnpm test` (contracts, web, api; api needs `pnpm services:up` — real Postgres test DB `vachelearn_test`, Mailpit for the email tests, RustFS bucket `vachelearn-assets-test` for the asset tests). Single: `pnpm --filter web test -- <pattern>`, `pnpm --filter api test -- <pattern>` |
 | Tenant/branch isolation suite | `pnpm --filter api test:isolation` (also part of `pnpm test`; full two-tenant fixture in 2.6) |
-| E2E (Playwright + axe) | `pnpm test:e2e` (needs `pnpm services:up`; starts the API on :4100 and the web on :3100, seeds the demo data (`e2e/seed.setup.ts`); first time: `pnpm --filter web exec playwright install chromium`) |
+| E2E (Playwright + axe) | `pnpm test:e2e` (needs `pnpm services:up`, incl. RustFS; starts the API on :4100 and the web on :3100, seeds the demo data (`e2e/seed.setup.ts`); first time: `pnpm --filter web exec playwright install chromium`) |
 | Build | `pnpm build` |
 | DB migrate (dev) / deploy / reset / seed | `pnpm --filter api db:migrate` · `db:deploy` · `db:reset` (localhost only) · `db:seed` (demo data, idempotent, local only; `SEED_PASSWORD` or a printed one) |
 | Create an account (operator) | `pnpm --filter api user:create --email <address> --name "<name>" --reason "<why>"` (sends a set-password email; D-083) |

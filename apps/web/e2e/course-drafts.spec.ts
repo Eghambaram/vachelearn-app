@@ -115,3 +115,68 @@ test('a Tenant Admin authors a course draft; a stale save offers a reload; a Bra
   await expect(page.getByRole('button', { name: 'Save draft' })).toHaveCount(0);
   await expectNoAxeViolations(page);
 });
+
+// A 1×1 PNG, and a Windows executable renamed to .png: the API decides by the contents (D-132).
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64',
+);
+const EXE = Buffer.concat([Buffer.from('MZ'), Buffer.alloc(200, 0x90)]);
+
+/** True once the browser has fetched and decoded the image (through the API's redirect to a signed link). */
+const loaded = (img: import('@playwright/test').Locator) =>
+  img.evaluate(
+    (el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0,
+  );
+
+test('a Tenant Admin uploads a course cover; a wrong file type is refused; a Branch Admin sees the cover', async ({
+  page,
+}) => {
+  test.slow();
+  const { slug, admin } = await tenantWithAdmin(page, 'covers');
+  await activate(page, admin);
+  await signIn(page, admin);
+  await expect(page).toHaveURL(/\/admin$/, { timeout: 20_000 });
+  expect(
+    (await apiPost(page, '/branches', { code: 'NSK', name: 'Nashik', timezone: 'Asia/Kolkata' }))
+      .status,
+  ).toBe(201);
+  const branchAdmin = createAccount(uniqueEmail('ba'), 'Nashik Admin (Demo)');
+  grantRole(branchAdmin, 'branch_admin', slug, 'NSK');
+  const created = await apiPost(page, '/courses', { title: 'Confined spaces (Demo)' });
+  expect(created.status).toBe(201);
+  const courseUrl = `/admin/courses/${(created.body as { id: string }).id}`;
+
+  await page.goto(courseUrl);
+  await expect(page.getByText('No cover image.')).toBeVisible();
+  const picker = page.getByLabel('Upload a cover image');
+  await picker.setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: EXE });
+  await expect(picker).toHaveAccessibleDescription(/This file is not a PNG, JPEG or WebP image\./);
+  await expectNoAxeViolations(page);
+
+  await picker.setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: PNG });
+  await expect(page.getByText(/New cover: cover\.png \(not saved yet\)/)).toBeVisible();
+  const preview = page.getByRole('img', { name: 'Cover image for Confined spaces (Demo)' });
+  await expect.poll(() => loaded(preview)).toBe(true);
+  await page.getByRole('button', { name: 'Save draft' }).click();
+  await expect(page.getByText('Draft saved.')).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Current cover: cover.png')).toBeVisible();
+  await expectNoAxeViolations(page);
+
+  // The list shows the thumbnail (decorative: the title names the course).
+  await page.goto('/admin/courses');
+  const thumb = page.getByRole('row', { name: /Confined spaces/ }).locator('img');
+  await expect.poll(() => loaded(thumb)).toBe(true);
+
+  // A Branch Admin reads the course and sees its cover, without editing it (D-127, D-133).
+  await page.context().clearCookies();
+  await activate(page, branchAdmin);
+  await signIn(page, branchAdmin);
+  await expect(page).toHaveURL(/\/admin$/, { timeout: 20_000 });
+  await page.goto(courseUrl);
+  const readOnly = page.getByRole('img', { name: 'Cover image for Confined spaces (Demo)' });
+  await expect.poll(() => loaded(readOnly)).toBe(true);
+  await expect(page.getByLabel('Upload a cover image')).toHaveCount(0);
+  await expectNoAxeViolations(page);
+});

@@ -33,6 +33,21 @@ export function catalogErrorMessage(kind: CatalogKind) {
   };
 }
 
+/** Our sentences for a refused cover upload (Slice 3.4, D-132). */
+export function coverUploadMessage(result: Failure): string {
+  const e = t.courseAdmin.errors;
+  const field = result.error.fieldErrors?.[0];
+  if (field?.field === 'file') {
+    if (field.code === 'type_not_allowed') return e.coverType;
+    if (field.code === 'too_large') return e.coverTooLarge;
+    if (field.code === 'empty') return e.coverEmpty;
+    return e.coverFailed;
+  }
+  if (result.error.code === 'SUPPORT_READ_ONLY') return e.supportReadOnly;
+  if (result.error.code === 'FORBIDDEN') return e.forbidden;
+  return result.status === 422 ? e.coverFailed : authErrorMessage(result);
+}
+
 /** Our sentences for refused course changes (Slice 3.3). Conflicts are shown by the editor itself. */
 export function courseErrorMessage(result: Failure): string {
   const e = t.courseAdmin.errors;
@@ -45,6 +60,7 @@ export function courseErrorMessage(result: Failure): string {
     return field.code === 'archived' ? e.tagsArchived : e.tagsUnavailable;
   if (field?.field === 'durationMinutes') return e.durationInvalid;
   if (field?.field?.startsWith('objectives')) return e.objectivesInvalid;
+  if (field?.field === 'coverAssetId') return e.coverUnavailable;
   switch (result.error.code) {
     case 'CONFLICT':
       return t.courseAdmin.conflictBody;

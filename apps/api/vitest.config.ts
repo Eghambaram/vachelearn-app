@@ -8,6 +8,10 @@ const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ??
   'postgresql://vachelearn:change-me@localhost:55432/vachelearn_test';
 
+// Object storage (RustFS in infra/docker-compose.yml; CI runs the same image). A separate bucket for tests.
+const TEST_STORAGE_ENDPOINT = process.env.TEST_STORAGE_ENDPOINT ?? 'http://127.0.0.1:59000';
+const TEST_STORAGE_BUCKET = 'vachelearn-assets-test';
+
 export default defineConfig({
   // SWC instead of esbuild: NestJS dependency injection needs emitted decorator metadata, which esbuild drops.
   plugins: [swc.vite({ module: { type: 'es6' } })],
@@ -15,7 +19,12 @@ export default defineConfig({
     globals: true,
     include: ['src/**/*.test.ts', 'test/**/*.test.ts'],
     globalSetup: ['test/global-setup.ts'],
-    env: { NODE_ENV: 'test', DATABASE_URL: TEST_DATABASE_URL },
+    env: {
+      NODE_ENV: 'test',
+      DATABASE_URL: TEST_DATABASE_URL,
+      STORAGE_ENDPOINT: TEST_STORAGE_ENDPOINT,
+      STORAGE_BUCKET: TEST_STORAGE_BUCKET,
+    },
     // One database for every file: run test files one after another.
     fileParallelism: false,
     testTimeout: 15_000,

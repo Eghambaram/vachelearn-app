@@ -13,6 +13,10 @@ const PROD = {
   SMTP_HOST: 'smtp.example.com',
   SMTP_PORT: '587',
   EMAIL_FROM: 'VacheLearn <no-reply@mail.vachelearn.test>',
+  STORAGE_ENDPOINT: 'https://storage.example.com',
+  STORAGE_PUBLIC_ENDPOINT: 'https://files.example.com',
+  STORAGE_ACCESS_KEY_ID: 'prod-key-id',
+  STORAGE_SECRET_ACCESS_KEY: 'p'.repeat(40),
 } as const;
 
 describe('configuration (fail fast, nothing fails open)', () => {
@@ -154,6 +158,33 @@ describe('configuration (fail fast, nothing fails open)', () => {
     expect(config.apiDocs).toBe(true);
     expect(config.WEB_ORIGIN).toBe('http://localhost:3000');
     expect(config.cursorSecret.length).toBeGreaterThanOrEqual(32);
+  });
+
+  it('storage (D-009): production needs real https storage credentials and never auto-creates the bucket', () => {
+    const prod = { ...PROD, WEB_ORIGIN: 'https://app.example.com' };
+    expect(loadConfig(prod).storage).toMatchObject({
+      endpoint: 'https://storage.example.com',
+      publicEndpoint: 'https://files.example.com',
+      autoCreateBucket: false,
+    });
+    expect(() => loadConfig({ ...prod, STORAGE_SECRET_ACCESS_KEY: '' })).toThrow(
+      /STORAGE_SECRET_ACCESS_KEY is required in production/,
+    );
+    expect(() =>
+      loadConfig({ ...prod, STORAGE_SECRET_ACCESS_KEY: 'change-me-local-storage' }),
+    ).toThrow(/STORAGE_SECRET_ACCESS_KEY is still a placeholder/);
+    expect(() => loadConfig({ ...prod, STORAGE_ENDPOINT: 'http://storage.internal' })).toThrow(
+      /STORAGE_ENDPOINT must be https in production/,
+    );
+    expect(() => loadConfig({ ...prod, STORAGE_PUBLIC_ENDPOINT: '' })).toThrow(
+      /STORAGE_PUBLIC_ENDPOINT is required in production/,
+    );
+    expect(() => loadConfig({ ...prod, STORAGE_AUTO_CREATE_BUCKET: 'true' })).toThrow(
+      /STORAGE_AUTO_CREATE_BUCKET cannot be enabled in production/,
+    );
+    expect(() => loadConfig({ ...BASE, STORAGE_BUCKET: 'Not_A_Bucket' })).toThrow(
+      /STORAGE_BUCKET must be a valid bucket name/,
+    );
   });
 
   it('API docs: on in development, off elsewhere unless opted in, never in production', () => {

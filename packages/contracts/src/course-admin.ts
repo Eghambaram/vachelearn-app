@@ -113,6 +113,8 @@ export const CourseBasicsFields = {
   objectives: z.array(z.string().trim().min(1).max(200)).max(20),
   audience: OptionalText(500),
   prerequisites: OptionalText(500),
+  /** A ready image asset of this tenant (3.4, D-133); null removes the cover. */
+  coverAssetId: z.uuid().nullable(),
 };
 
 /** `POST /courses`: creates the course and its first draft. Only the title is required. */
@@ -142,6 +144,7 @@ export const UpdateCourseDraftBody = z
     objectives: CourseBasicsFields.objectives.optional(),
     audience: CourseBasicsFields.audience.optional(),
     prerequisites: CourseBasicsFields.prerequisites.optional(),
+    coverAssetId: CourseBasicsFields.coverAssetId.optional(),
   })
   .refine((b) => Object.keys(b).some((k) => k !== 'version'), 'nothing to change');
 export type UpdateCourseDraftBody = z.input<typeof UpdateCourseDraftBody>;
@@ -165,6 +168,8 @@ export const CourseDraftView = z.object({
   objectives: z.array(z.string()),
   audience: z.string().nullable(),
   prerequisites: z.string().nullable(),
+  /** The cover image, read through `GET /assets/:id/content` (D-133). */
+  cover: z.object({ id: z.uuid(), fileName: z.string() }).nullable(),
   updatedAt: IsoInstant,
 });
 export type CourseDraftView = z.infer<typeof CourseDraftView>;
@@ -195,6 +200,8 @@ export const CourseAdminListItem = z.object({
   deliveryMode: DeliveryMode.nullable(),
   language: CourseLanguage,
   durationMinutes: z.number().int().nullable(),
+  /** The shown version's cover image (draft, else published), for the list thumbnail. */
+  coverAssetId: z.uuid().nullable(),
   status: CourseStatus,
   publishedVersion: z.number().int().positive().nullable(),
   hasUnpublishedChanges: z.boolean(),

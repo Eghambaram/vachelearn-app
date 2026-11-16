@@ -43,10 +43,27 @@ jobs:
           --health-interval 5s
           --health-timeout 3s
           --health-retries 20
+      # Object storage for the asset tests and e2e (same image as infra/docker-compose.yml, D-078). The credentials are
+      # the local placeholders the tests and the API default to; nothing real.
+      rustfs:
+        image: rustfs/rustfs:1.0.4
+        env:
+          RUSTFS_ACCESS_KEY: vachelearn-local
+          RUSTFS_SECRET_KEY: change-me-local-storage
+          RUSTFS_CONSOLE_ENABLE: 'false'
+          RUSTFS_OBS_LOG_DIRECTORY: ''
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -fsS http://localhost:9000/health"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     env:
       TEST_DATABASE_URL: postgresql://vachelearn:ci-only-placeholder@localhost:5432/vachelearn_test
       MAILPIT_URL: http://127.0.0.1:8025
       MAILPIT_SMTP_PORT: '1025'
+      TEST_STORAGE_ENDPOINT: http://127.0.0.1:9000
     steps:
       - uses: actions/checkout@v7
 

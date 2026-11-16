@@ -24,6 +24,8 @@
     "demo:isolation": "node scripts/isolation-demo.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1169.0",
+    "@aws-sdk/s3-request-presigner": "3.1169.0",
     "@nestjs/common": "12.2.0",
     "@nestjs/core": "12.2.0",
     "@nestjs/platform-express": "12.2.0",
@@ -31,6 +33,8 @@
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "@vachelearn/contracts": "workspace:*",
+    "busboy": "1.6.0",
+    "file-type": "22.3.0",
     "helmet": "8.3.0",
     "nestjs-pino": "5.3.1",
     "nodemailer": "10.2.1",
@@ -43,6 +47,7 @@
   "devDependencies": {
     "@nestjs/testing": "12.2.0",
     "@swc/core": "1.16.20",
+    "@types/busboy": "1.5.5",
     "@types/express": "^5.0.6",
     "@types/node": "^24.19.2",
     "@types/supertest": "^7.2.1",

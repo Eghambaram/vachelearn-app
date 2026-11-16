@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { ApiResult } from '@/lib/api/client';
-import { listAdminCourses } from '@/lib/api/course-admin';
+import { assetContentUrl, listAdminCourses } from '@/lib/api/course-admin';
 import { formatDate } from '@/lib/format';
 import { getMessages } from '@/lib/i18n';
 import {
@@ -48,12 +48,29 @@ const COLUMNS: DataTableColumn<CourseAdminListItem>[] = [
     sortField: 'title',
     className: 'whitespace-normal min-w-56',
     cell: (row) => (
-      <Link
-        href={`/admin/courses/${row.id}`}
-        className="font-medium text-primary underline-offset-4 hover:underline"
-      >
-        {row.title}
-      </Link>
+      <span className="flex items-center gap-3">
+        {row.coverAssetId ? (
+          // Decorative: the title next to it names the course. A signed link, so not next/image (no caching).
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={assetContentUrl(row.coverAssetId)}
+            alt=""
+            loading="lazy"
+            className="h-9 w-14 shrink-0 rounded border object-cover"
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="h-9 w-14 shrink-0 rounded border border-dashed bg-muted"
+          />
+        )}
+        <Link
+          href={`/admin/courses/${row.id}`}
+          className="font-medium text-primary underline-offset-4 hover:underline"
+        >
+          {row.title}
+        </Link>
+      </span>
     ),
   },
   {

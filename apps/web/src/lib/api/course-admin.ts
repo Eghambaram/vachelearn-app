@@ -1,4 +1,6 @@
 import {
+  AssetView,
+  type AssetKind,
   CategoryListPage,
   CategoryView,
   CourseAdminListPage,
@@ -71,3 +73,15 @@ export const createCourse = (body: CreateCourseBody, csrfToken: string) =>
 
 export const saveCourseDraft = (courseId: string, body: UpdateCourseDraftBody, csrfToken: string) =>
   call(`/courses/${id(courseId)}/draft`, { method: 'PATCH', body, csrfToken }, course);
+
+/** Uploads one file (D-131); the API checks its type from the contents and the kind's size limit (D-132). */
+export function uploadAsset(kind: AssetKind, file: File, csrfToken: string) {
+  const form = new FormData();
+  form.append('file', file, file.name);
+  return call(`/assets${queryString({ kind })}`, { method: 'POST', body: form, csrfToken }, (d) =>
+    AssetView.parse(d),
+  );
+}
+
+/** Where an image asset is displayed from: the API checks access and redirects to a 5-minute link (D-133, D-135). */
+export const assetContentUrl = (assetId: string) => `/api/v1/assets/${id(assetId)}/content`;

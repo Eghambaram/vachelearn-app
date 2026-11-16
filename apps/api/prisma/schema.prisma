@@ -71,6 +71,7 @@ model Tenant {
   tags              Tag[]
   courses           Course[]
   courseVersions    CourseVersion[]
+  assets            Asset[]
   courseVersionTags CourseVersionTag[]
 
   @@index([status, createdAt])
@@ -791,6 +792,8 @@ model CourseVersion {
   audience        String?             @db.VarChar(500)
   prerequisites   String?             @db.VarChar(500)
   visibility      CourseVisibility    @default(assigned_only)
+  /// Cover image (3.4, D-133): a ready image asset of the same tenant.
+  coverAssetId    String?             @map("cover_asset_id") @db.Uuid
   publishedAt     DateTime?           @map("published_at") @db.Timestamptz(3)
   publishedById   String?             @map("published_by_id") @db.Uuid
   /// Optimistic-concurrency token for draft edits.
@@ -803,12 +806,14 @@ model CourseVersion {
   tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   course   Course             @relation(fields: [tenantId, courseId], references: [tenantId, id], onDelete: Restrict)
   category Category?          @relation(fields: [tenantId, categoryId], references: [tenantId, id], onDelete: Restrict)
+  cover    Asset?             @relation(fields: [tenantId, coverAssetId], references: [tenantId, id], onDelete: Restrict)
   tags     CourseVersionTag[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, courseId, versionNumber])
   @@index([tenantId, courseId, status])
   @@index([tenantId, categoryId])
+  @@index([tenantId, coverAssetId])
   @@map("course_versions")
 }
 
@@ -825,4 +830,71 @@ model CourseVersionTag {
   @@id([courseVersionId, tagId])
   @@index([tenantId, tagId])
   @@map("course_version_tags")
+}
+
+// ── Slice 3.4: assets (D-131–D-135) ──────────────────────────────────────────────────────────────────────────────────
+
+enum AssetKind {
+  image
+  document
+  video
+
+  @@map("asset_kind")
+}
+
+/// Written after the file is stored: images and documents are ready at once; videos go processing → ready | failed.
+enum AssetStatus {
+  processing
+  ready
+  failed
+
+  @@map("asset_status")
+}
+
+/// D-134: no scanner locally (`not_scanned`); a real scanner is a launch requirement (Phase 7).
+enum AssetScanStatus {
+  not_scanned
+  clean
+
+  @@map("asset_scan_status")
+}
+
+/// Where the bytes live: our object storage, or a video provider (stand-in `mock_video` locally, D-006).
+enum AssetProvider {
+  storage
+  mock_video
+
+  @@map("asset_provider")
+}
+
+/// An uploaded file (D-131–D-135). Never changed or deleted once stored; read only through a short-lived signed link.
+model Asset {
+  id            String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId      String          @map("tenant_id") @db.Uuid
+  kind          AssetKind
+  status        AssetStatus
+  /// `tenants/{tenantId}/{kind}/{random UUID}`: chosen by the API, never shown to clients.
+  storageKey    String          @unique @map("storage_key") @db.VarChar(200)
+  /// Detected from the file's contents, never from the client.
+  contentType   String          @map("content_type") @db.VarChar(100)
+  sizeBytes     Int             @map("size_bytes")
+  sha256        String          @db.Char(64)
+  /// The uploader's file name, cleaned (shown and used for downloads).
+  fileName      String          @map("file_name") @db.VarChar(200)
+  provider      AssetProvider
+  providerRef   String?         @map("provider_ref") @db.VarChar(200)
+  scanStatus    AssetScanStatus @map("scan_status")
+  failureReason String?         @map("failure_reason") @db.VarChar(200)
+  readyAt       DateTime?       @map("ready_at") @db.Timestamptz(3)
+  failedAt      DateTime?       @map("failed_at") @db.Timestamptz(3)
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   String?         @map("created_by_id") @db.Uuid
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  coverOfVersions CourseVersion[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, kind, createdAt])
+  @@map("assets")
 }

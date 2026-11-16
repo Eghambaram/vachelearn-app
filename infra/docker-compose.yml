@@ -1,8 +1,8 @@
 # Local development services (Phase 2, slice 2.1). Not for production.
 #   docker compose -f infra/docker-compose.yml up -d
-# Host ports default to 55432 / 51025 / 58025 so they never collide with another project's Postgres or Mailpit on the
-# standard ports; override with VL_POSTGRES_PORT, VL_SMTP_PORT, VL_MAILPIT_UI_PORT. Bound to 127.0.0.1 only.
-# Object storage is not here yet: chosen with StorageService in Phase 3 (D-078 — MinIO no longer publishes images).
+# Host ports default to 55432 / 51025 / 58025 / 59000 so they never collide with another project's services on the
+# standard ports; override with VL_POSTGRES_PORT, VL_SMTP_PORT, VL_MAILPIT_UI_PORT, VL_STORAGE_PORT. Bound to
+# 127.0.0.1 only. Object storage is RustFS (D-078, slice 3.4; MinIO no longer publishes images).
 name: vachelearn
 
 services:
@@ -36,5 +36,26 @@ services:
       timeout: 3s
       retries: 20
 
+  # S3-compatible object storage (D-078). The API creates its bucket on start when STORAGE_AUTO_CREATE_BUCKET=true
+  # (local only). Console off; logs to stdout.
+  rustfs:
+    image: rustfs/rustfs:1.0.4
+    environment:
+      # Local placeholders, the same as the committed example env file. Never real credentials.
+      RUSTFS_ACCESS_KEY: ${STORAGE_ACCESS_KEY_ID:-vachelearn-local}
+      RUSTFS_SECRET_KEY: ${STORAGE_SECRET_ACCESS_KEY:-change-me-local-storage}
+      RUSTFS_CONSOLE_ENABLE: 'false'
+      RUSTFS_OBS_LOG_DIRECTORY: ''
+    ports:
+      - '127.0.0.1:${VL_STORAGE_PORT:-59000}:9000'
+    volumes:
+      - rustfs-data:/data
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:9000/health']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
 volumes:
   postgres-data:
+  rustfs-data:

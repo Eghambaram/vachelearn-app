@@ -12,7 +12,7 @@ import type {
 } from '@vachelearn/contracts';
 import type { z } from 'zod';
 import type { Prisma } from '../../generated/prisma/client';
-import { liveReach, reachFor } from '../access/reach';
+import { liveReach, reachFor, readsCourses } from '../access/reach';
 import type { RequestContext } from '../access/request-context';
 import { lockTenant } from '../access/tenant-admins';
 import { AuditService, changedFields, type Tx } from '../audit/audit.service';
@@ -50,6 +50,7 @@ const SHOWN_VERSIONS = {
     deliveryMode: true,
     language: true,
     durationMinutes: true,
+    coverAssetId: true,
     category: ITEM_REF,
   },
 } satisfies Prisma.Course$versionsArgs;
@@ -70,6 +71,8 @@ const DRAFT_SELECT = {
   updatedAt: true,
   categoryId: true,
   category: ITEM_REF,
+  coverAssetId: true,
+  cover: { select: { id: true, fileName: true } },
   tags: { select: { tag: ITEM_REF }, orderBy: { tag: { name: 'asc' } } },
 } satisfies Prisma.CourseVersionSelect;
 type DraftRow = Prisma.CourseVersionGetPayload<{ select: typeof DRAFT_SELECT }>;
@@ -91,12 +94,6 @@ type ShownVersion = CourseRow['versions'][number];
 function tenantOf(ctx: RequestContext) {
   if (!ctx.tenant) throw ApiException.notFound();
   return ctx.tenant.tenantId;
-}
-
-/** D-127: tenant or branch reach reads every course; assigned-only reach (Instructor) none yet. */
-function readsCourses(ctx: RequestContext) {
-  const scope = ctx.tenant?.branchScope ?? [];
-  return scope === 'ALL' || scope.length > 0;
 }
 
 /** Creating and editing are tenant-wide only (matrix `course.create` / `course.update` T), checked live. */
@@ -167,6 +164,18 @@ async function chooseSlug(tx: Tx, tenantId: string, title: string) {
 const field = (name: string, code: string, message: string) =>
   ApiException.validation([{ field: name, code, message }]);
 
+/** D-133: a cover is a ready image of this tenant; another tenant's id reads as unknown (422, never 403). */
+async function assertCover(tx: Tx, tenantId: string, assetId: string) {
+  const asset = await tx.asset.findFirst({
+    where: { id: assetId, tenantId },
+    select: { kind: true, status: true },
+  });
+  if (!asset) throw field('coverAssetId', 'not_found', 'Upload the cover image again');
+  if (asset.kind !== 'image') throw field('coverAssetId', 'not_image', 'A cover must be an image');
+  if (asset.status !== 'ready')
+    throw field('coverAssetId', 'not_ready', 'This image is not ready yet');
+}
+
 @Injectable()
 export class CoursesService {
   constructor(
@@ -189,6 +198,7 @@ export class CoursesService {
       deliveryMode: shown?.deliveryMode ?? null,
       language: (shown?.language ?? 'en') as CourseAdminListItem['language'],
       durationMinutes: shown?.durationMinutes ?? null,
+      coverAssetId: shown?.coverAssetId ?? null,
       status: statusOf(row, row.versions),
       publishedVersion: publishedNumber(row.versions),
       hasUnpublishedChanges:
@@ -214,6 +224,7 @@ export class CoursesService {
       objectives: d.objectives,
       audience: d.audience,
       prerequisites: d.prerequisites,
+      cover: d.cover,
       updatedAt: d.updatedAt.toISOString(),
     };
   }
@@ -457,6 +468,9 @@ export class CoursesService {
         categoryId: draft.categoryId,
         tagIds: currentTags,
       });
+      if (scalars.coverAssetId && scalars.coverAssetId !== draft.coverAssetId) {
+        await assertCover(tx, tenantId, scalars.coverAssetId);
+      }
 
       const diff = changedFields(
         {
@@ -470,6 +484,7 @@ export class CoursesService {
           durationMinutes: draft.durationMinutes,
           audience: draft.audience,
           prerequisites: draft.prerequisites,
+          coverAssetId: draft.coverAssetId,
         },
         scalars,
         // Long free text is recorded as changed, never by value.

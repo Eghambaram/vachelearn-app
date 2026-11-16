@@ -30,6 +30,7 @@ const SECRET_FIELDS = [
   'resetToken',
   'secret',
   'signedUrl',
+  'location',
   'answers',
 ];
 

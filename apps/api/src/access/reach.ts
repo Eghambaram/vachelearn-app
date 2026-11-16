@@ -39,6 +39,15 @@ export function withinReach(
   );
 }
 
+/**
+ * D-127: course readers are callers whose route permission (`course.read`) reaches the whole tenant or some branches;
+ * assigned-only reach (Instructor) reads no course until 5.5. Courses, the catalog lists and course covers (D-133).
+ */
+export function readsCourses(ctx: RequestContext) {
+  const scope = ctx.tenant?.branchScope ?? [];
+  return scope === 'ALL' || scope.length > 0;
+}
+
 /** Reach from the context: the access guard already narrowed the branch scope to the route's permission. */
 export function reachFromContext(ctx: RequestContext): Reach {
   const scope = ctx.tenant?.branchScope ?? [];

@@ -39,6 +39,11 @@ import {
   MyInvitationsController,
 } from './invitations/invitations.controller';
 import { InvitationsService } from './invitations/invitations.service';
+import { AssetsController } from './assets/assets.controller';
+import { AssetsService } from './assets/assets.service';
+import { MalwareScanner, NoMalwareScanner } from './storage/malware-scanner';
+import { StorageService, createStorageService } from './storage/storage.service';
+import { MockVideoProvider, VideoProvider } from './storage/video.provider';
 import { JobRegistry } from './jobs/job-handlers';
 import { JobWorker } from './jobs/job-worker';
 import { JobsService } from './jobs/jobs.service';
@@ -92,6 +97,7 @@ export class AppModule {
         AuditLogController,
         InvitationsController,
         MyInvitationsController,
+        AssetsController,
       ],
       providers: [
         { provide: APP_CONFIG, useValue: config },
@@ -130,6 +136,15 @@ export class AppModule {
           useFactory: (logger: PinoLogger) => createEmailProvider(config, logger),
         },
         EmailJobs,
+        // Files (D-131–D-135): storage, video provider (D-006 mock), malware-scan hook (D-134).
+        { provide: StorageService, useValue: createStorageService(config) },
+        {
+          provide: VideoProvider,
+          inject: [StorageService],
+          useFactory: (storage: StorageService) => new MockVideoProvider(storage),
+        },
+        { provide: MalwareScanner, useClass: NoMalwareScanner },
+        AssetsService,
         // Deny by default: every route must be @Public() or name its permission.
         { provide: APP_GUARD, useClass: AccessGuard },
         { provide: APP_FILTER, useClass: AllExceptionsFilter },

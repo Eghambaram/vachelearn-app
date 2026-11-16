@@ -21,15 +21,17 @@ export async function call<T>(
   parse: (data: unknown) => T,
 ): Promise<ApiResult<T>> {
   let res: Response;
+  // A file upload (D-131) is sent as multipart: the browser sets the content type and boundary itself.
+  const form = init.body instanceof FormData ? init.body : null;
   try {
     res = await fetch(`/api/v1${path}`, {
       method: init.method,
       credentials: 'same-origin',
       headers: {
-        ...(init.body !== undefined ? { 'content-type': 'application/json' } : {}),
+        ...(init.body !== undefined && !form ? { 'content-type': 'application/json' } : {}),
         ...(init.csrfToken ? { [CSRF_HEADER]: init.csrfToken } : {}),
       },
-      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+      body: form ?? (init.body !== undefined ? JSON.stringify(init.body) : undefined),
     });
   } catch {
     return failure(0, 'NETWORK', 'The service could not be reached');

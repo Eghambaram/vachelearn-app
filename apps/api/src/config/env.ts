@@ -62,6 +62,23 @@ const EnvSchema = z
     SMTP_SECURE: z.enum(['true', 'false']).default('false'),
     SMTP_USER: z.string().min(1).optional(),
     SMTP_PASSWORD: z.string().min(1).optional(),
+    /** S3-compatible object storage (D-009, D-078: RustFS locally). The API reaches it here. */
+    STORAGE_ENDPOINT: z.url().default('http://127.0.0.1:59000'),
+    /** The address browsers use for signed links; defaults to STORAGE_ENDPOINT (the same locally). */
+    STORAGE_PUBLIC_ENDPOINT: z.url().optional(),
+    STORAGE_REGION: z.string().min(1).max(50).default('us-east-1'),
+    STORAGE_BUCKET: z
+      .string()
+      .regex(/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/, 'must be a valid bucket name')
+      .default('vachelearn-assets'),
+    STORAGE_ACCESS_KEY_ID: z.string().min(3).optional(),
+    STORAGE_SECRET_ACCESS_KEY: z.string().min(8).optional(),
+    /** Path-style addressing (RustFS and most self-hosted servers). AWS S3 and R2 work either way. */
+    STORAGE_FORCE_PATH_STYLE: z.enum(['true', 'false']).default('true'),
+    /** Creates the bucket at start-up if missing. Local only: refused in production. */
+    STORAGE_AUTO_CREATE_BUCKET: z.enum(['true', 'false']).default('false'),
+    /** D-006: `mock` stores videos in our storage and marks them ready through a job. */
+    VIDEO_PROVIDER: z.enum(['mock']).default('mock'),
   })
   .superRefine((env, ctx) => {
     if (env.EMAIL_PROVIDER === 'smtp' && (!env.SMTP_HOST || !env.SMTP_PORT)) {
@@ -154,6 +171,40 @@ const EnvSchema = z
           message: 'is still a placeholder address',
         });
       }
+      if (!env.STORAGE_ACCESS_KEY_ID || !env.STORAGE_SECRET_ACCESS_KEY) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [env.STORAGE_ACCESS_KEY_ID ? 'STORAGE_SECRET_ACCESS_KEY' : 'STORAGE_ACCESS_KEY_ID'],
+          message: 'is required in production',
+        });
+      } else if (/change-me|vachelearn-local/.test(env.STORAGE_SECRET_ACCESS_KEY)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['STORAGE_SECRET_ACCESS_KEY'],
+          message: 'is still a placeholder',
+        });
+      }
+      if (!env.STORAGE_PUBLIC_ENDPOINT) {
+        // Signed links must name the address browsers reach, never fall back to an internal one.
+        ctx.addIssue({
+          code: 'custom',
+          path: ['STORAGE_PUBLIC_ENDPOINT'],
+          message: 'is required in production',
+        });
+      }
+      for (const key of ['STORAGE_ENDPOINT', 'STORAGE_PUBLIC_ENDPOINT'] as const) {
+        const value = env[key];
+        if (value && !value.startsWith('https://')) {
+          ctx.addIssue({ code: 'custom', path: [key], message: 'must be https in production' });
+        }
+      }
+      if (env.STORAGE_AUTO_CREATE_BUCKET === 'true') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['STORAGE_AUTO_CREATE_BUCKET'],
+          message: 'cannot be enabled in production (create the bucket with its policy instead)',
+        });
+      }
       if (env.ENABLE_API_DOCS === 'true') {
         ctx.addIssue({
           code: 'custom',
@@ -193,6 +244,18 @@ const EnvSchema = z
             }
           : null,
     },
+    storage: {
+      endpoint: env.STORAGE_ENDPOINT,
+      publicEndpoint: env.STORAGE_PUBLIC_ENDPOINT ?? env.STORAGE_ENDPOINT,
+      region: env.STORAGE_REGION,
+      bucket: env.STORAGE_BUCKET,
+      // Local placeholders match infra/docker-compose.yml; production requires real values (above).
+      accessKeyId: env.STORAGE_ACCESS_KEY_ID ?? 'vachelearn-local',
+      secretAccessKey: env.STORAGE_SECRET_ACCESS_KEY ?? 'change-me-local-storage',
+      forcePathStyle: env.STORAGE_FORCE_PATH_STYLE === 'true',
+      autoCreateBucket: env.STORAGE_AUTO_CREATE_BUCKET === 'true',
+    },
+    videoProvider: env.VIDEO_PROVIDER,
   }));
 
 export type AppConfig = Readonly<z.output<typeof EnvSchema>>;
