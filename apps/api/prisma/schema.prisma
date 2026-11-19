@@ -72,6 +72,8 @@ model Tenant {
   courses           Course[]
   courseVersions    CourseVersion[]
   assets            Asset[]
+  courseModules     CourseModule[]
+  lessons           Lesson[]
   courseVersionTags CourseVersionTag[]
 
   @@index([status, createdAt])
@@ -736,6 +738,27 @@ enum DeliveryMode {
   @@map("delivery_mode")
 }
 
+/// Lesson types (spec §6, D-136). `assessment` is a placeholder until the assessment builder (4.4).
+enum LessonType {
+  text
+  video
+  document
+  link
+  assessment
+
+  @@map("lesson_type")
+}
+
+/// How a lesson is completed (D-041), fixed by its type and frozen with the version.
+enum LessonCompletionRule {
+  manual
+  watched_90
+  acknowledged
+  passed
+
+  @@map("lesson_completion_rule")
+}
+
 enum CourseVisibility {
   assigned_only
   catalog
@@ -808,6 +831,7 @@ model CourseVersion {
   category Category?          @relation(fields: [tenantId, categoryId], references: [tenantId, id], onDelete: Restrict)
   cover    Asset?             @relation(fields: [tenantId, coverAssetId], references: [tenantId, id], onDelete: Restrict)
   tags     CourseVersionTag[]
+  modules  CourseModule[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, courseId, versionNumber])
@@ -893,8 +917,64 @@ model Asset {
 
   tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   coverOfVersions CourseVersion[]
+  lessons         Lesson[]
 
   @@unique([tenantId, id])
   @@index([tenantId, kind, createdAt])
   @@map("assets")
+}
+
+/// A module of a course version's outline (3.5, D-137). Frozen with a published version (trigger).
+model CourseModule {
+  id              String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  courseVersionId String   @map("course_version_id") @db.Uuid
+  /// 0-based order within the version.
+  position        Int
+  title           String   @db.VarChar(120)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant  Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  version CourseVersion @relation(fields: [tenantId, courseVersionId], references: [tenantId, id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, courseVersionId, id])
+  @@unique([courseVersionId, position])
+  @@index([tenantId, courseVersionId])
+  @@map("course_modules")
+}
+
+/// A lesson (3.5, D-136, D-041). Its module belongs to the same version (composite FK); frozen with a published version.
+model Lesson {
+  id              String               @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  tenantId        String               @map("tenant_id") @db.Uuid
+  courseVersionId String               @map("course_version_id") @db.Uuid
+  moduleId        String               @map("module_id") @db.Uuid
+  /// 0-based order within the module.
+  position        Int
+  title           String               @db.VarChar(120)
+  type            LessonType
+  required        Boolean              @default(true)
+  durationMinutes Int?                 @map("duration_minutes")
+  completionRule  LessonCompletionRule @map("completion_rule")
+  /// Text lessons only: plain text with simple formatting, never HTML (D-136).
+  body            String?              @db.VarChar(20000)
+  /// Link lessons only: an https address.
+  url             String?              @db.VarChar(2000)
+  /// Video and document lessons only: an asset of the matching kind.
+  assetId         String?              @map("asset_id") @db.Uuid
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  module CourseModule @relation(fields: [tenantId, courseVersionId, moduleId], references: [tenantId, courseVersionId, id], onDelete: Cascade)
+  asset  Asset?       @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Restrict)
+
+  @@unique([tenantId, id])
+  @@unique([moduleId, position])
+  @@index([tenantId, courseVersionId])
+  @@index([tenantId, assetId])
+  @@map("lessons")
 }

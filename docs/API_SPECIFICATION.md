@@ -245,13 +245,32 @@ handler declares both or neither, or when a `platform/**` route names a tenant p
   is shown only to readers whose `group.read` reach covers that group (a Branch Admin sees `null` for a
   whole-organisation group).
 
+## Course content (Slice 3.5)
+
+- Routes under `/courses/:id/draft` in the session's tenant. Reads (`course.read`, every course reader per D-127;
+  Instructors 404 until 5.5): `GET content` (the outline: modules, lessons with type, completion rule, link address,
+  file `{id, kind, fileName, status}` and `missing` — `body`/`url`/`file`/`assessment` or null — plus totals and
+  `canEdit`), `GET lessons/:lessonId` (one lesson with its text). Changes (`course.update`, Tenant Admin, live and
+  tenant-wide): `POST modules`, `PATCH modules/:moduleId`, `DELETE modules/:moduleId?version=N` (its lessons go too),
+  `PUT modules/order`, `POST modules/:moduleId/lessons`, `PUT modules/:moduleId/lessons/order`,
+  `PATCH lessons/:lessonId`, `POST lessons/:lessonId/move` (`{moduleId, position}`, 200), `DELETE lessons/:lessonId?version=N`.
+- Every change names the draft `version` (the basics form's token too, D-137) and answers with the whole outline and
+  the new token; stale → 409 `CONFLICT`. No draft → 409 `NO_DRAFT`; archived → 409 `COURSE_ARCHIVED`; over a limit
+  (50 modules, 100 lessons per module, 500 per course) → 409 `CONTENT_LIMIT`. A reorder names every item exactly once
+  (422 `ids`/`not_a_permutation`). Content fields that do not fit the lesson's type → 422 `not_for_type`; the type is
+  fixed (an unknown field). Text: plain text ≤ 20,000 characters, no invisible or control characters except new
+  lines and tabs; links: `https://` without credentials, normalised; files: this tenant's, of the lesson's kind, not
+  failed (`not_found`/`wrong_kind`/`failed`). Ids from another tenant, course or version → 404.
+- Audited: `course_module.created|renamed|deleted|lessons_reordered`, `course.modules_reordered`,
+  `lesson.created|updated|moved|deleted`; text and addresses as set/changed, never by value.
+
 ## Assets (Slice 3.4)
 
 - Routes in the session's tenant: `POST /assets?kind=image|document|video` (`asset.upload`, Tenant Admin; the only
   route that accepts `multipart/form-data`, one part named `file` — every other route answers 415 to a non-JSON body;
   same-origin and CSRF checks still apply). `GET /assets/:id` (details), `GET /assets/:id/access`
   (`{ url, expiresAt }`), `GET /assets/:id/content` (302 to the signed link, `Cache-Control: no-store`,
-  `Referrer-Policy: no-referrer`; what `<img>` uses) — all route permission `course.read`, then D-133 in the service.
+  `Referrer-Policy: no-referrer`; what `<img>` uses) — all route permission `course.read`, then D-133 (and D-138 for lesson files) in the service.
 - Upload (D-131, D-132): streamed to a private temporary file (never held in memory), stopped past the kind's limit
   (422 `file` `too_large`); the type is detected from the contents (422 `type_not_allowed` for SVG, Office files,
   executables or a mismatch); empty → 422 `empty`. Image: PNG/JPEG/WebP ≤ 5 MB · document: PDF ≤ 25 MB · video:

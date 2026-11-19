@@ -213,8 +213,8 @@ export class AssetsService implements OnModuleInit {
   }
 
   /**
-   * D-133: Tenant Admins (tenant-wide `asset.read`) read every asset of the tenant; course readers (D-127) read an asset
-   * that is a course's cover; everyone else gets 404 — the same answer as a missing or other-tenant asset.
+   * D-133, D-138: Tenant Admins (tenant-wide `asset.read`) read every asset of the tenant; course readers (D-127) read
+   * an asset that is a course's cover or a lesson's file; everyone else gets 404 — the same answer as a missing or other-tenant asset.
    */
   private async readable(ctx: RequestContext, id: string) {
     const tenantId = tenantOf(ctx);
@@ -228,6 +228,12 @@ export class AssetsService implements OnModuleInit {
         select: { id: true },
       });
       if (cover) return asset;
+      // D-138: a file of a lesson follows its course too.
+      const lesson = await this.prisma.lesson.findFirst({
+        where: { tenantId, assetId: id },
+        select: { id: true },
+      });
+      if (lesson) return asset;
     }
     throw ApiException.notFound();
   }

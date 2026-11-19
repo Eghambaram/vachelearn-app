@@ -20,3 +20,4 @@ export * from './people';
 export * from './audit';
 export * from './invitations';
 export * from './groups';
+export * from './course-content';

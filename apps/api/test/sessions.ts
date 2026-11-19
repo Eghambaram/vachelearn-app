@@ -63,6 +63,19 @@ export function realActors(app: INestApplication, db: PrismaClient, passwordHash
           .set('cookie', cookie)
           .set(CSRF_HEADER, view.csrfToken)
           .send(body),
+      put: (path: string, body?: object) =>
+        request(app.getHttpServer())
+          .put(path)
+          .set('origin', WEB)
+          .set('cookie', cookie)
+          .set(CSRF_HEADER, view.csrfToken)
+          .send(body),
+      delete: (path: string) =>
+        request(app.getHttpServer())
+          .delete(path)
+          .set('origin', WEB)
+          .set('cookie', cookie)
+          .set(CSRF_HEADER, view.csrfToken),
       /** A multipart upload with one `file` part (D-131). */
       upload: (path: string, content: Buffer, fileName: string) =>
         request(app.getHttpServer())

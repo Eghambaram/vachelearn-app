@@ -1,13 +1,15 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 3 · People and content — slice 3.4 done (storage + assets); next: plan 3.5 (content builder).**
+**Phase 3 · People and content — slice 3.5a (outline API) built, uncommitted; 3.5b editor and 3.5c preview next.**
 Phase 2 approved by the owner 2026-11-13 (exit gate be2af4e…462ba53, CI green); Phase 1 approved (a51d042).
 
 ## Last verified
-2026-11-16, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit + RustFS 1.0.4 (Docker), slice 3.4 as committed:
-- `pnpm verify` exit 0 after the review fixes (contracts 56, web 773, api 584; lint 0 errors, 2 old warnings; build
-  OK) · `test:isolation` 458 passed · `pnpm test:e2e` 283 passed, 0 failed (11.8 min, desktop + 360 px, axe).
+2026-11-19, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit + RustFS 1.0.4, working tree of 3.5a on 491ac80:
+- `pnpm verify`: format, lint (0 errors, 2 old warnings), typecheck, tests (contracts 56, web 773, api 635) passed;
+  the web build stopped once on Next's security notice (GHSA-mfr8-8qww-v76h, GHSA-vc7v-qv4w-wrv8: next ≤ 16.4.4,
+  fixed in 16.4.5; we use no `'use cache'`), rerun `pnpm --filter web build` exit 0 · `test:isolation` 509 passed ·
+  migrations rebuilt on an empty database: schema identical to the test database. E2E not run (no web change yet).
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
@@ -28,12 +30,19 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
   course cover, reviews fixed (D-078, D-131–D-135 Confirmed).
 
 ## In progress / uncommitted
-- Nothing.
+- CI fix: migration `20261117020000_invitations_group_frozen` (a later-sorting 3.1 migration dropped D-122's group
+  check on fresh databases; CI on 491ac80 failed on it) — commit separately, first.
+- Slice 3.5a: migration `20261117041004_course_content` (course_modules, lessons, CHECKs, frozen/limit/asset
+  triggers), `courses/course-content.{service,controller}.ts`, contracts `course-content.ts`, D-138 lesson files in
+  `assets.service.ts`, `course-content.isolation.test.ts` (29), docs; D-041 + D-136–D-139 Confirmed. Reviews done
+  (isolation: 4 Low; security: 3 Low) and fixed.
 
 ## Next step
-Plan 3.5
-(content builder: modules, lessons, ordering, completion rules — D-041). Owner's local root env file needs the new
-STORAGE_* block from `.env.example`. Phase 4 must still re-check each member's reach on group fan-out (D-125).
+Owner reviews 3.5a + the CI fix → commit both, push. Then 3.5b: the Content page (outline editor, lesson panel with
+uploads, move buttons + "Move to module", drag per D-139 — check `@atlaskit/pragmatic-drag-and-drop` first). Render
+lesson text as React text nodes for `## `/`- `/paragraphs only (no innerHTML, no markdown library); link `href` only
+after a client `https:` check, `rel="noopener noreferrer"`, host shown as stored (punycode). Then 3.5c preview.
+Owner's local root env file needs the STORAGE_* block from `.env.example`. Phase 4: D-125 reach on group fan-out.
 
 ## Blocked on owner
 - Confirm D-064 (logo lockup, "Vache" wordmark vs "VacheLearn" product name).
@@ -44,9 +53,12 @@ STORAGE_* block from `.env.example`. Phase 4 must still re-check each member's r
 
 ## Known issues
 - 3.4 reviews, logged for later: the nonce CSP must allow the storage origin in `img-src`/`media-src`; a launch check
-  that the production bucket is private (Phase 7); an asset `purpose` before any second kind of image exists (else a
-  `course.update` holder could expose it as a cover, D-133); the upload cap is per API process; a real video
+  that the production bucket is private (Phase 7); an asset `purpose` before any second kind of image, document or video
+  upload exists (else a `course.update` holder could expose it as a cover or lesson file, D-133, D-138); the upload cap is per API process; a real video
   provider must bind refs to the tenant (D-006).
+- 3.5a reviews, logged: renumbering is one UPDATE per row (≤ ~200, under the draft lock) — a single
+  `UPDATE … FROM unnest(…) WITH ORDINALITY` if outlines get slow; migration names must sort after every migration
+  they change (the 3.1/3.2 trigger overwrite above).
 - 3.3 reviews, logged: every course reader sees the course owner's name and membership id; archived tags/categories
   are refused by the API only (no DB trigger); the course list's published-side filter becomes "current published
   version" in 3.6.

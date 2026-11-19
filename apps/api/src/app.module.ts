@@ -29,6 +29,8 @@ import { EMAIL_PROVIDER, EmailJobs } from './email/email-jobs';
 import { createEmailProvider } from './email/email.provider';
 import { CategoriesController, TagsController } from './catalog/catalog.controller';
 import { CatalogItemsService } from './catalog/catalog-items.service';
+import { CourseContentController } from './courses/course-content.controller';
+import { CourseContentService } from './courses/course-content.service';
 import { CoursesController } from './courses/courses.controller';
 import { CoursesService } from './courses/courses.service';
 import { GroupsController } from './groups/groups.controller';
@@ -91,6 +93,7 @@ export class AppModule {
         CategoriesController,
         TagsController,
         CoursesController,
+        CourseContentController,
         PeopleController,
         JobRolesController,
         TenantSettingsController,
@@ -121,6 +124,7 @@ export class AppModule {
         GroupsService,
         CatalogItemsService,
         CoursesService,
+        CourseContentService,
         PeopleService,
         JobRolesService,
         TenantSettingsService,

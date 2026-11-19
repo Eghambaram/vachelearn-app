@@ -13,6 +13,8 @@ import { LifecycleBody } from './tenancy';
  */
 
 const Version = z.number().int().min(1);
+/** Optimistic-concurrency token of an editable record (stale → 409). */
+export const RowVersion = Version;
 
 // ── Categories and tags (D-128) ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -39,6 +41,9 @@ const Label = (min: number, max: number, { joiners = false } = {}) =>
           'invisible or control characters are not allowed',
         ),
     );
+
+/** A trimmed, NFC label with no invisible or control characters (titles: Indic joiners allowed). */
+export const PlainLabel = Label;
 
 export const CategoryName = Label(2, 60);
 export const TagName = Label(2, 40);

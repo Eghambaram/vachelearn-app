@@ -91,13 +91,13 @@ const COURSE_SELECT = {
 type CourseRow = Prisma.CourseGetPayload<{ select: typeof COURSE_SELECT }>;
 type ShownVersion = CourseRow['versions'][number];
 
-function tenantOf(ctx: RequestContext) {
+export function tenantOf(ctx: RequestContext) {
   if (!ctx.tenant) throw ApiException.notFound();
   return ctx.tenant.tenantId;
 }
 
 /** Creating and editing are tenant-wide only (matrix `course.create` / `course.update` T), checked live. */
-async function assertTenantWide(
+export async function assertTenantWide(
   tx: Tx,
   ctx: RequestContext,
   tenantId: string,

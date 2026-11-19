@@ -52,7 +52,7 @@ notifications. These are not listed per role.
 | `course.publish` · `course.archive` | Publish version / archive course | — | T | — | — | — | — | — | 3.6 |
 | `course.review` | Approve review step (only if D-022) | — | T | — | — | — | — | — | 3.6 |
 | `asset.upload` | Upload assets | — | T | — | — | — | — | — | 3.4 |
-| `asset.read` | Get a signed URL for an asset (D-133: a course cover follows `course.read`; an unattached asset TA only) | — | T | — | — | — | entitled lessons (O) | — | 3.4 |
+| `asset.read` | Get a signed URL for an asset (D-133, D-138: a course cover or a lesson's file follows `course.read`; an unattached asset TA only) | — | T | — | — | — | entitled lessons (O) | — | 3.4 |
 | `catalog.browse` | Tenant catalog | — | T | B | S | A | O (entitled) | — | 3.7 |
 | `enrollment.self_enroll` | Self-enroll where course allows (D-046) | — | — | — | — | — | O | — | 4.1 |
 | `assignment.create` · `assignment.update` · `assignment.cancel` | Assign learning (targets within scope; tenant target needs T — D-045) | — | T | B | S | — | — | — | 4.1 |
