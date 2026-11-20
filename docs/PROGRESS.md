@@ -1,15 +1,16 @@
 # Progress (imported into every Claude Code session — keep under ~80 lines)
 
 ## Current phase / slice
-**Phase 3 · People and content — slice 3.5a (outline API) built, uncommitted; 3.5b editor and 3.5c preview next.**
+**Phase 3 · People and content — slice 3.5a (outline API) committed (4c0cca3, CI green); 3.5b editor next.**
 Phase 2 approved by the owner 2026-11-13 (exit gate be2af4e…462ba53, CI green); Phase 1 approved (a51d042).
 
 ## Last verified
-2026-11-19, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit + RustFS 1.0.4, working tree of 3.5a on 491ac80:
-- `pnpm verify`: format, lint (0 errors, 2 old warnings), typecheck, tests (contracts 56, web 773, api 635) passed;
-  the web build stopped once on Next's security notice (GHSA-mfr8-8qww-v76h, GHSA-vc7v-qv4w-wrv8: next ≤ 16.4.4,
-  fixed in 16.4.5; we use no `'use cache'`), rerun `pnpm --filter web build` exit 0 · `test:isolation` 509 passed ·
-  migrations rebuilt on an empty database: schema identical to the test database. E2E not run (no web change yet).
+2026-11-20, Node v24.21.0, pnpm 12.8.1, Postgres 18 + Mailpit + RustFS 1.0.4, Next 16.4.6 on 4c0cca3:
+- `pnpm verify`: format, lint (0 errors, 2 old warnings), typecheck, contracts 56 passed; web tests timed out twice
+  under parallel load, rerun alone 773 passed · api 635 passed · `pnpm --filter web build` exit 0 · `pnpm audit
+  --prod`: no known vulnerabilities · `pnpm test:e2e`: first run 278 passed / 5 load timeouts (34.7 min), rerun 283
+  passed (15.1 min). CI on 4c0cca3: success. 3.5a gates (2026-11-19): `test:isolation` 509 passed, fresh-DB schema
+  identical.
 
 ## Done in this phase
 Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by the owner 2026-10-26 (a51d042).
@@ -27,18 +28,15 @@ Phase 1 (1.1–1.5.8 + exit gate): `docs/progress-log/2026-10.md`; approved by t
 - 3.3 categories, tags, course drafts (65dc400): schema + triggers, catalog + courses API, real course list, new
   course, basics editor with 409 reload, Settings › Categories and tags, reviews fixed. Detail: progress log.
 - 3.4 storage + assets: RustFS, streaming uploads checked by content, signed links (D-133, D-135), mock video job,
-  course cover, reviews fixed (D-078, D-131–D-135 Confirmed).
+  course cover, reviews fixed (D-078, D-131–D-135 Confirmed) (491ac80; CI fix 7d757bd).
+- 3.5a outline API: modules + lessons, DB rules, shared draft token, D-138 lesson files (4c0cca3). Next 16.4.6
+  (GHSA-mfr8-8qww-v76h, GHSA-vc7v-qv4w-wrv8).
 
 ## In progress / uncommitted
-- CI fix: migration `20261117020000_invitations_group_frozen` (a later-sorting 3.1 migration dropped D-122's group
-  check on fresh databases; CI on 491ac80 failed on it) — commit separately, first.
-- Slice 3.5a: migration `20261117041004_course_content` (course_modules, lessons, CHECKs, frozen/limit/asset
-  triggers), `courses/course-content.{service,controller}.ts`, contracts `course-content.ts`, D-138 lesson files in
-  `assets.service.ts`, `course-content.isolation.test.ts` (29), docs; D-041 + D-136–D-139 Confirmed. Reviews done
-  (isolation: 4 Low; security: 3 Low) and fixed.
+Nothing.
 
 ## Next step
-Owner reviews 3.5a + the CI fix → commit both, push. Then 3.5b: the Content page (outline editor, lesson panel with
+3.5b: the Content page (outline editor, lesson panel with
 uploads, move buttons + "Move to module", drag per D-139 — check `@atlaskit/pragmatic-drag-and-drop` first). Render
 lesson text as React text nodes for `## `/`- `/paragraphs only (no innerHTML, no markdown library); link `href` only
 after a client `https:` check, `rel="noopener noreferrer"`, host shown as stored (punycode). Then 3.5c preview.
@@ -56,6 +54,8 @@ Owner's local root env file needs the STORAGE_* block from `.env.example`. Phase
   that the production bucket is private (Phase 7); an asset `purpose` before any second kind of image, document or video
   upload exists (else a `course.update` holder could expose it as a cover or lesson file, D-133, D-138); the upload cap is per API process; a real video
   provider must bind refs to the tenant (D-006).
+- Dev-only audit findings (not in `--prod`): `effect` ≤ 3.22.0 via the Prisma CLI (GHSA-7589-6fvf-x4pw, high),
+  `minimatch` < 11.0.1 via ESLint (GHSA-g3hv-75wg-m249) — take with the next Prisma/ESLint bump.
 - 3.5a reviews, logged: renumbering is one UPDATE per row (≤ ~200, under the draft lock) — a single
   `UPDATE … FROM unnest(…) WITH ORDINALITY` if outlines get slow; migration names must sort after every migration
   they change (the 3.1/3.2 trigger overwrite above).
